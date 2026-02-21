@@ -65,14 +65,12 @@ export default function Feed() {
 
   const fetchPosts = async () => {
     if (!profile) return;
-
     const { data: postsData, error } = await supabase
       .from("posts")
       .select("*")
       .eq("university_id", profile.university_id)
       .order("created_at", { ascending: false })
       .limit(50);
-
     if (error) { console.error(error); return; }
 
     const userIds = [...new Set(postsData.map((p) => p.user_id))];
@@ -120,7 +118,7 @@ export default function Feed() {
       });
       if (error) throw error;
       setNewPost(""); setImageFile(null); setShowComposer(false);
-      toast.success("Posted! 🔥");
+      toast.success("Posted!");
       fetchPosts();
     } catch (error: any) { toast.error(error.message); }
     finally { setPosting(false); }
@@ -165,11 +163,9 @@ export default function Feed() {
       .select("id, content, created_at, user_id")
       .eq("post_id", postId)
       .order("created_at", { ascending: true });
-
     if (!data) return;
     const uids = [...new Set(data.map((c) => c.user_id))];
     const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", uids);
-
     const enriched = data.map((c) => {
       const p = profiles?.find((pr) => pr.user_id === c.user_id);
       return { ...c, display_name: p?.display_name ?? "Unknown", avatar_url: p?.avatar_url ?? null };
@@ -196,42 +192,48 @@ export default function Feed() {
   };
 
   return (
-    <div className="px-4 pt-4">
+    <div className="px-4 pt-6 pb-4">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="font-display text-3xl font-bold text-gradient">T</h1>
-        <Button size="icon" className="gradient-primary border-0 rounded-full h-10 w-10" onClick={() => setShowComposer(!showComposer)}>
+      <div className="mb-5 flex items-center justify-between">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Feed</h1>
+        <button
+          onClick={() => setShowComposer(!showComposer)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95"
+        >
           {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-        </Button>
+        </button>
       </div>
 
       {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative mb-5">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search campus users..."
+          placeholder="Search campus..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
-          className="pl-9 bg-muted/50 border-border/50"
+          className="pl-10 h-11 rounded-full bg-muted border-0 text-sm placeholder:text-muted-foreground"
         />
         {searchResults.length > 0 && (
-          <Card className="absolute z-10 w-full mt-1 border-border/50 bg-card">
-            <CardContent className="p-2 space-y-1">
+          <div className="absolute z-10 w-full mt-2 rounded-2xl border border-border bg-background shadow-lg overflow-hidden">
+            <div className="p-2 space-y-0.5">
               {searchResults.map((r) => (
-                <div key={r.user_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-7 w-7">
-                      {r.avatar_url ? <AvatarImage src={r.avatar_url} /> : <AvatarFallback className="bg-muted text-xs">{r.display_name.charAt(0)}</AvatarFallback>}
+                <div key={r.user_id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      {r.avatar_url ? <AvatarImage src={r.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold">{r.display_name.charAt(0)}</AvatarFallback>}
                     </Avatar>
-                    <span className="text-sm font-medium">{r.display_name}</span>
+                    <span className="text-sm font-semibold">{r.display_name}</span>
                   </div>
-                  <Button size="sm" variant={followingIds.has(r.user_id) ? "outline" : "default"} className="h-7 text-xs" onClick={() => toggleFollow(r.user_id)}>
+                  <button
+                    onClick={() => toggleFollow(r.user_id)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${followingIds.has(r.user_id) ? "border border-border text-foreground" : "bg-foreground text-background"}`}
+                  >
                     {followingIds.has(r.user_id) ? "Unfollow" : "Follow"}
-                  </Button>
+                  </button>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
 
@@ -239,112 +241,127 @@ export default function Feed() {
       <AnimatePresence>
         {showComposer && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <Card className="mb-4 border-primary/20 bg-card/80 glow-purple">
-              <CardContent className="pt-4">
-                <div className="flex gap-3">
-                  <Avatar className="h-8 w-8">
-                    {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : <AvatarFallback className="bg-muted text-xs">{profile?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
-                  </Avatar>
-                  <div className="flex-1 space-y-2">
-                    <Textarea placeholder="What's happening on campus?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={3} className="bg-muted/30 border-border/30 resize-none" />
-                    <div className="flex items-center justify-between">
-                      <label className="cursor-pointer text-muted-foreground hover:text-primary transition-colors">
-                        <Image className="h-5 w-5" />
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
-                      </label>
-                      <Button size="sm" onClick={handlePost} disabled={posting || !newPost.trim()} className="gradient-primary border-0">
-                        {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    {imageFile && <p className="text-xs text-muted-foreground">📎 {imageFile.name}</p>}
+            <div className="mb-5 rounded-2xl border border-border bg-background p-4">
+              <div className="flex gap-3">
+                <Avatar className="h-9 w-9">
+                  {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold">{profile?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
+                </Avatar>
+                <div className="flex-1 space-y-3">
+                  <Textarea placeholder="What's happening on campus?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3" />
+                  <div className="flex items-center justify-between">
+                    <label className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                      <Image className="h-5 w-5" />
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+                    </label>
+                    <button
+                      onClick={handlePost}
+                      disabled={posting || !newPost.trim()}
+                      className="px-5 py-2 rounded-full bg-foreground text-background text-xs font-semibold disabled:opacity-40 transition-transform active:scale-95"
+                    >
+                      {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+                    </button>
                   </div>
+                  {imageFile && <p className="text-xs text-muted-foreground">📎 {imageFile.name}</p>}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Posts */}
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : posts.length === 0 ? (
         <div className="py-20 text-center">
-          <p className="text-2xl mb-2">🤫</p>
-          <p className="text-muted-foreground">No posts yet. Be the first!</p>
+          <p className="text-muted-foreground text-sm">No posts yet. Be the first!</p>
         </div>
       ) : (
-        <div className="space-y-3 pb-4">
+        <div className="space-y-4">
           {posts.map((post, i) => (
-            <motion.div key={post.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="border-border/30 bg-card/60 backdrop-blur-sm hover:border-primary/20 transition-colors">
-                <CardContent className="pt-4">
-                  <div className="flex gap-3">
-                    <Avatar className="h-9 w-9">
-                      {post.profiles?.avatar_url ? <AvatarImage src={post.profiles.avatar_url} /> : <AvatarFallback className="bg-muted text-xs">{post.profiles?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm truncate">{post.profiles?.display_name ?? "Unknown"}</span>
-                        <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
-                        {post.user_id !== user?.id && (
-                          <button onClick={() => toggleFollow(post.user_id)} className="ml-auto shrink-0">
-                            {followingIds.has(post.user_id) ? (
-                              <UserMinus className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
-                            ) : (
-                              <UserPlus className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      <p className="mt-1 text-sm leading-relaxed">{post.content}</p>
-                      {post.image_url && (
-                        <img src={post.image_url} alt="Post" className="mt-2 rounded-lg max-h-64 w-full object-cover" loading="lazy" />
-                      )}
-                      <div className="mt-3 flex items-center gap-4">
-                        <button onClick={() => toggleLike(post.id, post.has_liked)} className={`flex items-center gap-1 text-sm transition-colors ${post.has_liked ? "text-secondary" : "text-muted-foreground hover:text-secondary"}`}>
-                          <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
-                          {post.reaction_count > 0 && post.reaction_count}
-                        </button>
-                        <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
-                          <MessageCircle className="h-4 w-4" />
-                          {post.comment_count > 0 && post.comment_count}
-                        </button>
-                      </div>
+            <motion.div key={post.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+              <div className="rounded-2xl border border-border bg-background overflow-hidden">
+                {/* Post header */}
+                <div className="px-4 pt-4 pb-2 flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    {post.profiles?.avatar_url ? <AvatarImage src={post.profiles.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold">{post.profiles?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm">{post.profiles?.display_name ?? "Unknown"}</span>
+                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
+                  </div>
+                  {post.user_id !== user?.id && (
+                    <button
+                      onClick={() => toggleFollow(post.user_id)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${followingIds.has(post.user_id) ? "border border-border text-muted-foreground" : "bg-foreground text-background"}`}
+                    >
+                      {followingIds.has(post.user_id) ? "Following" : "Follow"}
+                    </button>
+                  )}
+                </div>
 
-                      {/* Comments Section */}
-                      {expandedComments.has(post.id) && (
-                        <div className="mt-3 border-t border-border/30 pt-3 space-y-2">
-                          {(commentsMap[post.id] ?? []).map((c) => (
-                            <div key={c.id} className="flex gap-2">
-                              <Avatar className="h-6 w-6">
-                                {c.avatar_url ? <AvatarImage src={c.avatar_url} /> : <AvatarFallback className="bg-muted text-[10px]">{c.display_name.charAt(0)}</AvatarFallback>}
-                              </Avatar>
-                              <div>
-                                <span className="text-xs font-semibold">{c.display_name}</span>
-                                <span className="text-xs text-muted-foreground ml-2">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
-                                <p className="text-xs leading-relaxed">{c.content}</p>
-                              </div>
-                            </div>
-                          ))}
-                          <div className="flex gap-2 mt-2">
-                            <Input
-                              placeholder="Write a comment..."
-                              value={commentInputs[post.id] ?? ""}
-                              onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                              onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
-                              className="bg-muted/30 border-border/30 text-xs h-8"
-                            />
-                            <Button size="sm" className="h-8 px-2" onClick={() => submitComment(post.id)} disabled={!commentInputs[post.id]?.trim()}>
-                              <Send className="h-3 w-3" />
-                            </Button>
+                {/* Post image */}
+                {post.image_url && (
+                  <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover" loading="lazy" />
+                )}
+
+                {/* Post content */}
+                <div className="px-4 py-3">
+                  <p className="text-sm leading-relaxed">{post.content}</p>
+                </div>
+
+                {/* Action row */}
+                <div className="px-4 pb-3 flex items-center gap-4">
+                  <button onClick={() => toggleLike(post.id, post.has_liked)} className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                    <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
+                    {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
+                  </button>
+                  <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <MessageCircle className="h-4 w-4" />
+                    {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
+                  </button>
+                  <div className="flex-1" />
+                  <button onClick={() => toggleComments(post.id)} className="px-4 py-1.5 rounded-full bg-foreground text-background text-xs font-semibold">
+                    View Post
+                  </button>
+                </div>
+
+                {/* Comments */}
+                {expandedComments.has(post.id) && (
+                  <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
+                    {(commentsMap[post.id] ?? []).map((c) => (
+                      <div key={c.id} className="flex gap-2.5">
+                        <Avatar className="h-6 w-6">
+                          {c.avatar_url ? <AvatarImage src={c.avatar_url} /> : <AvatarFallback className="bg-muted text-[10px] font-bold">{c.display_name.charAt(0)}</AvatarFallback>}
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold">{c.display_name}</span>
+                            <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
                           </div>
+                          <p className="text-xs leading-relaxed text-foreground/80">{c.content}</p>
                         </div>
-                      )}
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Write a comment..."
+                        value={commentInputs[post.id] ?? ""}
+                        onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
+                        className="h-9 rounded-full bg-muted border-0 text-xs pl-4"
+                      />
+                      <button
+                        onClick={() => submitComment(post.id)}
+                        disabled={!commentInputs[post.id]?.trim()}
+                        className="h-9 w-9 flex items-center justify-center rounded-full bg-foreground text-background disabled:opacity-30 shrink-0"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
