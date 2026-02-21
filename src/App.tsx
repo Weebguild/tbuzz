@@ -21,7 +21,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -40,7 +40,7 @@ function AppRoutes() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <h1 className="font-display text-5xl font-bold text-gradient mb-4">T</h1>
+          <h1 className="text-5xl font-extrabold text-foreground mb-4">T</h1>
           <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
         </div>
       </div>
@@ -62,6 +62,7 @@ function AppRoutes() {
         <Route path="/gossip" element={<Gossip />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/:userId" element={<Profile />} />
       </Route>
       <Route path="/" element={<Navigate to="/feed" replace />} />
       <Route path="*" element={<NotFound />} />

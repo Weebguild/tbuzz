@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowUp, Flag, Loader2, Plus, X, Send, AtSign } from "lucide-react";
+import { ArrowUp, Loader2, Plus, X, AtSign } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface GossipPost {
@@ -224,23 +224,23 @@ export default function Gossip() {
       <AnimatePresence>
         {showComposer && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="mb-5 rounded-2xl border border-border bg-background p-4 space-y-3">
+            <div className="mb-5 rounded-2xl border border-border bg-card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-primary">Posting as {profile?.anonymous_alias ?? "Anonymous"}</span>
               </div>
-              <Textarea placeholder="Spill the tea..." value={content} onChange={(e) => setContent(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3" />
+              <Textarea placeholder="Spill the tea..." value={content} onChange={(e) => setContent(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground" />
 
               {/* Tag users */}
               <div className="relative">
                 <div className="flex items-center gap-2">
                   <AtSign className="h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Tag someone..." value={tagQuery} onChange={(e) => searchTags(e.target.value)} className="h-9 rounded-full bg-muted border-0 text-xs pl-3" />
+                  <Input placeholder="Tag someone..." value={tagQuery} onChange={(e) => searchTags(e.target.value)} className="h-9 rounded-full bg-muted border-0 text-xs pl-3 text-foreground placeholder:text-muted-foreground" />
                 </div>
                 {tagSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-border bg-background shadow-lg overflow-hidden">
+                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-border bg-elevated shadow-lg overflow-hidden">
                     <div className="p-1.5 space-y-0.5">
                       {tagSuggestions.map((s) => (
-                        <button key={s.user_id} onClick={() => addTag(s)} className="w-full text-left p-2 rounded-lg hover:bg-muted text-sm transition-colors">
+                        <button key={s.user_id} onClick={() => addTag(s)} className="w-full text-left p-2 rounded-lg hover:bg-muted text-sm text-foreground transition-colors">
                           {s.display_name}
                         </button>
                       ))}
@@ -252,7 +252,7 @@ export default function Gossip() {
               {selectedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {selectedTags.map((t) => (
-                    <span key={t.user_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-foreground text-background text-xs font-medium">
+                    <span key={t.user_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
                       @{t.display_name}
                       <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(t.user_id)} />
                     </span>
@@ -285,7 +285,7 @@ export default function Gossip() {
         <div className="space-y-3">
           {posts.map((post, i) => (
             <motion.div key={post.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-              <div className="rounded-2xl border border-border bg-background p-4">
+              <div className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex gap-3">
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-muted text-base">🎭</AvatarFallback>
@@ -295,11 +295,11 @@ export default function Gossip() {
                       <span className="font-semibold text-sm text-primary">{post.gossip_alias}</span>
                       <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
                     </div>
-                    <p className="mt-1.5 text-sm leading-relaxed">{post.content}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-foreground">{post.content}</p>
                     {post.tagged_users.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {post.tagged_users.map((t) => (
-                          <span key={t.user_id} className="inline-flex px-2.5 py-0.5 rounded-full bg-foreground text-background text-[10px] font-semibold">@{t.display_name}</span>
+                          <span key={t.user_id} className="inline-flex px-2.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold">@{t.display_name}</span>
                         ))}
                       </div>
                     )}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -15,6 +16,7 @@ interface LeaderboardEntry {
 
 export default function Leaderboard() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -75,7 +77,7 @@ export default function Leaderboard() {
         </div>
       ) : entries.length === 0 ? (
         <div className="py-20 text-center">
-          <Trophy className="mx-auto h-12 w-12 text-foreground/20 mb-4" strokeWidth={1.5} />
+          <Trophy className="mx-auto h-12 w-12 text-muted-foreground/40 mb-4" strokeWidth={1.5} />
           <p className="font-bold text-foreground">No scores yet</p>
           <p className="text-xs text-muted-foreground mt-1">Get gossiped about to climb the ranks!</p>
         </div>
@@ -88,7 +90,10 @@ export default function Leaderboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.04 }}
             >
-              <div className="flex items-center gap-4 rounded-2xl border border-border bg-background p-4">
+              <button
+                onClick={() => navigate(`/profile/${entry.user_id}`)}
+                className="w-full flex items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left hover:bg-muted/50 transition-colors"
+              >
                 <span className="text-xl font-extrabold text-foreground w-8 text-center shrink-0">
                   {entry.rank}
                 </span>
@@ -96,19 +101,19 @@ export default function Leaderboard() {
                   {entry.avatar_url ? (
                     <AvatarImage src={entry.avatar_url} />
                   ) : (
-                    <AvatarFallback className="bg-muted font-bold text-sm">
+                    <AvatarFallback className="bg-muted font-bold text-sm text-foreground">
                       {entry.display_name.charAt(0)}
                     </AvatarFallback>
                   )}
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-sm truncate">{entry.display_name}</span>
+                    <span className="font-semibold text-sm text-foreground truncate">{entry.display_name}</span>
                     {entry.rank === 1 && <Crown className="h-4 w-4 text-yellow-500 shrink-0" />}
                   </div>
                 </div>
                 <span className="text-sm font-bold text-primary shrink-0">{entry.score}</span>
-              </div>
+              </button>
             </motion.div>
           ))}
         </div>
