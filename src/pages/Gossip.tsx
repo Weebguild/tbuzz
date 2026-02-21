@@ -1,15 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowUp, Flag, Loader2, Plus, X, Send, Sparkles, AtSign, Filter } from "lucide-react";
+import { ArrowUp, Flag, Loader2, Plus, X, Send, AtSign } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface GossipPost {
@@ -42,7 +39,6 @@ export default function Gossip() {
   const [filterMode, setFilterMode] = useState<FilterMode>("trending");
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
 
-  // Tagging
   const [tagQuery, setTagQuery] = useState("");
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [selectedTags, setSelectedTags] = useState<TagSuggestion[]>([]);
@@ -56,9 +52,7 @@ export default function Gossip() {
 
   const fetchGossip = async () => {
     if (!profile) return;
-
     const since = getTimeRangeDate(timeRange).toISOString();
-
     let query = supabase
       .from("gossip_posts")
       .select("*")
@@ -82,7 +76,6 @@ export default function Gossip() {
       supabase.from("gossip_tags").select("gossip_post_id, tagged_user_id").in("gossip_post_id", postIds),
     ]);
 
-    // Get tagged user display names
     const taggedUserIds = [...new Set(tags?.map((t) => t.tagged_user_id) ?? [])];
     let taggedProfiles: { user_id: string; display_name: string }[] = [];
     if (taggedUserIds.length > 0) {
@@ -103,7 +96,6 @@ export default function Gossip() {
       };
     });
 
-    // Sort by filter mode
     if (filterMode === "trending" || filterMode === "popularity") {
       enriched.sort((a, b) => b.upvote_count - a.upvote_count);
     }
@@ -142,7 +134,6 @@ export default function Gossip() {
   const handlePost = async () => {
     if (!user || !profile || !content.trim()) return;
     setPosting(true);
-
     try {
       const { data: insertedPost, error } = await supabase.from("gossip_posts").insert({
         user_id: user.id,
@@ -151,10 +142,8 @@ export default function Gossip() {
         gossip_alias: profile.anonymous_alias ?? "Anonymous",
         gossip_avatar: "mask",
       }).select("id").single();
-
       if (error) throw error;
 
-      // Insert tags
       if (selectedTags.length > 0 && insertedPost) {
         await supabase.from("gossip_tags").insert(
           selectedTags.map((t) => ({ gossip_post_id: insertedPost.id, tagged_user_id: t.user_id }))
@@ -164,7 +153,7 @@ export default function Gossip() {
       setContent("");
       setSelectedTags([]);
       setShowComposer(false);
-      toast.success("Gossip posted! 🤫");
+      toast.success("Gossip posted!");
       fetchGossip();
     } catch (error: any) { toast.error(error.message); }
     finally { setPosting(false); }
@@ -183,46 +172,50 @@ export default function Gossip() {
   const reportPost = async (postId: string) => {
     if (!user) return;
     const { error } = await supabase.from("reports").insert({ reporter_user_id: user.id, reported_gossip_post_id: postId, reason: "Flagged by user" });
-    if (!error) toast.success("Report submitted. 🛡️");
+    if (!error) toast.success("Report submitted.");
   };
 
+  const filters: FilterMode[] = ["trending", "recent", "popularity"];
+  const timeRanges: TimeRange[] = ["week", "month", "year"];
+
   return (
-    <div className="px-4 pt-4">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="px-4 pt-6 pb-4">
+      {/* Header */}
+      <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Gossip</h1>
-          <p className="text-xs text-muted-foreground">Anonymous. Unfiltered. Campus tea. ☕</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Gossip</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Anonymous. Unfiltered. Campus tea.</p>
         </div>
-        <Button size="icon" className="gradient-primary border-0 rounded-full h-10 w-10" onClick={() => setShowComposer(!showComposer)}>
+        <button
+          onClick={() => setShowComposer(!showComposer)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95"
+        >
           {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-        </Button>
+        </button>
       </div>
 
       {/* Filters */}
-      <div className="mb-4 space-y-2">
-        <div className="flex gap-2">
-          {(["trending", "recent", "popularity"] as FilterMode[]).map((mode) => (
-            <Button
+      <div className="mb-5 space-y-2.5">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {filters.map((mode) => (
+            <button
               key={mode}
-              size="sm"
-              variant={filterMode === mode ? "default" : "outline"}
-              className={`text-xs h-7 capitalize ${filterMode === mode ? "gradient-primary border-0" : "border-border/50"}`}
               onClick={() => setFilterMode(mode)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize whitespace-nowrap transition-colors ${filterMode === mode ? "bg-foreground text-background" : "border border-border text-foreground"}`}
             >
               {mode}
-            </Button>
+            </button>
           ))}
         </div>
         <div className="flex gap-1.5">
-          {(["week", "month", "year"] as TimeRange[]).map((range) => (
-            <Badge
+          {timeRanges.map((range) => (
+            <button
               key={range}
-              variant={timeRange === range ? "default" : "outline"}
-              className={`cursor-pointer text-[10px] capitalize ${timeRange === range ? "bg-secondary border-0" : "border-border/50"}`}
               onClick={() => setTimeRange(range)}
+              className={`px-3 py-1 rounded-full text-[11px] font-medium capitalize transition-colors ${timeRange === range ? "bg-foreground text-background" : "border border-border text-muted-foreground"}`}
             >
               This {range}
-            </Badge>
+            </button>
           ))}
         </div>
       </div>
@@ -231,99 +224,97 @@ export default function Gossip() {
       <AnimatePresence>
         {showComposer && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <Card className="mb-4 border-secondary/20 bg-card/80 glow-pink">
-              <CardContent className="pt-4 space-y-3">
+            <div className="mb-5 rounded-2xl border border-border bg-background p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-primary">Posting as {profile?.anonymous_alias ?? "Anonymous"}</span>
+              </div>
+              <Textarea placeholder="Spill the tea..." value={content} onChange={(e) => setContent(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3" />
+
+              {/* Tag users */}
+              <div className="relative">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-secondary" />
-                  <span className="text-xs text-secondary font-medium">Posting as {profile?.anonymous_alias ?? "Anonymous"}</span>
+                  <AtSign className="h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Tag someone..." value={tagQuery} onChange={(e) => searchTags(e.target.value)} className="h-9 rounded-full bg-muted border-0 text-xs pl-3" />
                 </div>
-                <Textarea placeholder="Spill the tea... ☕" value={content} onChange={(e) => setContent(e.target.value)} rows={3} className="bg-muted/30 border-border/30 resize-none" />
-
-                {/* Tag users */}
-                <div className="relative">
-                  <div className="flex items-center gap-2">
-                    <AtSign className="h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Tag someone..." value={tagQuery} onChange={(e) => searchTags(e.target.value)} className="bg-muted/30 border-border/30 text-xs h-8" />
-                  </div>
-                  {tagSuggestions.length > 0 && (
-                    <Card className="absolute z-10 w-full mt-1 border-border/50 bg-card">
-                      <CardContent className="p-2 space-y-1">
-                        {tagSuggestions.map((s) => (
-                          <button key={s.user_id} onClick={() => addTag(s)} className="w-full text-left p-2 rounded hover:bg-muted/50 text-sm">
-                            {s.display_name}
-                          </button>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
-                {selectedTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedTags.map((t) => (
-                      <Badge key={t.user_id} variant="outline" className="text-xs border-secondary/30 text-secondary gap-1">
-                        @{t.display_name}
-                        <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(t.user_id)} />
-                      </Badge>
-                    ))}
+                {tagSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-border bg-background shadow-lg overflow-hidden">
+                    <div className="p-1.5 space-y-0.5">
+                      {tagSuggestions.map((s) => (
+                        <button key={s.user_id} onClick={() => addTag(s)} className="w-full text-left p-2 rounded-lg hover:bg-muted text-sm transition-colors">
+                          {s.display_name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
+              </div>
 
-                <div className="flex justify-end">
-                  <Button size="sm" onClick={handlePost} disabled={posting || !content.trim()} className="bg-secondary hover:bg-secondary/90 border-0">
-                    {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
+              {selectedTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedTags.map((t) => (
+                    <span key={t.user_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-foreground text-background text-xs font-medium">
+                      @{t.display_name}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(t.user_id)} />
+                    </span>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handlePost}
+                  disabled={posting || !content.trim()}
+                  className="px-5 py-2 rounded-full bg-foreground text-background text-xs font-semibold disabled:opacity-40 transition-transform active:scale-95"
+                >
+                  {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Posts */}
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-secondary" /></div>
+        <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : posts.length === 0 ? (
         <div className="py-20 text-center">
-          <p className="text-2xl mb-2">🤐</p>
-          <p className="text-muted-foreground">No gossip yet. Start the drama!</p>
+          <p className="text-muted-foreground text-sm">No gossip yet. Start the drama!</p>
         </div>
       ) : (
-        <div className="space-y-3 pb-4">
+        <div className="space-y-3">
           {posts.map((post, i) => (
-            <motion.div key={post.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="border-border/30 bg-card/60 backdrop-blur-sm hover:border-secondary/20 transition-colors">
-                <CardContent className="pt-4">
-                  <div className="flex gap-3">
-                    <Avatar className="h-9 w-9 ring-1 ring-secondary/30">
-                      <AvatarFallback className="bg-muted text-lg">🎭</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-secondary truncate">{post.gossip_alias}</span>
-                        <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+            <motion.div key={post.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+              <div className="rounded-2xl border border-border bg-background p-4">
+                <div className="flex gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-muted text-base">🎭</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-primary">{post.gossip_alias}</span>
+                      <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                    </div>
+                    <p className="mt-1.5 text-sm leading-relaxed">{post.content}</p>
+                    {post.tagged_users.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {post.tagged_users.map((t) => (
+                          <span key={t.user_id} className="inline-flex px-2.5 py-0.5 rounded-full bg-foreground text-background text-[10px] font-semibold">@{t.display_name}</span>
+                        ))}
                       </div>
-                      <p className="mt-1 text-sm leading-relaxed">{post.content}</p>
-                      {post.tagged_users.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {post.tagged_users.map((t) => (
-                            <Badge key={t.user_id} className="text-[10px] bg-secondary/20 text-secondary border-0">@{t.display_name}</Badge>
-                          ))}
-                        </div>
-                      )}
-                      <div className="mt-3 flex items-center gap-4">
-                        <button onClick={() => toggleUpvote(post.id, post.has_upvoted)} className={`flex items-center gap-1 text-sm transition-colors ${post.has_upvoted ? "text-primary" : "text-muted-foreground hover:text-primary"}`}>
-                          <ArrowUp className={`h-4 w-4 ${post.has_upvoted ? "fill-current" : ""}`} />
-                          {post.upvote_count > 0 && post.upvote_count}
-                        </button>
-                        <button onClick={() => reportPost(post.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                          <Flag className="h-4 w-4" />
-                        </button>
-                      </div>
+                    )}
+                    <div className="mt-3 flex items-center gap-4">
+                      <button onClick={() => toggleUpvote(post.id, post.has_upvoted)} className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_upvoted ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                        <ArrowUp className={`h-4 w-4 ${post.has_upvoted ? "fill-current" : ""}`} />
+                        {post.upvote_count > 0 && <span className="text-xs font-medium">{post.upvote_count}</span>}
+                      </button>
+                      <button onClick={() => reportPost(post.id)} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+                        Report
+                      </button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>

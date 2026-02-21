@@ -2,15 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Loader2, Camera, Sparkles } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"];
@@ -113,7 +111,7 @@ export default function Onboarding() {
       if (error) throw error;
 
       await refreshProfile();
-      toast.success("Profile created! Welcome to T 🎉");
+      toast.success("Profile created! Welcome to T");
       navigate("/feed", { replace: true });
     } catch (error: any) {
       toast.error(error.message);
@@ -123,123 +121,120 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+    <div className="flex min-h-screen items-center justify-center px-4 py-8 bg-background">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
         <div className="mb-6 text-center">
-          <Sparkles className="mx-auto h-8 w-8 text-primary mb-2" />
-          <h1 className="font-display text-2xl font-bold">Set up your profile</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Set up your profile</h1>
           {universityName && (
-            <p className="mt-1 text-sm text-secondary">{universityName}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{universityName}</p>
           )}
         </div>
 
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Avatar */}
-              <div className="flex justify-center">
-                <label className="relative cursor-pointer group">
-                  <Avatar className="h-20 w-20 ring-2 ring-primary/30 group-hover:ring-primary transition-all">
-                    {avatarPreview ? (
-                      <AvatarImage src={avatarPreview} />
-                    ) : (
-                      <AvatarFallback className="bg-muted">
-                        <Camera className="h-6 w-6 text-muted-foreground" />
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 rounded-full gradient-primary p-1.5">
-                    <Camera className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-                </label>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Display Name</Label>
-                <Input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="What should we call you?"
-                  required
-                  className="bg-muted/50 border-border/50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Anonymous Alias</Label>
-                <Input
-                  value={anonymousAlias}
-                  onChange={(e) => setAnonymousAlias(e.target.value)}
-                  placeholder="e.g. ShadowFox, NeonPanda..."
-                  required
-                  maxLength={20}
-                  className="bg-muted/50 border-border/50"
-                />
-                <p className="text-xs text-muted-foreground">This will be your permanent gossip identity. Choose wisely! 🎭</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Bio</Label>
-                <Textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell us about yourself..."
-                  rows={2}
-                  className="bg-muted/50 border-border/50 resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground text-[10px] uppercase tracking-wider">Year</Label>
-                  <Select value={year} onValueChange={setYear}>
-                    <SelectTrigger className="bg-muted/50 border-border/50 text-xs h-9">
-                      <SelectValue placeholder="Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {YEARS.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+        <div className="rounded-2xl border border-border bg-background p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Avatar */}
+            <div className="flex justify-center">
+              <label className="relative cursor-pointer group">
+                <Avatar className="h-20 w-20 ring-2 ring-border group-hover:ring-foreground transition-all">
+                  {avatarPreview ? (
+                    <AvatarImage src={avatarPreview} />
+                  ) : (
+                    <AvatarFallback className="bg-muted">
+                      <Camera className="h-6 w-6 text-muted-foreground" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 rounded-full bg-foreground p-1.5">
+                  <Camera className="h-3 w-3 text-background" />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground text-[10px] uppercase tracking-wider">Dept</Label>
-                  <Select value={department} onValueChange={setDepartment}>
-                    <SelectTrigger className="bg-muted/50 border-border/50 text-xs h-9">
-                      <SelectValue placeholder="Dept" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground text-[10px] uppercase tracking-wider">Stream</Label>
-                  <Select value={stream} onValueChange={setStream}>
-                    <SelectTrigger className="bg-muted/50 border-border/50 text-xs h-9">
-                      <SelectValue placeholder="Stream" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STREAMS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              </label>
+            </div>
 
-              <Button
-                type="submit"
-                disabled={loading || !displayName || !anonymousAlias.trim()}
-                className="w-full gradient-primary border-0 font-semibold"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Let's Go 🚀"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Display Name</Label>
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="What should we call you?"
+                required
+                className="h-10 rounded-xl bg-muted border-0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Anonymous Alias</Label>
+              <Input
+                value={anonymousAlias}
+                onChange={(e) => setAnonymousAlias(e.target.value)}
+                placeholder="e.g. ShadowFox, NeonPanda..."
+                required
+                maxLength={20}
+                className="h-10 rounded-xl bg-muted border-0"
+              />
+              <p className="text-[11px] text-muted-foreground">This will be your permanent gossip identity. Choose wisely!</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Bio</Label>
+              <Textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself..."
+                rows={2}
+                className="rounded-xl bg-muted border-0 resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Year</Label>
+                <Select value={year} onValueChange={setYear}>
+                  <SelectTrigger className="bg-muted border-0 text-xs h-9 rounded-xl">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {YEARS.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Dept</Label>
+                <Select value={department} onValueChange={setDepartment}>
+                  <SelectTrigger className="bg-muted border-0 text-xs h-9 rounded-xl">
+                    <SelectValue placeholder="Dept" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Stream</Label>
+                <Select value={stream} onValueChange={setStream}>
+                  <SelectTrigger className="bg-muted border-0 text-xs h-9 rounded-xl">
+                    <SelectValue placeholder="Stream" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STREAMS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !displayName || !anonymousAlias.trim()}
+              className="w-full h-11 rounded-full bg-foreground text-background font-semibold text-sm disabled:opacity-40 transition-transform active:scale-[0.98]"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Let's Go"}
+            </button>
+          </form>
+        </div>
       </motion.div>
     </div>
   );

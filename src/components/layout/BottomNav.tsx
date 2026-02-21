@@ -1,52 +1,52 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, MessageSquare, Trophy, User } from "lucide-react";
+import { Home, MessageSquare, Trophy, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 const tabs = [
-  { path: "/feed", icon: Home, label: "Feed" },
-  { path: "/gossip", icon: MessageSquare, label: "Gossip" },
-  { path: "/leaderboard", icon: Trophy, label: "Board" },
-  { path: "/profile", icon: User, label: "Profile" },
+  { path: "/feed", icon: Home },
+  { path: "/gossip", icon: MessageSquare },
+  { path: "compose", icon: Plus, isCenter: true },
+  { path: "/leaderboard", icon: Trophy },
+  { path: "/profile", icon: User },
 ];
 
 export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/80 backdrop-blur-xl safe-area-pb">
-      <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background safe-area-pb">
+      <div className="mx-auto flex max-w-lg items-center justify-around px-4 py-2">
         {tabs.map((tab) => {
+          if (tab.isCenter) {
+            return (
+              <div key={tab.path} className="flex items-center justify-center -mt-5">
+                <Link
+                  to="/feed"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground shadow-lg"
+                >
+                  <Plus className="h-6 w-6 text-background" />
+                </Link>
+              </div>
+            );
+          }
+
           const isActive =
             location.pathname === tab.path ||
             (tab.path === "/feed" && location.pathname === "/");
+
           return (
             <Link
               key={tab.path}
               to={tab.path}
-              className="relative flex flex-1 flex-col items-center gap-0.5 py-1"
+              className="flex flex-1 items-center justify-center py-2"
             >
-              {isActive && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute -top-2 h-0.5 w-8 rounded-full gradient-primary"
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              )}
               <tab.icon
                 className={cn(
-                  "h-5 w-5 transition-colors",
+                  "h-6 w-6 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
+                fill={isActive ? "currentColor" : "none"}
               />
-              <span
-                className={cn(
-                  "text-[10px] font-medium transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                {tab.label}
-              </span>
             </Link>
           );
         })}
