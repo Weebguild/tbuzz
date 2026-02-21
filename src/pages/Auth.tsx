@@ -1,0 +1,167 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { Loader2, Mail, Lock, ArrowRight } from "lucide-react";
+
+export default function Auth() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { session } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (session) navigate("/feed", { replace: true });
+  }, [session, navigate]);
+
+  const validateEmailDomain = async (email: string): Promise<boolean> => {
+    const domain = email.split("@")[1];
+    if (!domain) return false;
+
+    const { data } = await supabase
+      .from("universities")
+      .select("id")
+      .contains("email_domains", [domain]);
+
+    return (data?.length ?? 0) > 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (!isLogin) {
+        const isValid = await validateEmailDomain(email);
+        if (!isValid) {
+          toast.error("Your email domain isn't registered with any university. Contact your admin.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Welcome back! 🔥");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        toast.success("Check your email to verify your account! 📧");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-sm"
+      >
+        {/* Logo */}
+        <div className="mb-8 text-center">
+          <h1 className="font-display text-6xl font-bold text-gradient">T</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your campus. Your people. Your gossip.
+          </p>
+        </div>
+
+        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardContent className="pt-6">
+            <AnimatePresence mode="wait">
+              <motion.form
+                key={isLogin ? "login" : "signup"}
+                initial={{ opacity: 0, x: isLogin ? -20 : 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: isLogin ? 20 : -20 }}
+                onSubmit={handleSubmit}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-muted-foreground text-xs uppercase tracking-wider">
+                    University Email
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@university.ac.uk"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="pl-10 bg-muted/50 border-border/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-muted-foreground text-xs uppercase tracking-wider">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="pl-10 bg-muted/50 border-border/50"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full gradient-primary border-0 text-primary-foreground font-semibold"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      {isLogin ? "Sign In" : "Create Account"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </motion.form>
+            </AnimatePresence>
+
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {isLogin
+                  ? "Don't have an account? Sign up"
+                  : "Already have an account? Sign in"}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
