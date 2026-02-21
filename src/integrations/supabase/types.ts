@@ -139,6 +139,35 @@ export type Database = {
           },
         ]
       }
+      gossip_tags: {
+        Row: {
+          created_at: string
+          gossip_post_id: string
+          id: string
+          tagged_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gossip_post_id: string
+          id?: string
+          tagged_user_id: string
+        }
+        Update: {
+          created_at?: string
+          gossip_post_id?: string
+          id?: string
+          tagged_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gossip_tags_gossip_post_id_fkey"
+            columns: ["gossip_post_id"]
+            isOneToOne: false
+            referencedRelation: "gossip_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaderboard_scores: {
         Row: {
           created_at: string
@@ -211,37 +240,46 @@ export type Database = {
       }
       profiles: {
         Row: {
+          anonymous_alias: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string
+          department: string | null
           display_name: string
           id: string
-          interests: string[] | null
+          stream: string | null
           university_id: string
           updated_at: string
           user_id: string
+          year: string | null
         }
         Insert: {
+          anonymous_alias?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string
           id?: string
-          interests?: string[] | null
+          stream?: string | null
           university_id: string
           updated_at?: string
           user_id: string
+          year?: string | null
         }
         Update: {
+          anonymous_alias?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string
           id?: string
-          interests?: string[] | null
+          stream?: string | null
           university_id?: string
           updated_at?: string
           user_id?: string
+          year?: string | null
         }
         Relationships: [
           {

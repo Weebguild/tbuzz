@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { LogOut, Edit2, Save, Users, Trophy, Loader2, X, Camera } from "lucide-react";
+import { LogOut, Edit2, Save, Loader2, Camera, GraduationCap, BookOpen, Layers } from "lucide-react";
 
 export default function Profile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -109,11 +109,8 @@ export default function Profile() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="border-border/30 bg-card/60 backdrop-blur-sm overflow-hidden">
-          {/* Banner */}
           <div className="h-24 gradient-primary relative" />
-
           <CardContent className="-mt-12 relative">
-            {/* Avatar */}
             <div className="flex justify-between items-start">
               <label className="relative cursor-pointer group">
                 <Avatar className="h-20 w-20 ring-4 ring-card">
@@ -146,7 +143,6 @@ export default function Profile() {
               </Button>
             </div>
 
-            {/* Info */}
             <div className="mt-3">
               {editing ? (
                 <div className="space-y-3">
@@ -171,8 +167,11 @@ export default function Profile() {
               ) : (
                 <>
                   <h2 className="font-display text-xl font-bold">{profile.display_name}</h2>
+                  {profile.anonymous_alias && (
+                    <p className="text-xs text-secondary font-medium">🎭 {profile.anonymous_alias}</p>
+                  )}
                   {universityName && (
-                    <p className="text-sm text-secondary">{universityName}</p>
+                    <p className="text-sm text-muted-foreground">{universityName}</p>
                   )}
                   {profile.bio && (
                     <p className="mt-1 text-sm text-muted-foreground">{profile.bio}</p>
@@ -180,6 +179,27 @@ export default function Profile() {
                 </>
               )}
             </div>
+
+            {/* Academic Info */}
+            {(profile.year || profile.department || profile.stream) && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {profile.year && (
+                  <Badge variant="outline" className="text-xs border-primary/30 text-primary gap-1">
+                    <GraduationCap className="h-3 w-3" /> {profile.year}
+                  </Badge>
+                )}
+                {profile.department && (
+                  <Badge variant="outline" className="text-xs border-secondary/30 text-secondary gap-1">
+                    <BookOpen className="h-3 w-3" /> {profile.department}
+                  </Badge>
+                )}
+                {profile.stream && (
+                  <Badge variant="outline" className="text-xs border-accent/30 text-accent gap-1">
+                    <Layers className="h-3 w-3" /> {profile.stream}
+                  </Badge>
+                )}
+              </div>
+            )}
 
             {/* Stats */}
             <div className="mt-4 flex gap-6">
@@ -192,17 +212,6 @@ export default function Profile() {
                 <p className="text-xs text-muted-foreground">Following</p>
               </div>
             </div>
-
-            {/* Interests */}
-            {profile.interests && profile.interests.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {profile.interests.map((interest) => (
-                  <Badge key={interest} variant="outline" className="text-xs border-primary/30 text-primary">
-                    {interest}
-                  </Badge>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
       </motion.div>
