@@ -23,10 +23,7 @@ export default function Auth() {
   const validateEmailDomain = async (email: string): Promise<boolean> => {
     const domain = email.split("@")[1];
     if (!domain) return false;
-    const { data } = await supabase
-      .from("universities")
-      .select("id")
-      .contains("email_domains", [domain]);
+    const { data } = await supabase.from("universities").select("id").contains("email_domains", [domain]);
     return (data?.length ?? 0) > 0;
   };
 
@@ -36,47 +33,30 @@ export default function Auth() {
     try {
       if (!isLogin) {
         const isValid = await validateEmailDomain(email);
-        if (!isValid) {
-          toast.error("Your email domain isn't registered with any university. Contact your admin.");
-          setLoading(false);
-          return;
-        }
+        if (!isValid) { toast.error("Your email domain isn't registered with any university. Contact your admin."); setLoading(false); return; }
       }
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
+        const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
         if (error) throw error;
         toast.success("Check your email to verify your account!");
       }
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error: any) { toast.error(error.message); }
+    finally { setLoading(false); }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 bg-background">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="mb-10 text-center">
           <h1 className="text-6xl font-extrabold tracking-tight text-foreground">T</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your campus. Your people. Your gossip.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Your campus. Your people. Your gossip.</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-background p-6">
+        <div className="rounded-2xl border border-border bg-card p-6">
           <AnimatePresence mode="wait">
             <motion.form
               key={isLogin ? "login" : "signup"}
@@ -87,68 +67,30 @@ export default function Auth() {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                  University Email
-                </Label>
+                <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">University Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@university.ac.uk"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="pl-10 h-11 rounded-xl bg-muted border-0"
-                  />
+                  <Input id="email" type="email" placeholder="you@university.ac.uk" value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                  Password
-                </Label>
+                <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="pl-10 h-11 rounded-xl bg-muted border-0"
-                  />
+                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground" />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-11 rounded-full bg-foreground text-background font-semibold text-sm disabled:opacity-40 transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    {isLogin ? "Sign In" : "Create Account"}
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
+              <button type="submit" disabled={loading} className="w-full h-11 rounded-full bg-foreground text-background font-semibold text-sm disabled:opacity-40 transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{isLogin ? "Sign In" : "Create Account"}<ArrowRight className="h-4 w-4" /></>}
               </button>
             </motion.form>
           </AnimatePresence>
 
           <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-sm text-primary hover:underline transition-colors">
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
         </div>

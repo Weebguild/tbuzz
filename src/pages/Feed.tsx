@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, Search, UserPlus, UserMinus } from "lucide-react";
+import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, Flame } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface Post {
@@ -21,7 +20,6 @@ interface Post {
   reaction_count: number;
   comment_count: number;
   has_liked: boolean;
-  is_following: boolean;
 }
 
 interface Comment {
@@ -33,14 +31,15 @@ interface Comment {
   avatar_url: string | null;
 }
 
-interface SearchResult {
-  user_id: string;
-  display_name: string;
-  avatar_url: string | null;
+interface TrendingGossip {
+  id: string;
+  gossip_alias: string;
+  content: string;
 }
 
 export default function Feed() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState("");
@@ -48,19 +47,38 @@ export default function Feed() {
   const [posting, setPosting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [trendingGossip, setTrendingGossip] = useState<TrendingGossip[]>([]);
 
   const fetchFollowing = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("follows")
-      .select("following_user_id")
-      .eq("follower_user_id", user.id);
+    const { data } = await supabase.from("follows").select("following_user_id").eq("follower_user_id", user.id);
     setFollowingIds(new Set(data?.map((f) => f.following_user_id) ?? []));
+  };
+
+  const fetchTrendingGossip = async () => {
+    if (!profile) return;
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: gossipPosts } = await supabase
+      .from("gossip_posts")
+      .select("id, gossip_alias, content, created_at")
+      .eq("university_id", profile.university_id)
+      .gte("created_at", weekAgo)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (!gossipPosts || gossipPosts.length === 0) return;
+
+    const postIds = gossipPosts.map((p) => p.id);
+    const { data: reactions } = await supabase.from("reactions").select("gossip_post_id").in("gossip_post_id", postIds);
+
+    const scored = gossipPosts.map((p) => ({
+      ...p,
+      score: reactions?.filter((r) => r.gossip_post_id === p.id).length ?? 0,
+    }));
+    scored.sort((a, b) => b.score - a.score);
+    setTrendingGossip(scored.slice(0, 3));
   };
 
   const fetchPosts = async () => {
@@ -88,7 +106,6 @@ export default function Feed() {
       reaction_count: reactions?.filter((r) => r.post_id === post.id).length ?? 0,
       comment_count: comments?.filter((c) => c.post_id === post.id).length ?? 0,
       has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) ?? false,
-      is_following: followingIds.has(post.user_id),
     }));
 
     setPosts(enriched);
@@ -96,7 +113,7 @@ export default function Feed() {
   };
 
   useEffect(() => { fetchFollowing(); }, [user]);
-  useEffect(() => { fetchPosts(); }, [profile, followingIds]);
+  useEffect(() => { fetchPosts(); fetchTrendingGossip(); }, [profile, followingIds]);
 
   const handlePost = async () => {
     if (!user || !profile || !newPost.trim()) return;
@@ -142,19 +159,6 @@ export default function Feed() {
       await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId });
     }
     await fetchFollowing();
-  };
-
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (!query.trim() || !profile) { setSearchResults([]); return; }
-    const { data } = await supabase
-      .from("profiles")
-      .select("user_id, display_name, avatar_url")
-      .eq("university_id", profile.university_id)
-      .ilike("display_name", `%${query}%`)
-      .neq("user_id", user?.id ?? "")
-      .limit(5);
-    setSearchResults(data ?? []);
   };
 
   const loadComments = async (postId: string) => {
@@ -204,50 +208,39 @@ export default function Feed() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-5">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search campus..."
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          className="pl-10 h-11 rounded-full bg-muted border-0 text-sm placeholder:text-muted-foreground"
-        />
-        {searchResults.length > 0 && (
-          <div className="absolute z-10 w-full mt-2 rounded-2xl border border-border bg-background shadow-lg overflow-hidden">
-            <div className="p-2 space-y-0.5">
-              {searchResults.map((r) => (
-                <div key={r.user_id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      {r.avatar_url ? <AvatarImage src={r.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold">{r.display_name.charAt(0)}</AvatarFallback>}
-                    </Avatar>
-                    <span className="text-sm font-semibold">{r.display_name}</span>
-                  </div>
-                  <button
-                    onClick={() => toggleFollow(r.user_id)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${followingIds.has(r.user_id) ? "border border-border text-foreground" : "bg-foreground text-background"}`}
-                  >
-                    {followingIds.has(r.user_id) ? "Unfollow" : "Follow"}
-                  </button>
-                </div>
-              ))}
-            </div>
+      {/* Trending Gossip Banner */}
+      {trendingGossip.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+            <Flame className="h-3.5 w-3.5" /> Trending on Campus
+          </p>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+            {trendingGossip.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => navigate("/gossip")}
+                className="flex-shrink-0 w-60 rounded-xl p-3 border border-border/50 backdrop-blur-sm transition-colors hover:bg-muted/50"
+                style={{ background: "rgba(255,255,255,0.03)" }}
+              >
+                <p className="text-xs font-semibold text-primary mb-1">{g.gossip_alias}</p>
+                <p className="text-sm text-foreground/80 truncate">{g.content}</p>
+              </button>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Composer */}
       <AnimatePresence>
         {showComposer && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="mb-5 rounded-2xl border border-border bg-background p-4">
+            <div className="mb-5 rounded-2xl border border-border bg-card p-4">
               <div className="flex gap-3">
                 <Avatar className="h-9 w-9">
-                  {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold">{profile?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
+                  {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold text-foreground">{profile?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
                 </Avatar>
                 <div className="flex-1 space-y-3">
-                  <Textarea placeholder="What's happening on campus?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3" />
+                  <Textarea placeholder="What's happening on campus?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground" />
                   <div className="flex items-center justify-between">
                     <label className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
                       <Image className="h-5 w-5" />
@@ -280,14 +273,16 @@ export default function Feed() {
         <div className="space-y-4">
           {posts.map((post, i) => (
             <motion.div key={post.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-              <div className="rounded-2xl border border-border bg-background overflow-hidden">
+              <div className="rounded-2xl border border-border bg-card overflow-hidden">
                 {/* Post header */}
                 <div className="px-4 pt-4 pb-2 flex items-center gap-3">
-                  <Avatar className="h-9 w-9">
-                    {post.profiles?.avatar_url ? <AvatarImage src={post.profiles.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold">{post.profiles?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
-                  </Avatar>
+                  <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">
+                    <Avatar className="h-9 w-9">
+                      {post.profiles?.avatar_url ? <AvatarImage src={post.profiles.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold text-foreground">{post.profiles?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
+                    </Avatar>
+                  </button>
                   <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm">{post.profiles?.display_name ?? "Unknown"}</span>
+                    <button onClick={() => navigate(`/profile/${post.user_id}`)} className="font-semibold text-sm text-foreground hover:underline">{post.profiles?.display_name ?? "Unknown"}</button>
                     <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
                   </div>
                   {post.user_id !== user?.id && (
@@ -307,7 +302,7 @@ export default function Feed() {
 
                 {/* Post content */}
                 <div className="px-4 py-3">
-                  <p className="text-sm leading-relaxed">{post.content}</p>
+                  <p className="text-sm leading-relaxed text-foreground">{post.content}</p>
                 </div>
 
                 {/* Action row */}
@@ -331,12 +326,14 @@ export default function Feed() {
                   <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
                     {(commentsMap[post.id] ?? []).map((c) => (
                       <div key={c.id} className="flex gap-2.5">
-                        <Avatar className="h-6 w-6">
-                          {c.avatar_url ? <AvatarImage src={c.avatar_url} /> : <AvatarFallback className="bg-muted text-[10px] font-bold">{c.display_name.charAt(0)}</AvatarFallback>}
-                        </Avatar>
+                        <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
+                          <Avatar className="h-6 w-6">
+                            {c.avatar_url ? <AvatarImage src={c.avatar_url} /> : <AvatarFallback className="bg-muted text-[10px] font-bold text-foreground">{c.display_name.charAt(0)}</AvatarFallback>}
+                          </Avatar>
+                        </button>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold">{c.display_name}</span>
+                            <button onClick={() => navigate(`/profile/${c.user_id}`)} className="text-xs font-semibold text-foreground hover:underline">{c.display_name}</button>
                             <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
                           </div>
                           <p className="text-xs leading-relaxed text-foreground/80">{c.content}</p>
@@ -349,7 +346,7 @@ export default function Feed() {
                         value={commentInputs[post.id] ?? ""}
                         onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
                         onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
-                        className="h-9 rounded-full bg-muted border-0 text-xs pl-4"
+                        className="h-9 rounded-full bg-muted border-0 text-xs pl-4 text-foreground placeholder:text-muted-foreground"
                       />
                       <button
                         onClick={() => submitComment(post.id)}
