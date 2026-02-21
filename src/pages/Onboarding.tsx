@@ -6,17 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Loader2, Camera, X, Sparkles } from "lucide-react";
+import { Loader2, Camera, Sparkles } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-const INTEREST_OPTIONS = [
-  "Music", "Sports", "Gaming", "Art", "Tech", "Fashion",
-  "Film", "Travel", "Food", "Fitness", "Books", "Photography",
-  "Dance", "Comedy", "Science", "Politics",
+const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"];
+const DEPARTMENTS = [
+  "Computer Science", "Engineering", "Mathematics", "Physics", "Chemistry",
+  "Biology", "Business", "Economics", "Psychology", "Law", "Medicine",
+  "Arts", "Design", "Architecture", "Education", "Other",
+];
+const STREAMS = [
+  "Data Science", "AI/ML", "Cybersecurity", "Software Engineering",
+  "Mechanical", "Electrical", "Civil", "Chemical", "Biomedical",
+  "Finance", "Marketing", "General", "Other",
 ];
 
 export default function Onboarding() {
@@ -24,7 +30,10 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
-  const [interests, setInterests] = useState<string[]>([]);
+  const [anonymousAlias, setAnonymousAlias] = useState("");
+  const [year, setYear] = useState("");
+  const [department, setDepartment] = useState("");
+  const [stream, setStream] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,12 +59,6 @@ export default function Onboarding() {
     }
   }, [profile, user, navigate]);
 
-  const toggleInterest = (interest: string) => {
-    setInterests((prev) =>
-      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
-    );
-  };
-
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -67,6 +70,10 @@ export default function Onboarding() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!anonymousAlias.trim()) {
+      toast.error("Please choose an anonymous alias!");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -97,7 +104,10 @@ export default function Onboarding() {
         display_name: displayName,
         bio,
         avatar_url: avatarUrl,
-        interests,
+        anonymous_alias: anonymousAlias.trim(),
+        year: year || null,
+        department: department || null,
+        stream: stream || null,
       });
 
       if (error) throw error;
@@ -129,7 +139,7 @@ export default function Onboarding() {
 
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
           <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Avatar */}
               <div className="flex justify-center">
                 <label className="relative cursor-pointer group">
@@ -161,40 +171,68 @@ export default function Onboarding() {
               </div>
 
               <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Anonymous Alias</Label>
+                <Input
+                  value={anonymousAlias}
+                  onChange={(e) => setAnonymousAlias(e.target.value)}
+                  placeholder="e.g. ShadowFox, NeonPanda..."
+                  required
+                  maxLength={20}
+                  className="bg-muted/50 border-border/50"
+                />
+                <p className="text-xs text-muted-foreground">This will be your permanent gossip identity. Choose wisely! 🎭</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label className="text-muted-foreground text-xs uppercase tracking-wider">Bio</Label>
                 <Textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Tell us about yourself..."
-                  rows={3}
+                  rows={2}
                   className="bg-muted/50 border-border/50 resize-none"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Interests</Label>
-                <div className="flex flex-wrap gap-2">
-                  {INTEREST_OPTIONS.map((interest) => (
-                    <Badge
-                      key={interest}
-                      variant={interests.includes(interest) ? "default" : "outline"}
-                      className={`cursor-pointer transition-all ${
-                        interests.includes(interest)
-                          ? "gradient-primary border-0"
-                          : "hover:border-primary/50"
-                      }`}
-                      onClick={() => toggleInterest(interest)}
-                    >
-                      {interest}
-                      {interests.includes(interest) && <X className="ml-1 h-3 w-3" />}
-                    </Badge>
-                  ))}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-[10px] uppercase tracking-wider">Year</Label>
+                  <Select value={year} onValueChange={setYear}>
+                    <SelectTrigger className="bg-muted/50 border-border/50 text-xs h-9">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {YEARS.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-[10px] uppercase tracking-wider">Dept</Label>
+                  <Select value={department} onValueChange={setDepartment}>
+                    <SelectTrigger className="bg-muted/50 border-border/50 text-xs h-9">
+                      <SelectValue placeholder="Dept" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-[10px] uppercase tracking-wider">Stream</Label>
+                  <Select value={stream} onValueChange={setStream}>
+                    <SelectTrigger className="bg-muted/50 border-border/50 text-xs h-9">
+                      <SelectValue placeholder="Stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STREAMS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <Button
                 type="submit"
-                disabled={loading || !displayName}
+                disabled={loading || !displayName || !anonymousAlias.trim()}
                 className="w-full gradient-primary border-0 font-semibold"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Let's Go 🚀"}
