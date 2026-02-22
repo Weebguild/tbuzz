@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +112,10 @@ export default function Feed() {
       .eq("university_id", profile.university_id)
       .order("created_at", { ascending: false })
       .limit(50);
-    if (error) { console.error(error); return; }
+    if (error) {
+      console.error(error);
+      return;
+    }
 
     const userIds = [...new Set(postsData.map((p) => p.user_id))];
     const postIds = postsData.map((p) => p.id);
@@ -136,8 +138,13 @@ export default function Feed() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchFollowing(); }, [user]);
-  useEffect(() => { fetchPosts(); fetchTrendingGossip(); }, [profile, followingIds]);
+  useEffect(() => {
+    fetchFollowing();
+  }, [user]);
+  useEffect(() => {
+    fetchPosts();
+    fetchTrendingGossip();
+  }, [profile, followingIds]);
 
   const handlePost = async () => {
     if (!user || !profile || !newPost.trim()) return;
@@ -158,11 +165,17 @@ export default function Feed() {
         image_url: imageUrl,
       });
       if (error) throw error;
-      setNewPost(""); setImageFile(null); setImageConfirmed(false); setShowComposer(false);
+      setNewPost("");
+      setImageFile(null);
+      setImageConfirmed(false);
+      setShowComposer(false);
       toast.success("Posted!");
       fetchPosts();
-    } catch (error: any) { toast.error(error.message); }
-    finally { setPosting(false); }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setPosting(false);
+    }
   };
 
   const toggleLike = async (postId: string, hasLiked: boolean) => {
@@ -187,7 +200,12 @@ export default function Feed() {
 
   const deletePost = async (postId: string) => {
     const { error } = await supabase.from("posts").delete().eq("id", postId);
-    if (error) { toast.error(error.message); } else { toast.success("Post deleted"); fetchPosts(); }
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Post deleted");
+      fetchPosts();
+    }
     setDeletePostId(null);
   };
 
@@ -199,7 +217,10 @@ export default function Feed() {
       .order("created_at", { ascending: true });
     if (!data) return;
     const uids = [...new Set(data.map((c) => c.user_id))];
-    const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", uids);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, avatar_url")
+      .in("user_id", uids);
     const enriched = data.map((c) => {
       const p = profiles?.find((pr) => pr.user_id === c.user_id);
       return { ...c, display_name: p?.display_name ?? "Unknown", avatar_url: p?.avatar_url ?? null };
@@ -210,7 +231,12 @@ export default function Feed() {
   const toggleComments = (postId: string) => {
     setExpandedComments((prev) => {
       const next = new Set(prev);
-      if (next.has(postId)) { next.delete(postId); } else { next.add(postId); loadComments(postId); }
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+        loadComments(postId);
+      }
       return next;
     });
   };
@@ -219,7 +245,10 @@ export default function Feed() {
     const text = commentInputs[postId]?.trim();
     if (!text || !user) return;
     const { error } = await supabase.from("comments").insert({ user_id: user.id, post_id: postId, content: text });
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
     loadComments(postId);
     fetchPosts();
@@ -227,68 +256,104 @@ export default function Feed() {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) { setImageFile(file); setImageConfirmed(false); }
+    if (file) {
+      setImageFile(file);
+      setImageConfirmed(false);
+    }
   };
 
   return (
-      <div className="px-4 pt-6 pb-4">
-        {/* Header */}
-        <div className="mb-5 flex items-center justify-between">
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Feed</h1>
-          
-          {/* NEW: Wraps the ActivityDrawer and Composer Button together */}
-          <div className="flex items-center gap-3">
-            <ActivityDrawer />
-            <button
-              onClick={() => setShowComposer(!showComposer)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95"
-            >
-              {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
+    <div className="px-4 pt-6 pb-4">
+      {/* Header */}
+      <div className="mb-5 flex items-center justify-between">
+        <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Feed</h1>
 
-        {/* Trending Gossip Ticker */}
-        <TrendingTicker items={trendingGossip} />
+        {/* NEW: Wraps the ActivityDrawer and Composer Button together */}
+        <div className="flex items-center gap-3">
+          <ActivityDrawer />
+          <button
+            onClick={() => setShowComposer(!showComposer)}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+          >
+            {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Trending Gossip Ticker */}
+      <TrendingTicker items={trendingGossip} />
 
       {/* Composer */}
       <AnimatePresence>
         {showComposer && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="mb-5 rounded-2xl border border-border bg-card p-4">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mb-5 rounded-3xl glass-panel p-4">
               <div className="flex gap-3">
-                <Avatar className="h-9 w-9">
-                  {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold text-foreground">{profile?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
+                <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                  {profile?.avatar_url ? (
+                    <AvatarImage src={profile.avatar_url} />
+                  ) : (
+                    <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                      {profile?.display_name?.charAt(0) ?? "?"}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div className="flex-1 space-y-3">
-                  <Textarea placeholder="What's happening on campus?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground" />
+                  <Textarea
+                    placeholder="What's happening on campus?"
+                    value={newPost}
+                    onChange={(e) => setNewPost(e.target.value)}
+                    rows={3}
+                    className="bg-black/20 border border-white/10 rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                  />
 
                   {/* Image preview editor */}
                   {imageFile && !imageConfirmed && (
                     <ImagePreviewEditor
                       file={imageFile}
-                      onConfirm={(f) => { setImageFile(f); setImageConfirmed(true); }}
-                      onCancel={() => { setImageFile(null); setImageConfirmed(false); }}
+                      onConfirm={(f) => {
+                        setImageFile(f);
+                        setImageConfirmed(true);
+                      }}
+                      onCancel={() => {
+                        setImageFile(null);
+                        setImageConfirmed(false);
+                      }}
                     />
                   )}
                   {imageFile && imageConfirmed && (
                     <div className="relative">
-                      <img src={URL.createObjectURL(imageFile)} alt="Attached" className="rounded-xl max-h-32 object-cover" />
-                      <button onClick={() => { setImageFile(null); setImageConfirmed(false); }} className="absolute top-1 right-1 bg-black/60 rounded-full p-1">
+                      <img
+                        src={URL.createObjectURL(imageFile)}
+                        alt="Attached"
+                        className="rounded-xl max-h-32 object-cover border border-white/10"
+                      />
+                      <button
+                        onClick={() => {
+                          setImageFile(null);
+                          setImageConfirmed(false);
+                        }}
+                        className="absolute top-1 right-1 bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/10"
+                      >
                         <X className="h-3 w-3 text-white" />
                       </button>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between">
-                    <label className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                    <label className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2 rounded-full hover:bg-white/5">
                       <Image className="h-5 w-5" />
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                     </label>
                     <button
                       onClick={handlePost}
                       disabled={posting || !newPost.trim()}
-                      className="px-5 py-2 rounded-full bg-foreground text-background text-xs font-semibold disabled:opacity-40 transition-transform active:scale-95"
+                      className="px-5 py-2 rounded-full bg-primary text-white shadow-[0_0_15px_rgba(124,58,237,0.3)] text-xs font-semibold disabled:opacity-40 disabled:shadow-none transition-transform active:scale-95"
                     >
                       {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
                     </button>
@@ -302,45 +367,65 @@ export default function Feed() {
 
       {/* Posts */}
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
       ) : posts.length === 0 ? (
         <div className="py-20 text-center">
-          <p className="text-muted-foreground text-sm">No posts yet. Be the first!</p>
+          <p className="text-muted-foreground text-sm font-medium">No posts yet. Be the first!</p>
         </div>
       ) : (
         <div className="space-y-4">
           {posts.map((post, i) => (
-            <motion.div key={post.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-              <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+            >
+              <div className="rounded-3xl glass-panel overflow-hidden hover:border-primary/30 transition-colors duration-500">
                 {/* Post header */}
                 <div className="px-4 pt-4 pb-2 flex items-center gap-3">
                   <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">
-                    <Avatar className="h-9 w-9">
-                      {post.profiles?.avatar_url ? <AvatarImage src={post.profiles.avatar_url} /> : <AvatarFallback className="bg-muted text-xs font-bold text-foreground">{post.profiles?.display_name?.charAt(0) ?? "?"}</AvatarFallback>}
+                    <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                      {post.profiles?.avatar_url ? (
+                        <AvatarImage src={post.profiles.avatar_url} />
+                      ) : (
+                        <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                          {post.profiles?.display_name?.charAt(0) ?? "?"}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                   </button>
                   <div className="flex-1 min-w-0">
-                    <button onClick={() => navigate(`/profile/${post.user_id}`)} className="font-semibold text-sm text-foreground hover:underline">{post.profiles?.display_name ?? "Unknown"}</button>
-                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
+                    <button
+                      onClick={() => navigate(`/profile/${post.user_id}`)}
+                      className="font-semibold text-sm text-foreground hover:text-primary transition-colors"
+                    >
+                      {post.profiles?.display_name ?? "Unknown"}
+                    </button>
+                    <p className="text-xs text-muted-foreground/80">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                    </p>
                   </div>
                   {post.user_id !== user?.id ? (
                     <button
                       onClick={() => toggleFollow(post.user_id)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${followingIds.has(post.user_id) ? "border border-border text-muted-foreground" : "bg-foreground text-background"}`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${followingIds.has(post.user_id) ? "border border-white/10 text-muted-foreground hover:bg-white/5" : "bg-white/10 text-foreground hover:bg-white/20"}`}
                     >
                       {followingIds.has(post.user_id) ? "Following" : "Follow"}
                     </button>
                   ) : (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                        <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
                           <MoreVertical className="h-4 w-4 text-muted-foreground" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-elevated border-border">
+                      <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
                         <DropdownMenuItem
                           onClick={() => setDeletePostId(post.id)}
-                          className="text-destructive focus:text-destructive"
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10"
                         >
                           Delete Post
                         </DropdownMenuItem>
@@ -351,65 +436,91 @@ export default function Feed() {
 
                 {/* Post image - tappable for fullscreen */}
                 {post.image_url && (
-                  <button className="w-full" onClick={() => setExpandedImage(post)}>
+                  <button className="w-full mt-2" onClick={() => setExpandedImage(post)}>
                     <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover" loading="lazy" />
                   </button>
                 )}
 
                 {/* Post content */}
                 <div className="px-4 py-3">
-                  <p className="text-sm leading-relaxed text-foreground">{post.content}</p>
+                  <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
                 </div>
 
                 {/* Action row */}
                 <div className="px-4 pb-3 flex items-center gap-4">
-                  <button onClick={() => toggleLike(post.id, post.has_liked)} className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                  <button
+                    onClick={() => toggleLike(post.id, post.has_liked)}
+                    className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                  >
                     <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
                     {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
                   </button>
-                  <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <button
+                    onClick={() => toggleComments(post.id)}
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <MessageCircle className="h-4 w-4" />
                     {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
                   </button>
                 </div>
 
                 {/* Comments */}
-                {expandedComments.has(post.id) && (
-                  <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
-                    {(commentsMap[post.id] ?? []).map((c) => (
-                      <div key={c.id} className="flex gap-2.5">
-                        <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
-                          <Avatar className="h-6 w-6">
-                            {c.avatar_url ? <AvatarImage src={c.avatar_url} /> : <AvatarFallback className="bg-muted text-[10px] font-bold text-foreground">{c.display_name.charAt(0)}</AvatarFallback>}
-                          </Avatar>
-                        </button>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => navigate(`/profile/${c.user_id}`)} className="text-xs font-semibold text-foreground hover:underline">{c.display_name}</button>
-                            <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
+                <AnimatePresence>
+                  {expandedComments.has(post.id) && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3 bg-black/20"
+                    >
+                      {(commentsMap[post.id] ?? []).map((c) => (
+                        <div key={c.id} className="flex gap-2.5">
+                          <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
+                            <Avatar className="h-6 w-6 ring-1 ring-white/10">
+                              {c.avatar_url ? (
+                                <AvatarImage src={c.avatar_url} />
+                              ) : (
+                                <AvatarFallback className="bg-black/40 text-[10px] font-bold text-foreground">
+                                  {c.display_name.charAt(0)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => navigate(`/profile/${c.user_id}`)}
+                                className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                              >
+                                {c.display_name}
+                              </button>
+                              <span className="text-[10px] text-muted-foreground/60">
+                                {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                            <p className="text-xs leading-relaxed text-foreground/80 mt-0.5">{c.content}</p>
                           </div>
-                          <p className="text-xs leading-relaxed text-foreground/80">{c.content}</p>
                         </div>
+                      ))}
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          placeholder="Write a comment..."
+                          value={commentInputs[post.id] ?? ""}
+                          onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                          onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
+                          className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-4 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                        />
+                        <button
+                          onClick={() => submitComment(post.id)}
+                          disabled={!commentInputs[post.id]?.trim()}
+                          className="h-9 w-9 flex items-center justify-center rounded-full bg-primary text-white disabled:opacity-30 disabled:bg-white/10 shrink-0 transition-transform active:scale-95 shadow-[0_0_10px_rgba(124,58,237,0.3)] disabled:shadow-none"
+                        >
+                          <Send className="h-3.5 w-3.5 ml-0.5" />
+                        </button>
                       </div>
-                    ))}
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Write a comment..."
-                        value={commentInputs[post.id] ?? ""}
-                        onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                        onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
-                        className="h-9 rounded-full bg-muted border-0 text-xs pl-4 text-foreground placeholder:text-muted-foreground"
-                      />
-                      <button
-                        onClick={() => submitComment(post.id)}
-                        disabled={!commentInputs[post.id]?.trim()}
-                        className="h-9 w-9 flex items-center justify-center rounded-full bg-foreground text-background disabled:opacity-30 shrink-0"
-                      >
-                        <Send className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           ))}
@@ -425,22 +536,33 @@ export default function Feed() {
             reactionCount={expandedImage.reaction_count}
             commentCount={expandedImage.comment_count}
             onClose={() => setExpandedImage(null)}
-            onToggleLike={() => { toggleLike(expandedImage.id, expandedImage.has_liked); setExpandedImage(null); }}
-            onToggleComments={() => { toggleComments(expandedImage.id); setExpandedImage(null); }}
+            onToggleLike={() => {
+              toggleLike(expandedImage.id, expandedImage.has_liked);
+              setExpandedImage(null);
+            }}
+            onToggleComments={() => {
+              toggleComments(expandedImage.id);
+              setExpandedImage(null);
+            }}
           />
         )}
       </AnimatePresence>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deletePostId} onOpenChange={(open) => !open && setDeletePostId(null)}>
-        <AlertDialogContent className="bg-elevated border-border">
+        <AlertDialogContent className="bg-[#0A0A0A] border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">Are you sure you want to delete this post?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription className="text-muted-foreground">
+              This action cannot be undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deletePostId && deletePost(deletePostId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel className="border-white/10 text-foreground hover:bg-white/5">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletePostId && deletePost(deletePostId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-[0_0_15px_rgba(220,38,38,0.4)]"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

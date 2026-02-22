@@ -134,7 +134,7 @@ export default function Profile() {
   return (
     <div className="px-4 pt-6 pb-4">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Profile</h1>
+        <h1 className="text-4xl tracking-widest text-foreground uppercase">Profile</h1>
         {isOwnProfile && (
           <button onClick={signOut} className="text-muted-foreground hover:text-foreground transition-colors">
             <LogOut className="h-5 w-5" />

@@ -122,21 +122,15 @@ export default function Gossip() {
     if (filterMode === "trending") {
       const now = new Date().getTime();
       enriched.sort((a, b) => {
-        // Calculate age in hours
         const ageHoursA = (now - new Date(a.created_at).getTime()) / (1000 * 60 * 60);
         const ageHoursB = (now - new Date(b.created_at).getTime()) / (1000 * 60 * 60);
-
-        // Heat Score = ((Upvotes * 1.5) + (Tags * 2.0)) / (AgeHours + 2)^1.8
         const heatA = (a.upvote_count * 1.5 + a.tagged_users.length * 2.0) / Math.pow(ageHoursA + 2, 1.8);
         const heatB = (b.upvote_count * 1.5 + b.tagged_users.length * 2.0) / Math.pow(ageHoursB + 2, 1.8);
-
-        return heatB - heatA; // Highest heat first
+        return heatB - heatA;
       });
     } else if (filterMode === "popularity") {
-      // Raw leaderboard style (Most upvotes overall)
       enriched.sort((a, b) => b.upvote_count - a.upvote_count);
     }
-    // If "recent", it remains sorted by created_at from the Supabase query
 
     setPosts(enriched);
     setLoading(false);
@@ -254,8 +248,8 @@ export default function Gossip() {
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Gossip</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Anonymous. Unfiltered. Campus tea.</p>
+          <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Gossip</h1>
+          <p className="text-xs text-muted-foreground/80 mt-0.5">Anonymous. Unfiltered. Campus tea.</p>
         </div>
         <div className="flex items-center gap-3">
           <ActivityDrawer />
@@ -280,7 +274,7 @@ export default function Gossip() {
                   ? mode === "trending"
                     ? "bg-[#7C3AED] text-white shadow-[0_0_15px_rgba(124,58,237,0.4)]"
                     : "bg-foreground text-background"
-                  : "bg-muted border border-border text-muted-foreground hover:text-foreground"
+                  : "bg-black/40 border border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white"
               }`}
             >
               {getFilterIcon(mode)}
@@ -302,7 +296,7 @@ export default function Gossip() {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium capitalize transition-colors ${timeRange === range ? "bg-foreground text-background" : "border border-border text-muted-foreground"}`}
+                    className={`px-3 py-1 rounded-full text-[11px] font-medium capitalize transition-colors ${timeRange === range ? "bg-foreground text-background" : "bg-black/40 border border-white/10 text-muted-foreground hover:bg-white/10"}`}
                   >
                     This {range}
                   </button>
@@ -322,7 +316,7 @@ export default function Gossip() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="mb-5 rounded-2xl border border-border bg-card p-4 space-y-3">
+            <div className="mb-5 rounded-3xl glass-panel p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-primary">
                   Posting as {profile?.anonymous_alias ?? "Anonymous"}
@@ -333,7 +327,7 @@ export default function Gossip() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={3}
-                className="border-0 bg-muted rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                className="bg-black/20 border border-white/10 rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
               />
 
               {/* Tag users */}
@@ -344,17 +338,17 @@ export default function Gossip() {
                     placeholder="Tag someone..."
                     value={tagQuery}
                     onChange={(e) => searchTags(e.target.value)}
-                    className="h-9 rounded-full bg-muted border-0 text-xs pl-3 text-foreground placeholder:text-muted-foreground"
+                    className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
                   />
                 </div>
                 {tagSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-border bg-elevated shadow-lg overflow-hidden">
+                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-md shadow-lg overflow-hidden">
                     <div className="p-1.5 space-y-0.5">
                       {tagSuggestions.map((s) => (
                         <button
                           key={s.user_id}
                           onClick={() => addTag(s)}
-                          className="w-full text-left p-2 rounded-lg hover:bg-muted text-sm text-foreground transition-colors"
+                          className="w-full text-left p-2 rounded-lg hover:bg-white/10 text-sm text-foreground transition-colors"
                         >
                           {s.display_name}
                         </button>
@@ -382,7 +376,7 @@ export default function Gossip() {
                 <button
                   onClick={handlePost}
                   disabled={posting || !content.trim()}
-                  className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-[0_0_10px_rgba(124,58,237,0.3)] disabled:opacity-40 disabled:shadow-none transition-transform active:scale-95"
+                  className="px-5 py-2 rounded-full bg-primary text-white text-xs font-bold shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-40 disabled:shadow-none transition-transform active:scale-95"
                 >
                   {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
                 </button>
@@ -399,7 +393,7 @@ export default function Gossip() {
         </div>
       ) : posts.length === 0 ? (
         <div className="py-20 text-center">
-          <p className="text-muted-foreground text-sm">No gossip yet. Start the drama!</p>
+          <p className="text-muted-foreground text-sm font-medium">No gossip yet. Start the drama!</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -410,30 +404,32 @@ export default function Gossip() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
             >
-              <div className="rounded-2xl border border-border bg-card p-4 hover:border-primary/20 transition-colors">
+              <div className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500">
                 <div className="flex gap-3">
-                  <Avatar className="h-9 w-9 ring-1 ring-border">
-                    <AvatarFallback className="bg-[#1A1A1A] text-base">🎭</AvatarFallback>
+                  <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                    <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-primary">{post.gossip_alias}</span>
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
+                          {post.gossip_alias}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground/80">
                           {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                         </span>
                       </div>
                       {post.is_own && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                            <button className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
                               <MoreVertical className="h-4 w-4 text-muted-foreground" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-elevated border-border">
+                          <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
                             <DropdownMenuItem
                               onClick={() => setDeletePostId(post.id)}
-                              className="text-destructive focus:text-destructive"
+                              className="text-destructive focus:text-destructive focus:bg-destructive/10"
                             >
                               Delete Gossip
                             </DropdownMenuItem>
@@ -457,7 +453,7 @@ export default function Gossip() {
                     <div className="mt-3.5 flex items-center gap-4">
                       <button
                         onClick={() => toggleUpvote(post.id, post.has_upvoted)}
-                        className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_upvoted ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                        className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_upvoted ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
                       >
                         <ArrowUp className={`h-4 w-4 ${post.has_upvoted ? "fill-current" : ""}`} />
                         {post.upvote_count > 0 && <span className="text-[11px] font-bold">{post.upvote_count}</span>}
@@ -479,7 +475,7 @@ export default function Gossip() {
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deletePostId} onOpenChange={(open) => !open && setDeletePostId(null)}>
-        <AlertDialogContent className="bg-elevated border-border">
+        <AlertDialogContent className="bg-[#0A0A0A] border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">
               Are you sure you want to delete this gossip?
@@ -489,10 +485,10 @@ export default function Gossip() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="border-white/10 text-foreground hover:bg-white/5">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletePostId && deleteGossip(deletePostId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-[0_0_15px_rgba(220,38,38,0.4)]"
             >
               Delete
             </AlertDialogAction>

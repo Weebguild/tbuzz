@@ -141,7 +141,7 @@ export default function Leaderboard() {
     <div className="px-4 pt-6 pb-4">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Leaderboard</h1>
+          <h1 className="text-4xl tracking-widest text-foreground uppercase">Leaderboard</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Who's the talk of campus?</p>
         </div>
       </div>
