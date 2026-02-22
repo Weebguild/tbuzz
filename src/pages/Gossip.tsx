@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -256,12 +257,15 @@ export default function Gossip() {
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Gossip</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Anonymous. Unfiltered. Campus tea.</p>
         </div>
-        <button
-          onClick={() => setShowComposer(!showComposer)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
-        >
-          {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-3">
+          <ActivityDrawer />
+          <button
+            onClick={() => setShowComposer(!showComposer)}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+          >
+            {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

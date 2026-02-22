@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,7 @@ import { formatDistanceToNow } from "date-fns";
 import { TrendingTicker } from "@/components/feed/TrendingTicker";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
 import { ImagePreviewEditor } from "@/components/feed/ImagePreviewEditor";
+import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -229,20 +231,26 @@ export default function Feed() {
   };
 
   return (
-    <div className="px-4 pt-6 pb-4">
-      {/* Header */}
-      <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Feed</h1>
-        <button
-          onClick={() => setShowComposer(!showComposer)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95"
-        >
-          {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-        </button>
-      </div>
+    return (
+      <div className="px-4 pt-6 pb-4">
+        {/* Header */}
+        <div className="mb-5 flex items-center justify-between">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Feed</h1>
+          
+          {/* NEW: Wraps the ActivityDrawer and Composer Button together */}
+          <div className="flex items-center gap-3">
+            <ActivityDrawer />
+            <button
+              onClick={() => setShowComposer(!showComposer)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background transition-transform active:scale-95"
+            >
+              {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
 
-      {/* Trending Gossip Ticker */}
-      <TrendingTicker items={trendingGossip} />
+        {/* Trending Gossip Ticker */}
+        <TrendingTicker items={trendingGossip} />
 
       {/* Composer */}
       <AnimatePresence>
