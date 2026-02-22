@@ -134,7 +134,7 @@ export function BottomNav() {
                     onClick={openSearch}
                     className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground shadow-lg shadow-black/30"
                   >
-                    <Plus className="h-6 w-6 text-background" />
+                    <Search className="h-6 w-6 text-background" />
                   </button>
                 </div>
               );

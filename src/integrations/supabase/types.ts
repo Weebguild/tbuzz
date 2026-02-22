@@ -112,6 +112,7 @@ export type Database = {
           gossip_alias: string
           gossip_avatar: string
           id: string
+          is_flagged: boolean
           tagged_user_id: string | null
           university_id: string
           user_id: string
@@ -122,6 +123,7 @@ export type Database = {
           gossip_alias: string
           gossip_avatar?: string
           id?: string
+          is_flagged?: boolean
           tagged_user_id?: string | null
           university_id: string
           user_id: string
@@ -132,6 +134,7 @@ export type Database = {
           gossip_alias?: string
           gossip_avatar?: string
           id?: string
+          is_flagged?: boolean
           tagged_user_id?: string | null
           university_id?: string
           user_id?: string

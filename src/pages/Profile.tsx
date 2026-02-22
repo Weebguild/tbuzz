@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -24,6 +24,7 @@ interface ViewProfile {
 
 export default function Profile() {
   const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
   const { user, profile, signOut, refreshProfile } = useAuth();
   const isOwnProfile = !userId || userId === user?.id;
 
@@ -104,17 +105,10 @@ export default function Profile() {
     setSaving(false);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/avatar.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-    if (uploadError) { toast.error(uploadError.message); return; }
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("user_id", user.id);
-    refreshProfile();
-    toast.success("Avatar updated!");
+    if (!file) return;
+    navigate("/avatar-crop", { state: { file, returnTo: isOwnProfile ? "/profile" : `/profile/${userId}` } });
   };
 
   if (loadingProfile || !targetProfile) {
@@ -185,7 +179,8 @@ export default function Profile() {
               ) : (
                 <>
                   <h2 className="text-xl font-extrabold text-foreground">{targetProfile.display_name}</h2>
-                  {targetProfile.anonymous_alias && <p className="text-xs text-primary font-semibold mt-0.5">🎭 {targetProfile.anonymous_alias}</p>}
+                  {/* Anonymous alias only visible to profile owner */}
+                  {isOwnProfile && targetProfile.anonymous_alias && <p className="text-xs text-primary font-semibold mt-0.5">🎭 {targetProfile.anonymous_alias}</p>}
                   {universityName && <p className="text-sm text-muted-foreground">{universityName}</p>}
                   {targetProfile.bio && <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{targetProfile.bio}</p>}
                 </>

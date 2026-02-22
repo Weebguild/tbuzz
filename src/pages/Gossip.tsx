@@ -6,8 +6,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowUp, Loader2, Plus, X, AtSign } from "lucide-react";
+import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface GossipPost {
   id: string;
@@ -18,6 +34,8 @@ interface GossipPost {
   upvote_count: number;
   has_upvoted: boolean;
   tagged_users: { user_id: string; display_name: string }[];
+  is_own: boolean;
+  is_flagged?: boolean;
 }
 
 interface TagSuggestion {
@@ -42,6 +60,7 @@ export default function Gossip() {
   const [tagQuery, setTagQuery] = useState("");
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [selectedTags, setSelectedTags] = useState<TagSuggestion[]>([]);
+  const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
   const getTimeRangeDate = (range: TimeRange): Date => {
     const now = new Date();
@@ -56,7 +75,7 @@ export default function Gossip() {
     
     const { data, error } = await supabase
       .from("gossip_posts")
-      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
+      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id, user_id, is_flagged")
       .eq("university_id", profile.university_id)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
@@ -88,6 +107,7 @@ export default function Gossip() {
           const p = taggedProfiles.find((tp) => tp.user_id === t.tagged_user_id);
           return { user_id: t.tagged_user_id, display_name: p?.display_name ?? "Unknown" };
         }) ?? [],
+        is_own: post.user_id === user?.id,
       };
     });
 
@@ -166,8 +186,15 @@ export default function Gossip() {
 
   const reportPost = async (postId: string) => {
     if (!user) return;
+    await supabase.from("gossip_posts").update({ is_flagged: true }).eq("id", postId);
     const { error } = await supabase.from("reports").insert({ reporter_user_id: user.id, reported_gossip_post_id: postId, reason: "Flagged by user" });
     if (!error) toast.success("Report submitted.");
+  };
+
+  const deleteGossip = async (postId: string) => {
+    const { error } = await supabase.from("gossip_posts").delete().eq("id", postId);
+    if (error) { toast.error(error.message); } else { toast.success("Gossip deleted"); fetchGossip(); }
+    setDeletePostId(null);
   };
 
   const filters: FilterMode[] = ["trending", "recent", "popularity"];
@@ -202,17 +229,29 @@ export default function Gossip() {
             </button>
           ))}
         </div>
-        <div className="flex gap-1.5">
-          {timeRanges.map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-3 py-1 rounded-full text-[11px] font-medium capitalize transition-colors ${timeRange === range ? "bg-foreground text-background" : "border border-border text-muted-foreground"}`}
+        {/* Conditional time range row */}
+        <AnimatePresence>
+          {filterMode === "popularity" && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
             >
-              This {range}
-            </button>
-          ))}
-        </div>
+              <div className="flex gap-1.5">
+                {timeRanges.map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTimeRange(range)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-medium capitalize transition-colors ${timeRange === range ? "bg-foreground text-background" : "border border-border text-muted-foreground"}`}
+                  >
+                    This {range}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Composer */}
@@ -286,9 +325,28 @@ export default function Gossip() {
                     <AvatarFallback className="bg-muted text-base">🎭</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-primary">{post.gossip_alias}</span>
-                      <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm text-primary">{post.gossip_alias}</span>
+                        <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                      </div>
+                      {post.is_own && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                              <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-elevated border-border">
+                            <DropdownMenuItem
+                              onClick={() => setDeletePostId(post.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              Delete Gossip
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                     <p className="mt-1.5 text-sm leading-relaxed text-foreground">{post.content}</p>
                     {post.tagged_users.length > 0 && (
@@ -314,6 +372,22 @@ export default function Gossip() {
           ))}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deletePostId} onOpenChange={(open) => !open && setDeletePostId(null)}>
+        <AlertDialogContent className="bg-elevated border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Are you sure you want to delete this gossip?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deletePostId && deleteGossip(deletePostId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -3,12 +3,31 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, Flame } from "lucide-react";
+import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
+import { TrendingTicker } from "@/components/feed/TrendingTicker";
+import { PostImageExpander } from "@/components/feed/PostImageExpander";
+import { ImagePreviewEditor } from "@/components/feed/ImagePreviewEditor";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Post {
   id: string;
@@ -46,11 +65,14 @@ export default function Feed() {
   const [showComposer, setShowComposer] = useState(false);
   const [posting, setPosting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageConfirmed, setImageConfirmed] = useState(false);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [trendingGossip, setTrendingGossip] = useState<TrendingGossip[]>([]);
+  const [expandedImage, setExpandedImage] = useState<Post | null>(null);
+  const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
   const fetchFollowing = async () => {
     if (!user) return;
@@ -120,7 +142,7 @@ export default function Feed() {
     setPosting(true);
     try {
       let imageUrl: string | null = null;
-      if (imageFile) {
+      if (imageFile && imageConfirmed) {
         const ext = imageFile.name.split(".").pop();
         const path = `${user.id}/${Date.now()}.${ext}`;
         await supabase.storage.from("post-images").upload(path, imageFile);
@@ -134,7 +156,7 @@ export default function Feed() {
         image_url: imageUrl,
       });
       if (error) throw error;
-      setNewPost(""); setImageFile(null); setShowComposer(false);
+      setNewPost(""); setImageFile(null); setImageConfirmed(false); setShowComposer(false);
       toast.success("Posted!");
       fetchPosts();
     } catch (error: any) { toast.error(error.message); }
@@ -159,6 +181,12 @@ export default function Feed() {
       await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId });
     }
     await fetchFollowing();
+  };
+
+  const deletePost = async (postId: string) => {
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
+    if (error) { toast.error(error.message); } else { toast.success("Post deleted"); fetchPosts(); }
+    setDeletePostId(null);
   };
 
   const loadComments = async (postId: string) => {
@@ -195,6 +223,11 @@ export default function Feed() {
     fetchPosts();
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) { setImageFile(file); setImageConfirmed(false); }
+  };
+
   return (
     <div className="px-4 pt-6 pb-4">
       {/* Header */}
@@ -208,27 +241,8 @@ export default function Feed() {
         </button>
       </div>
 
-      {/* Trending Gossip Banner */}
-      {trendingGossip.length > 0 && (
-        <div className="mb-5">
-          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-            <Flame className="h-3.5 w-3.5" /> Trending on Campus
-          </p>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-            {trendingGossip.map((g) => (
-              <button
-                key={g.id}
-                onClick={() => navigate("/gossip")}
-                className="flex-shrink-0 w-60 rounded-xl p-3 border border-border/50 backdrop-blur-sm transition-colors hover:bg-muted/50"
-                style={{ background: "rgba(255,255,255,0.03)" }}
-              >
-                <p className="text-xs font-semibold text-primary mb-1">{g.gossip_alias}</p>
-                <p className="text-sm text-foreground/80 truncate">{g.content}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Trending Gossip Ticker */}
+      <TrendingTicker items={trendingGossip} />
 
       {/* Composer */}
       <AnimatePresence>
@@ -241,10 +255,28 @@ export default function Feed() {
                 </Avatar>
                 <div className="flex-1 space-y-3">
                   <Textarea placeholder="What's happening on campus?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={3} className="border-0 bg-muted rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground" />
+
+                  {/* Image preview editor */}
+                  {imageFile && !imageConfirmed && (
+                    <ImagePreviewEditor
+                      file={imageFile}
+                      onConfirm={(f) => { setImageFile(f); setImageConfirmed(true); }}
+                      onCancel={() => { setImageFile(null); setImageConfirmed(false); }}
+                    />
+                  )}
+                  {imageFile && imageConfirmed && (
+                    <div className="relative">
+                      <img src={URL.createObjectURL(imageFile)} alt="Attached" className="rounded-xl max-h-32 object-cover" />
+                      <button onClick={() => { setImageFile(null); setImageConfirmed(false); }} className="absolute top-1 right-1 bg-black/60 rounded-full p-1">
+                        <X className="h-3 w-3 text-white" />
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <label className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
                       <Image className="h-5 w-5" />
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
                     </label>
                     <button
                       onClick={handlePost}
@@ -254,7 +286,6 @@ export default function Feed() {
                       {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
                     </button>
                   </div>
-                  {imageFile && <p className="text-xs text-muted-foreground">📎 {imageFile.name}</p>}
                 </div>
               </div>
             </div>
@@ -285,19 +316,37 @@ export default function Feed() {
                     <button onClick={() => navigate(`/profile/${post.user_id}`)} className="font-semibold text-sm text-foreground hover:underline">{post.profiles?.display_name ?? "Unknown"}</button>
                     <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
                   </div>
-                  {post.user_id !== user?.id && (
+                  {post.user_id !== user?.id ? (
                     <button
                       onClick={() => toggleFollow(post.user_id)}
                       className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${followingIds.has(post.user_id) ? "border border-border text-muted-foreground" : "bg-foreground text-background"}`}
                     >
                       {followingIds.has(post.user_id) ? "Following" : "Follow"}
                     </button>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                          <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-elevated border-border">
+                        <DropdownMenuItem
+                          onClick={() => setDeletePostId(post.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Delete Post
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
 
-                {/* Post image */}
+                {/* Post image - tappable for fullscreen */}
                 {post.image_url && (
-                  <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover" loading="lazy" />
+                  <button className="w-full" onClick={() => setExpandedImage(post)}>
+                    <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover" loading="lazy" />
+                  </button>
                 )}
 
                 {/* Post content */}
@@ -314,10 +363,6 @@ export default function Feed() {
                   <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                     <MessageCircle className="h-4 w-4" />
                     {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
-                  </button>
-                  <div className="flex-1" />
-                  <button onClick={() => toggleComments(post.id)} className="px-4 py-1.5 rounded-full bg-foreground text-background text-xs font-semibold">
-                    View Post
                   </button>
                 </div>
 
@@ -363,6 +408,37 @@ export default function Feed() {
           ))}
         </div>
       )}
+
+      {/* Fullscreen image expander */}
+      <AnimatePresence>
+        {expandedImage && expandedImage.image_url && (
+          <PostImageExpander
+            imageUrl={expandedImage.image_url}
+            hasLiked={expandedImage.has_liked}
+            reactionCount={expandedImage.reaction_count}
+            commentCount={expandedImage.comment_count}
+            onClose={() => setExpandedImage(null)}
+            onToggleLike={() => { toggleLike(expandedImage.id, expandedImage.has_liked); setExpandedImage(null); }}
+            onToggleComments={() => { toggleComments(expandedImage.id); setExpandedImage(null); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deletePostId} onOpenChange={(open) => !open && setDeletePostId(null)}>
+        <AlertDialogContent className="bg-elevated border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Are you sure you want to delete this post?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deletePostId && deletePost(deletePostId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
