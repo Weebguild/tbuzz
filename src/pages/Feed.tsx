@@ -231,7 +231,6 @@ export default function Feed() {
   };
 
   return (
-    return (
       <div className="px-4 pt-6 pb-4">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
