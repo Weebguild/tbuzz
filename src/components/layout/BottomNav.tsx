@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Home, MessageSquare, Trophy, User, Plus, X, Search } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, MessageSquare, Trophy, User, Plus, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
 
 interface SearchResult {
   user_id: string;
@@ -86,7 +85,7 @@ export function BottomNav() {
               setSearchResults([]);
             }}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl glass-panel border-t border-white/10 max-h-[80vh] flex flex-col">
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0A0A0A] border-t border-white/10 max-h-[80vh] flex flex-col pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
             <div className="flex justify-center pt-4 pb-2">
               <div className="w-12 h-1.5 rounded-full bg-white/20" />
             </div>
@@ -156,49 +155,61 @@ export function BottomNav() {
       )}
 
       {/* Floating Glass Bottom Nav Bar */}
-      <div className="fixed bottom-6 left-0 right-0 z-40 px-4 pointer-events-none">
-        <nav className="mx-auto max-w-[340px] pointer-events-auto glass-panel rounded-full overflow-hidden safe-area-pb p-1.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)]">
-          <div className="flex items-center justify-between px-2">
-            {tabs.map((tab) => {
-              if (tab.isCenter) {
-                return (
-                  <div key={tab.path} className="flex items-center justify-center relative -top-4 mx-1">
-                    <button
-                      onClick={openSearch}
-                      className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent shadow-[0_0_25px_rgba(236,72,153,0.5)] transition-transform active:scale-90 hover:scale-105"
-                    >
-                      <Search className="h-6 w-6 text-white drop-shadow-md" />
-                    </button>
-                  </div>
-                );
-              }
-
-              const isActive = location.pathname === tab.path || (tab.path === "/feed" && location.pathname === "/");
-
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none flex justify-center px-4"
+        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+      >
+        <nav className="relative flex items-center justify-between w-full max-w-[340px] h-[64px] pointer-events-auto bg-[#0A0A0A]/60 backdrop-blur-2xl border border-white/10 rounded-full px-2 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)]">
+          {tabs.map((tab) => {
+            // Render the Center Floating Button
+            if (tab.isCenter) {
               return (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  className="flex flex-1 items-center justify-center py-3 relative group"
-                >
-                  {isActive && <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-full" />}
-                  <tab.icon
-                    className={cn(
-                      "h-[22px] w-[22px] transition-all duration-300 relative z-10",
-                      isActive
-                        ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
-                        : "text-muted-foreground group-hover:text-white/70",
-                    )}
-                    fill={isActive ? "currentColor" : "none"}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
-                  {isActive && (
-                    <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary shadow-[0_0_10px_rgba(124,58,237,1)]" />
-                  )}
-                </Link>
+                <div key={tab.path} className="relative flex-1 flex justify-center items-center h-full">
+                  <button
+                    onClick={openSearch}
+                    className="absolute -top-5 flex h-[56px] w-[56px] items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent shadow-[0_8px_25px_rgba(236,72,153,0.5)] transition-transform active:scale-90 hover:scale-105 border-[4px] border-[#000000]"
+                  >
+                    <Search className="h-6 w-6 text-white drop-shadow-md" />
+                  </button>
+                </div>
               );
-            })}
-          </div>
+            }
+
+            const isActive = location.pathname === tab.path || (tab.path === "/feed" && location.pathname === "/");
+
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                className="flex flex-1 items-center justify-center h-full relative group"
+              >
+                {/* Active Highlight Background */}
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-y-2 inset-x-2 bg-white/10 rounded-full"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+
+                <tab.icon
+                  className={cn(
+                    "h-[22px] w-[22px] transition-all duration-300 relative z-10",
+                    isActive
+                      ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
+                      : "text-muted-foreground group-hover:text-white/70",
+                  )}
+                  fill={isActive ? "currentColor" : "none"}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+
+                {/* Active Bottom Dot */}
+                {isActive && (
+                  <div className="absolute bottom-[6px] w-1 h-1 rounded-full bg-primary shadow-[0_0_10px_rgba(124,58,237,1)]" />
+                )}
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </>
