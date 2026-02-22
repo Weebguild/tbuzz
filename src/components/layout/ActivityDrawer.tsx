@@ -54,6 +54,7 @@ export function ActivityDrawer() {
 
     const enriched = data.map((n) => ({
       ...n,
+      type: n.type as Notification["type"],
       actor_profile: profiles?.find((p) => p.user_id === n.actor_id),
     }));
 
