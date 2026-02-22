@@ -1,3 +1,5 @@
+import { useState } from "react";
+import SplashScreen from "@/components/SplashScreen";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -36,7 +38,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { session, profile, loading } = useAuth();
-
+  const [showSplash, setShowSplash] = useState(true);
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
