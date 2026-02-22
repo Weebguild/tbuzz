@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, ArrowRight } from "lucide-react";
+import { Loader2, Mail, Lock, ArrowRight, Check } from "lucide-react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -19,6 +20,9 @@ export default function Auth() {
   useEffect(() => {
     if (session) navigate("/feed", { replace: true });
   }, [session, navigate]);
+
+  const passwordsMatch = password === confirmPassword && password.length > 0;
+  const showMismatch = !isLogin && confirmPassword.length > 0 && !passwordsMatch;
 
   const validateEmailDomain = async (email: string): Promise<boolean> => {
     const domain = email.split("@")[1];
@@ -29,6 +33,7 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLogin && !passwordsMatch) { toast.error("Passwords do not match"); return; }
     setLoading(true);
     try {
       if (!isLogin) {
@@ -82,14 +87,43 @@ export default function Auth() {
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} className="w-full h-11 rounded-full bg-foreground text-background font-semibold text-sm disabled:opacity-40 transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="pl-10 pr-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                    />
+                    {passwordsMatch && (
+                      <Check className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />
+                    )}
+                  </div>
+                  {showMismatch && (
+                    <p className="text-xs text-destructive font-medium">Passwords do not match</p>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || (!isLogin && !passwordsMatch)}
+                className="w-full h-11 rounded-full bg-foreground text-background font-semibold text-sm disabled:opacity-40 transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+              >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{isLogin ? "Sign In" : "Create Account"}<ArrowRight className="h-4 w-4" /></>}
               </button>
             </motion.form>
           </AnimatePresence>
 
           <div className="mt-4 text-center">
-            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-sm text-primary hover:underline transition-colors">
+            <button type="button" onClick={() => { setIsLogin(!isLogin); setConfirmPassword(""); }} className="text-sm text-primary hover:underline transition-colors">
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
