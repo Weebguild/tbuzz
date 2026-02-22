@@ -53,20 +53,15 @@ export default function Gossip() {
   const fetchGossip = async () => {
     if (!profile) return;
     const since = getTimeRangeDate(timeRange).toISOString();
-    let query = supabase
+    
+    const { data, error } = await supabase
       .from("gossip_posts")
-      .select("*")
+      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
       .eq("university_id", profile.university_id)
       .gte("created_at", since)
+      .order("created_at", { ascending: false })
       .limit(50);
 
-    if (filterMode === "recent") {
-      query = query.order("created_at", { ascending: false });
-    } else {
-      query = query.order("created_at", { ascending: false });
-    }
-
-    const { data, error } = await query;
     if (error) { console.error(error); return; }
 
     const postIds = data.map((p) => p.id);

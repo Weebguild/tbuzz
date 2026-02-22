@@ -65,6 +65,13 @@ export type Database = {
             foreignKeyName: "comments_gossip_post_id_fkey"
             columns: ["gossip_post_id"]
             isOneToOne: false
+            referencedRelation: "anonymous_gossip_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_gossip_post_id_fkey"
+            columns: ["gossip_post_id"]
+            isOneToOne: false
             referencedRelation: "gossip_posts"
             referencedColumns: ["id"]
           },
@@ -159,6 +166,13 @@ export type Database = {
           tagged_user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gossip_tags_gossip_post_id_fkey"
+            columns: ["gossip_post_id"]
+            isOneToOne: false
+            referencedRelation: "anonymous_gossip_posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gossip_tags_gossip_post_id_fkey"
             columns: ["gossip_post_id"]
@@ -321,6 +335,13 @@ export type Database = {
             foreignKeyName: "reactions_gossip_post_id_fkey"
             columns: ["gossip_post_id"]
             isOneToOne: false
+            referencedRelation: "anonymous_gossip_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_gossip_post_id_fkey"
+            columns: ["gossip_post_id"]
+            isOneToOne: false
             referencedRelation: "gossip_posts"
             referencedColumns: ["id"]
           },
@@ -362,6 +383,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reports_reported_gossip_post_id_fkey"
+            columns: ["reported_gossip_post_id"]
+            isOneToOne: false
+            referencedRelation: "anonymous_gossip_posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reports_reported_gossip_post_id_fkey"
             columns: ["reported_gossip_post_id"]
@@ -422,7 +450,44 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      anonymous_gossip_posts: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          gossip_alias: string | null
+          gossip_avatar: string | null
+          id: string | null
+          tagged_user_id: string | null
+          university_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          gossip_alias?: string | null
+          gossip_avatar?: string | null
+          id?: string | null
+          tagged_user_id?: string | null
+          university_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          gossip_alias?: string | null
+          gossip_avatar?: string | null
+          id?: string | null
+          tagged_user_id?: string | null
+          university_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gossip_posts_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_profile_id: { Args: { _user_id: string }; Returns: string }
