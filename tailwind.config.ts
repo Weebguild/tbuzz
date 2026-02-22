@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+        display: ["'Bebas Neue'", "sans-serif"], // Added for massive headers
       },
       colors: {
         border: "hsl(var(--border))",
@@ -52,16 +53,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -77,10 +68,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "aurora-1": {
+          "0%, 100%": { transform: "translateY(0) scale(1)", opacity: "0.3" },
+          "50%": { transform: "translateY(-50px) scale(1.2)", opacity: "0.5" },
+        },
+        "aurora-2": {
+          "0%, 100%": { transform: "translateX(0) scale(1)", opacity: "0.2" },
+          "50%": { transform: "translateX(50px) scale(1.1)", opacity: "0.4" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "aurora-1": "aurora-1 15s ease-in-out infinite",
+        "aurora-2": "aurora-2 20s ease-in-out infinite reverse",
       },
     },
   },

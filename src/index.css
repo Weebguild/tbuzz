@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,25 +6,28 @@
 
 @layer base {
   :root {
-    --background: 0 0% 5%;
+    /* Pure Black Background */
+    --background: 0 0% 0%;
     --foreground: 210 20% 98%;
 
-    --card: 0 0% 10%;
+    /* Glassy base for cards */
+    --card: 0 0% 4%;
     --card-foreground: 210 20% 98%;
 
-    --popover: 0 0% 14%;
+    --popover: 0 0% 6%;
     --popover-foreground: 210 20% 98%;
 
+    /* Neon Purple */
     --primary: 263 70% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 14%;
+    --secondary: 0 0% 10%;
     --secondary-foreground: 210 20% 98%;
 
-    --muted: 0 0% 12%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 220 9% 60%;
 
-    --accent: 263 70% 50%;
+    --accent: 330 81% 60%; /* Neon Pink accent */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -32,22 +35,13 @@
 
     --success: 160 84% 39%;
 
-    --border: 0 0% 18%;
+    /* Subtle, barely-there borders */
+    --border: 0 0% 12%;
     --input: 0 0% 12%;
     --ring: 263 70% 50%;
 
-    --radius: 1rem;
-
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 263 70% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 14%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 263 70% 50%;
-
-    --elevated: 0 0% 14%;
+    --radius: 1.5rem;
+    --elevated: 0 0% 8%;
   }
 }
 
@@ -57,19 +51,28 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', sans-serif;
+  /* Make default headers use the massive display font */
+  h1 {
+    @apply font-display tracking-wider font-normal;
+  }
+
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Inter", sans-serif;
     font-weight: 800;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer utilities {
   .safe-area-pb {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -77,5 +80,10 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* The core component of the Midnight Glass look */
+  .glass-panel {
+    @apply bg-white/[0.02] backdrop-blur-[24px] border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
   }
 }
