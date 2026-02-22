@@ -153,18 +153,7 @@
   }
 }
 
-@keyframes text-blow-apart {
-  0% {
-    transform: scale(1.1);
-    opacity: 1;
-    letter-spacing: 8px;
-  }
-  100% {
-    transform: scale(1.8) translateY(20px);
-    opacity: 0;
-    letter-spacing: 35px;
-  }
-}
+/* Update these specific keyframes in your src/index.css */
 
 @keyframes pop {
   0% {
@@ -172,23 +161,40 @@
     opacity: 1;
     filter: brightness(1.5);
   }
+  30% {
+    transform: scale(1.4) scaleX(0.9);
+    filter: brightness(2.5);
+  } /* Fluid stretch */
   100% {
     transform: scale(0);
     opacity: 0;
-    filter: brightness(3);
+    filter: brightness(4);
   }
 }
 
 @keyframes blast {
   0% {
-    transform: scale(0.8);
+    transform: scale(0.6);
     opacity: 1;
-    border-width: 10px;
+    border-width: 12px;
   }
   100% {
-    transform: scale(5);
+    transform: scale(6);
     opacity: 0;
     border-width: 0px;
+  } /* Faster, larger blast */
+}
+
+@keyframes text-blow-apart {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    letter-spacing: 0.3em;
+  }
+  100% {
+    transform: scale(2) translateY(30px);
+    opacity: 0;
+    letter-spacing: 1.5em;
+    filter: blur(10px);
   }
 }
-/* ... remaining keyframes from previous step ... */
