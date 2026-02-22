@@ -87,3 +87,108 @@
     @apply bg-white/[0.02] backdrop-blur-[24px] border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
   }
 }
+/* ─── MIDNIGHT GLASS SPLASH PHYSICS ─── */
+.splash-tension .glass-bubble {
+  animation:
+    realistic-tremor 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards,
+    escalating-glow 1.5s ease-in forwards;
+}
+.splash-tension .logo-text,
+.splash-tension .splash-text {
+  animation:
+    text-tremor 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards,
+    text-escalating-glow 1.5s ease-in forwards;
+}
+
+.splash-burst .glass-bubble {
+  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+.splash-burst .shockwave {
+  animation: blast 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+.splash-burst .logo-text {
+  animation: logo-reveal 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+.splash-burst .splash-tagline {
+  animation: text-blow-apart 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+.splash-burst .splash-credits {
+  animation: credits-blow-apart 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes realistic-tremor {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  10% {
+    transform: translate(-0.5px, 0.5px) scale(1);
+  }
+  30% {
+    transform: translate(-1px, 1px) scale(1.01);
+  }
+  50% {
+    transform: translate(-2px, 2px) scale(1.02);
+  }
+  70% {
+    transform: translate(-4px, 3px) scale(1.04);
+  }
+  90% {
+    transform: translate(-9px, 8px) scale(1.06) skew(-2deg);
+  }
+  100% {
+    transform: translate(15px, -14px) scale(1.08) skew(4deg);
+  }
+}
+
+@keyframes escalating-glow {
+  0% {
+    box-shadow:
+      0 15px 35px rgba(0, 0, 0, 0.5),
+      inset 0 0 20px rgba(124, 58, 237, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 60px rgba(236, 72, 153, 0.6),
+      inset 0 0 80px rgba(124, 58, 237, 0.9);
+  }
+}
+
+@keyframes text-blow-apart {
+  0% {
+    transform: scale(1.1);
+    opacity: 1;
+    letter-spacing: 8px;
+  }
+  100% {
+    transform: scale(1.8) translateY(20px);
+    opacity: 0;
+    letter-spacing: 35px;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: brightness(1.5);
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+    filter: brightness(3);
+  }
+}
+
+@keyframes blast {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+    border-width: 10px;
+  }
+  100% {
+    transform: scale(5);
+    opacity: 0;
+    border-width: 0px;
+  }
+}
+/* ... remaining keyframes from previous step ... */
