@@ -1,4 +1,3 @@
-import { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/layout/AppLayout";
-import SplashScreen from "@/components/SplashScreen";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Feed from "./pages/Feed";
@@ -38,16 +36,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { session, profile, loading } = useAuth();
-  const [showSplash, setShowSplash] = useState(() => {
-    // Only show splash on cold open when not yet authenticated
-    if (sessionStorage.getItem("splash_shown")) return false;
-    return true;
-  });
-
-  const handleSplashFinished = useCallback(() => {
-    sessionStorage.setItem("splash_shown", "1");
-    setShowSplash(false);
-  }, []);
 
   if (loading) {
     return (
@@ -58,17 +46,6 @@ function AppRoutes() {
         </div>
       </div>
     );
-  }
-
-  // Skip splash if already logged in
-  if (showSplash && !session) {
-    return <SplashScreen onFinished={handleSplashFinished} />;
-  }
-
-  // If splash was pending but user is logged in, clear it
-  if (showSplash && session) {
-    sessionStorage.setItem("splash_shown", "1");
-    setShowSplash(false);
   }
 
   return (
