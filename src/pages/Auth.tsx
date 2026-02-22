@@ -1,3 +1,5 @@
+import { useCallback, useRef } from "react";
+import { useMousePosition } from "@/hooks/use-mouse-position";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +19,20 @@ export default function Auth() {
   const { session } = useAuth();
   const navigate = useNavigate();
 
+  // ── SHINY GLOW ADDED HERE ──
+  const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  const update = useCallback(({ x, y }: { x: number; y: number }) => {
+    if (!overlayRef.current) return;
+    const { width, height } = overlayRef.current.getBoundingClientRect();
+    overlayRef.current.style.setProperty("--x", `${x - width / 2}px`);
+    overlayRef.current.style.setProperty("--y", `${y - height / 2}px`);
+  }, []);
+
+  useMousePosition(containerRef, update);
+  // ── END SHINY GLOW SETUP ──
+
   useEffect(() => {
     if (session) navigate("/feed", { replace: true });
   }, [session, navigate]);
@@ -33,29 +49,64 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLogin && !passwordsMatch) { toast.error("Passwords do not match"); return; }
+    if (!isLogin && !passwordsMatch) {
+      toast.error("Passwords do not match");
+      return;
+    }
     setLoading(true);
     try {
       if (!isLogin) {
         const isValid = await validateEmailDomain(email);
-        if (!isValid) { toast.error("Your email domain isn't registered with any university. Contact your admin."); setLoading(false); return; }
+        if (!isValid) {
+          toast.error("Your email domain isn't registered with any university. Contact your admin.");
+          setLoading(false);
+          return;
+        }
       }
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
       } else {
-        const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
         if (error) throw error;
         toast.success("Check your email to verify your account!");
       }
-    } catch (error: any) { toast.error(error.message); }
-    finally { setLoading(false); }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 bg-background">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+    // ── OUTER DIV CHANGED: added ref={containerRef} and relative + overflow-hidden ──
+    <div
+      ref={containerRef}
+      className="relative flex min-h-screen items-center justify-center px-4 bg-background overflow-hidden"
+    >
+      {/* ── SHINY GLOW OVERLAY ADDED HERE ── */}
+      <div
+        ref={overlayRef}
+        className="pointer-events-none absolute h-[500px] w-[500px] rounded-full blur-[80px] z-0"
+        style={{
+          background: "radial-gradient(circle, rgba(124,58,237,0.2) 0%, rgba(236,72,153,0.1) 50%, transparent 70%)",
+          transform: "translate(var(--x), var(--y))",
+          opacity: 1,
+        }}
+      />
+      {/* ── END GLOW OVERLAY ── */}
+
+      {/* ── CONTENT WRAPPED IN z-10 SO IT SITS ABOVE THE GLOW ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative z-10 w-full max-w-sm"
+      >
         <div className="mb-10 text-center">
           <h1 className="text-6xl font-extrabold tracking-tight text-foreground">T</h1>
           <p className="mt-2 text-sm text-muted-foreground">Your campus. Your people. Your gossip.</p>
@@ -72,24 +123,53 @@ export default function Auth() {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">University Email</Label>
+                <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                  University Email
+                </Label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="email" type="email" placeholder="you@university.ac.uk" value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@university.ac.uk"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Password</Label>
+                <Label
+                  htmlFor="password"
+                  className="text-xs text-muted-foreground uppercase tracking-wider font-medium"
+                >
+                  Password
+                </Label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                  />
                 </div>
               </div>
 
               {!isLogin && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Confirm Password</Label>
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="text-xs text-muted-foreground uppercase tracking-wider font-medium"
+                  >
+                    Confirm Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -106,9 +186,7 @@ export default function Auth() {
                       <Check className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />
                     )}
                   </div>
-                  {showMismatch && (
-                    <p className="text-xs text-destructive font-medium">Passwords do not match</p>
-                  )}
+                  {showMismatch && <p className="text-xs text-destructive font-medium">Passwords do not match</p>}
                 </div>
               )}
 
@@ -117,13 +195,27 @@ export default function Auth() {
                 disabled={loading || (!isLogin && !passwordsMatch)}
                 className="w-full h-11 rounded-full bg-foreground text-background font-semibold text-sm disabled:opacity-40 transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{isLogin ? "Sign In" : "Create Account"}<ArrowRight className="h-4 w-4" /></>}
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    {isLogin ? "Sign In" : "Create Account"}
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
             </motion.form>
           </AnimatePresence>
 
           <div className="mt-4 text-center">
-            <button type="button" onClick={() => { setIsLogin(!isLogin); setConfirmPassword(""); }} className="text-sm text-primary hover:underline transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setConfirmPassword("");
+              }}
+              className="text-sm text-primary hover:underline transition-colors"
+            >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
