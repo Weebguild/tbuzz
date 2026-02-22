@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { LogOut, Edit2, Save, Loader2, Camera, GraduationCap, BookOpen, Layers } from "lucide-react";
+import Counter from "@/components/Counter";
 
 interface ViewProfile {
   user_id: string;
@@ -82,7 +83,12 @@ export default function Profile() {
 
   const checkFollowing = async (uid: string) => {
     if (!user) return;
-    const { data } = await supabase.from("follows").select("id").eq("follower_user_id", user.id).eq("following_user_id", uid).maybeSingle();
+    const { data } = await supabase
+      .from("follows")
+      .select("id")
+      .eq("follower_user_id", user.id)
+      .eq("following_user_id", uid)
+      .maybeSingle();
     setIsFollowing(!!data);
   };
 
@@ -101,7 +107,13 @@ export default function Profile() {
     if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ display_name: displayName, bio }).eq("user_id", user.id);
-    if (error) { toast.error(error.message); } else { toast.success("Profile updated!"); setEditing(false); refreshProfile(); }
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Profile updated!");
+      setEditing(false);
+      refreshProfile();
+    }
     setSaving(false);
   };
 
@@ -112,7 +124,11 @@ export default function Profile() {
   };
 
   if (loadingProfile || !targetProfile) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -135,7 +151,13 @@ export default function Profile() {
               {isOwnProfile ? (
                 <label className="relative cursor-pointer group">
                   <Avatar className="h-20 w-20 ring-4 ring-primary/30">
-                    {targetProfile.avatar_url ? <AvatarImage src={targetProfile.avatar_url} /> : <AvatarFallback className="bg-muted text-xl font-extrabold text-foreground">{targetProfile.display_name.charAt(0)}</AvatarFallback>}
+                    {targetProfile.avatar_url ? (
+                      <AvatarImage src={targetProfile.avatar_url} />
+                    ) : (
+                      <AvatarFallback className="bg-muted text-xl font-extrabold text-foreground">
+                        {targetProfile.display_name.charAt(0)}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                   <div className="absolute bottom-0 right-0 rounded-full bg-foreground p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera className="h-3 w-3 text-background" />
@@ -144,15 +166,31 @@ export default function Profile() {
                 </label>
               ) : (
                 <Avatar className="h-20 w-20 ring-4 ring-primary/30">
-                  {targetProfile.avatar_url ? <AvatarImage src={targetProfile.avatar_url} /> : <AvatarFallback className="bg-muted text-xl font-extrabold text-foreground">{targetProfile.display_name.charAt(0)}</AvatarFallback>}
+                  {targetProfile.avatar_url ? (
+                    <AvatarImage src={targetProfile.avatar_url} />
+                  ) : (
+                    <AvatarFallback className="bg-muted text-xl font-extrabold text-foreground">
+                      {targetProfile.display_name.charAt(0)}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
               )}
               {isOwnProfile ? (
                 <button
                   className="mt-14 px-4 py-1.5 rounded-full border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors"
-                  onClick={() => editing ? handleSave() : setEditing(true)}
+                  onClick={() => (editing ? handleSave() : setEditing(true))}
                 >
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <span className="flex items-center gap-1"><Save className="h-3.5 w-3.5" /> Save</span> : <span className="flex items-center gap-1"><Edit2 className="h-3.5 w-3.5" /> Edit</span>}
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : editing ? (
+                    <span className="flex items-center gap-1">
+                      <Save className="h-3.5 w-3.5" /> Save
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Edit2 className="h-3.5 w-3.5" /> Edit
+                    </span>
+                  )}
                 </button>
               ) : (
                 <button
@@ -169,20 +207,32 @@ export default function Profile() {
                 <div className="space-y-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Name</Label>
-                    <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-10 rounded-xl bg-muted border-0 text-foreground" />
+                    <Input
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="h-10 rounded-xl bg-muted border-0 text-foreground"
+                    />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Bio</Label>
-                    <Textarea value={bio} onChange={(e) => setBio(e.target.value)} className="rounded-xl bg-muted border-0 resize-none text-foreground" rows={2} />
+                    <Textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      className="rounded-xl bg-muted border-0 resize-none text-foreground"
+                      rows={2}
+                    />
                   </div>
                 </div>
               ) : (
                 <>
                   <h2 className="text-xl font-extrabold text-foreground">{targetProfile.display_name}</h2>
-                  {/* Anonymous alias only visible to profile owner */}
-                  {isOwnProfile && targetProfile.anonymous_alias && <p className="text-xs text-primary font-semibold mt-0.5">🎭 {targetProfile.anonymous_alias}</p>}
+                  {isOwnProfile && targetProfile.anonymous_alias && (
+                    <p className="text-xs text-primary font-semibold mt-0.5">🎭 {targetProfile.anonymous_alias}</p>
+                  )}
                   {universityName && <p className="text-sm text-muted-foreground">{universityName}</p>}
-                  {targetProfile.bio && <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{targetProfile.bio}</p>}
+                  {targetProfile.bio && (
+                    <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{targetProfile.bio}</p>
+                  )}
                 </>
               )}
             </div>
@@ -209,11 +259,11 @@ export default function Profile() {
 
             <div className="mt-5 flex gap-8">
               <div>
-                <p className="text-lg font-extrabold text-foreground">{followerCount}</p>
+                <Counter targetValue={followerCount} delay={0} className="text-lg font-extrabold text-foreground" />
                 <p className="text-xs text-muted-foreground">Followers</p>
               </div>
               <div>
-                <p className="text-lg font-extrabold text-foreground">{followingCount}</p>
+                <Counter targetValue={followingCount} delay={200} className="text-lg font-extrabold text-foreground" />
                 <p className="text-xs text-muted-foreground">Following</p>
               </div>
             </div>
