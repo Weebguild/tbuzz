@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame } from "lucide-react";
+import { Flame, ChevronRight } from "lucide-react";
 
 interface TrendingItem {
   id: string;
@@ -23,6 +23,7 @@ export function TrendingTicker({ items }: TrendingTickerProps) {
 
   useEffect(() => {
     if (items.length <= 1) return;
+    // Rotate every 4 seconds
     const interval = setInterval(advance, 4000);
     return () => clearInterval(interval);
   }, [advance, items.length]);
@@ -32,30 +33,53 @@ export function TrendingTicker({ items }: TrendingTickerProps) {
   const current = items[index];
 
   return (
-    <div className="mb-5">
-      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-        <Flame className="h-3.5 w-3.5" /> Trending on Campus
-      </p>
-      <div
-        className="rounded-xl p-3 border border-border/50 backdrop-blur-sm cursor-pointer min-h-[60px]"
-        style={{ background: "rgba(255,255,255,0.03)" }}
-        onClick={() => navigate("/gossip")}
-      >
+    <div className="mb-6 group" onClick={() => navigate("/gossip")}>
+      {/* ── HEADER WITH LIVE PULSING DOT ── */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center gap-2">
+          {/* Animated Ping Dot */}
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EC4899] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EC4899]"></span>
+          </span>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <Flame className="h-3.5 w-3.5 text-[#EC4899]" /> Hot Right Now
+          </p>
+        </div>
+        <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors flex items-center">
+          Tap to read <ChevronRight className="h-3 w-3 ml-0.5" />
+        </span>
+      </div>
+
+      {/* ── THE TICKER CARD ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-[#1A1A1A] border border-[#2D2D2D] p-4 cursor-pointer min-h-[85px] flex flex-col justify-center transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_0_20px_rgba(124,58,237,0.15)]">
+        {/* Subtle Background Glow on Hover */}
+        <div className="absolute -inset-10 bg-gradient-to-r from-transparent via-[#7C3AED]/5 to-transparent opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500 pointer-events-none" />
+
         <AnimatePresence mode="wait">
           <motion.div
             key={current.id}
-            initial={{ opacity: 0, filter: "blur(8px)", scale: 0.95 }}
-            animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
+            // Vertical slide-up animation (Slot machine effect)
+            initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             exit={{
               opacity: 0,
-              filter: "blur(12px)",
-              scale: 1.05,
-              transition: { duration: 0.5 },
+              y: -20,
+              filter: "blur(4px)",
+              transition: { duration: 0.2, ease: "easeIn" },
             }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
+            className="relative z-10"
           >
-            <p className="text-xs font-semibold text-primary mb-1">{current.gossip_alias}</p>
-            <p className="text-sm text-foreground/80 truncate">{current.content}</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="px-2 py-0.5 rounded-md bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/30">
+                #{index + 1} Trending
+              </span>
+              <span className="text-xs font-bold text-foreground">{current.gossip_alias}</span>
+            </div>
+            <p className="text-sm font-medium text-foreground/90 line-clamp-2 leading-relaxed italic">
+              "{current.content}"
+            </p>
           </motion.div>
         </AnimatePresence>
       </div>
