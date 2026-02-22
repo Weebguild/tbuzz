@@ -94,7 +94,7 @@ export default function Auth() {
         ref={overlayRef}
         className="pointer-events-none absolute h-[500px] w-[500px] rounded-full blur-[80px] z-0"
         style={{
-          background: "radial-gradient(circle, rgba(124,58,237,0.2) 0%, rgba(236,72,153,0.1) 50%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(124,58,237,0.5) 0%, rgba(236,72,153,0.3) 50%, transparent 70%)",
           transform: "translate(var(--x), var(--y))",
           opacity: 1,
         }}
