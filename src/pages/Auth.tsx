@@ -90,15 +90,22 @@ export default function Auth() {
       className="relative flex min-h-screen items-center justify-center px-4 bg-background overflow-hidden"
     >
       {/* ── SHINY GLOW OVERLAY ADDED HERE ── */}
+      {/* ── SHINY GLOW OVERLAY ADDED HERE ── */}
       <div
         ref={overlayRef}
-        className="pointer-events-none absolute h-[500px] w-[500px] rounded-full blur-[80px] z-0"
+        className="pointer-events-none absolute rounded-full blur-[60px] z-0"
         style={{
+          width: "600px",
+          height: "600px",
+          top: 0,
+          left: 0,
           background: "radial-gradient(circle, rgba(124,58,237,0.5) 0%, rgba(236,72,153,0.3) 50%, transparent 70%)",
           transform: "translate(var(--x), var(--y))",
           opacity: 1,
+          willChange: "transform",
         }}
       />
+      {/* ── END GLOW OVERLAY ── */}
       {/* ── END GLOW OVERLAY ── */}
 
       {/* ── CONTENT WRAPPED IN z-10 SO IT SITS ABOVE THE GLOW ── */}
