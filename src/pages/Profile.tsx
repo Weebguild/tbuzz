@@ -4,10 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence, animate } from "framer-motion";
-import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle, UserPlus, UserCheck } from "lucide-react";
+import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle, UserPlus, UserCheck, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 // ── CUSTOM COMPONENT: SMOOTH COUNTING ANIMATION ──
 function AnimatedNumber({ value }: { value: number }) {
@@ -56,11 +66,12 @@ interface TextPost {
 
 export default function Profile() {
   const { userId: id } = useParams();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const targetUserId = id || user?.id;
   const isOwnProfile = targetUserId === user?.id;
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [photos, setPhotos] = useState<PhotoPost[]>([]);
@@ -218,7 +229,7 @@ export default function Profile() {
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Profile</h1>
         {isOwnProfile && (
           <button
-            onClick={() => toast("Logout confirmation coming soon!")}
+            onClick={() => setShowLogoutDialog(true)}
             className="h-10 w-10 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-destructive"
           >
             <LogOut className="h-5 w-5" />
@@ -450,6 +461,34 @@ export default function Profile() {
           />
         )}
       </AnimatePresence>
+      {/* ── LOGOUT CONFIRMATION DIALOG ── */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent className="border-white/10 bg-white/5 backdrop-blur-2xl shadow-[0_8px_60px_rgba(0,0,0,0.6)] rounded-3xl max-w-sm mx-auto">
+          <AlertDialogHeader className="items-center text-center">
+            <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center mb-2 ring-1 ring-destructive/20">
+              <AlertTriangle className="h-7 w-7 text-destructive" />
+            </div>
+            <AlertDialogTitle className="text-xl font-bold text-foreground">Log out?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground text-sm">
+              You'll need to sign in again to access your account. Are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0 mt-2">
+            <AlertDialogAction
+              onClick={async () => {
+                await signOut();
+                navigate("/auth");
+              }}
+              className="w-full rounded-full bg-destructive hover:bg-destructive/90 text-white font-bold py-3 shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+            >
+              Yes, log me out
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-foreground font-bold py-3 mt-0">
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
