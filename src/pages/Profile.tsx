@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence, animate } from "framer-motion";
-import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle, UserPlus, UserCheck } from "lucide-react";
+import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle, UserPlus, UserCheck, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
@@ -56,11 +56,12 @@ interface TextPost {
 
 export default function Profile() {
   const { userId: id } = useParams();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const targetUserId = id || user?.id;
   const isOwnProfile = targetUserId === user?.id;
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [photos, setPhotos] = useState<PhotoPost[]>([]);
@@ -218,7 +219,7 @@ export default function Profile() {
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Profile</h1>
         {isOwnProfile && (
           <button
-            onClick={() => toast("Logout confirmation coming soon!")}
+            onClick={() => setShowLogoutDialog(true)}
             className="h-10 w-10 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-destructive"
           >
             <LogOut className="h-5 w-5" />
@@ -448,6 +449,56 @@ export default function Profile() {
               toast.success("Liked from profile!");
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* ── LOGOUT CONFIRMATION DIALOG ── */}
+      <AnimatePresence>
+        {showLogoutDialog && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowLogoutDialog(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl shadow-[0_0_60px_rgba(124,58,237,0.15)] p-6"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <AlertTriangle className="h-7 w-7 text-destructive" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-1">Log out?</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  You'll need to sign in again to access your account.
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => setShowLogoutDialog(false)}
+                    className="flex-1 h-11 rounded-full border border-white/10 text-sm font-semibold text-foreground hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowLogoutDialog(false);
+                      await signOut();
+                      navigate("/auth", { replace: true });
+                    }}
+                    className="flex-1 h-11 rounded-full bg-destructive text-destructive-foreground text-sm font-semibold hover:bg-destructive/90 transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                  >
+                    Log out
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
