@@ -114,7 +114,7 @@ export default function Feed() {
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) {
-      console.error(error);
+      console.error("[Feed]", sanitizeError(error));
       return;
     }
 
