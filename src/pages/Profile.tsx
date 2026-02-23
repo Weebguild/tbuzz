@@ -76,7 +76,7 @@ export default function Profile() {
 
   const fetchProfileData = useCallback(async () => {
     if (!targetUserId) return;
-
+    setLoading(true);
     // 1. Fetch Profile Info
     const { data: profileData } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).single();
 
