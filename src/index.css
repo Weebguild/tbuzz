@@ -102,10 +102,23 @@
 }
 
 /* ── Glass Card + Hotness Heatmap ── */
+
+/* Outer heat wrapper — receives the fire glow so it's never clipped */
+.card-heat-low,
+.card-heat-medium,
+.card-heat-high {
+  border-radius: 2rem;
+}
+
+.card-heat-high {
+  animation: fire-flicker 0.15s ease-in-out infinite alternate;
+  border-radius: 2rem;
+}
+
 .glass-card-box {
   position: relative;
   overflow: hidden;
-  border-radius: 1.5rem;
+  border-radius: 2rem;
 }
 
 .glass-card-box::before,
@@ -148,7 +161,7 @@
   position: relative;
   z-index: 2;
   padding: 1rem;
-  border-radius: 1.5rem;
+  border-radius: 2rem;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -164,7 +177,7 @@
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  border-radius: 1.5rem;
+  border-radius: 2rem;
 }
 
 .glass-card-box .glass-floaters::before,
@@ -204,11 +217,6 @@
 .card-heat-high .glass-card-box .glass-floaters::after {
   opacity: 0.6;
   animation: glass-float 2s ease-in-out infinite alternate;
-}
-
-/* Fire flicker for high heat */
-.card-heat-high .glass-card-box {
-  animation: fire-flicker 0.15s ease-in-out infinite alternate;
 }
 
 @keyframes glass-rotate {
