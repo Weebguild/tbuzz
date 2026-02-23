@@ -56,6 +56,13 @@ export default function Gossip() {
   const { user, profile } = useAuth();
   const [posts, setPosts] = useState<GossipPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+
+  useEffect(() => {
+    if (!loading) { setShowSkeleton(false); return; }
+    const t = setTimeout(() => setShowSkeleton(true), 300);
+    return () => clearTimeout(t);
+  }, [loading]);
   const [showComposer, setShowComposer] = useState(false);
   const [content, setContent] = useState("");
   const [posting, setPosting] = useState(false);
@@ -421,7 +428,7 @@ export default function Gossip() {
       </AnimatePresence>
 
       {/* Posts */}
-      {loading ? (
+      {loading && showSkeleton ? (
         <div className="space-y-3">
           <PostSkeleton />
           <PostSkeleton />

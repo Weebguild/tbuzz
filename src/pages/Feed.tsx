@@ -65,6 +65,13 @@ export default function Feed() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+
+  useEffect(() => {
+    if (!loading) { setShowSkeleton(false); return; }
+    const t = setTimeout(() => setShowSkeleton(true), 300);
+    return () => clearTimeout(t);
+  }, [loading]);
   const [newPost, setNewPost] = useState("");
   const [showComposer, setShowComposer] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -369,7 +376,7 @@ export default function Feed() {
       </AnimatePresence>
 
       {/* Posts */}
-      {loading ? (
+      {loading && showSkeleton ? (
         <div className="space-y-4">
           <PostSkeleton />
           <PostSkeleton />
