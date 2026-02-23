@@ -453,12 +453,10 @@ export default function Gossip() {
               transition={{ delay: i * 0.03 }}
             >
               <SelfDestructWrapper expiresAt={post.expires_at}>
-              <div className={`${
-                post.hotness_score > 0.7 ? "card-heat-high" : post.hotness_score >= 0.3 ? "card-heat-medium" : "card-heat-low"
-              }`}>
-                <div className="box">
-                  <span></span>
-                  <div className="container">
+              <div className={post.hotness_score > 0.7 ? "card-heat-high" : post.hotness_score >= 0.3 ? "card-heat-medium" : "card-heat-low"}>
+                <div className="glass-card-box">
+                  <span className="glass-floaters"></span>
+                  <div className="glass-card-inner">
                     <div className="flex gap-3">
                       <Avatar className="h-9 w-9 ring-1 ring-white/10">
                         <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>

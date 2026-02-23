@@ -102,125 +102,112 @@
 }
 
 /* ── Glass Card + Hotness Heatmap ── */
-.box {
+.glass-card-box {
   position: relative;
   overflow: hidden;
   border-radius: 1.5rem;
 }
 
-.box::before {
+.glass-card-box::before,
+.glass-card-box::after {
   content: "";
   position: absolute;
   top: -50%;
   left: -50%;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0;
   transform-origin: bottom right;
   animation: glass-rotate 6s linear infinite;
+  pointer-events: none;
 }
 
-.box::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  transform-origin: bottom right;
-  animation: glass-rotate 6s linear infinite;
+.glass-card-box::after {
   animation-delay: -3s;
 }
 
 /* Heat-tier gradients for pseudo-elements */
-.card-heat-low .box::before,
-.card-heat-low .box::after {
-  background: rgba(255, 255, 255, 0.1);
+.card-heat-low .glass-card-box::before,
+.card-heat-low .glass-card-box::after {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.card-heat-medium .box::before,
-.card-heat-medium .box::after {
+.card-heat-medium .glass-card-box::before,
+.card-heat-medium .glass-card-box::after {
   background: linear-gradient(315deg, #03a9f4, #ff0058);
+  opacity: 0.4;
 }
 
-.card-heat-high .box::before,
-.card-heat-high .box::after {
+.card-heat-high .glass-card-box::before,
+.card-heat-high .glass-card-box::after {
   background: linear-gradient(315deg, #ffbc00, #ff0058);
+  opacity: 0.5;
 }
 
-.box .container {
+.glass-card-inner {
   position: relative;
-  z-index: 10;
+  z-index: 2;
   padding: 1rem;
   border-radius: 1.5rem;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  inset: 2px;
+  margin: 2px;
 }
 
-/* Floating glass squares */
-.box span {
+/* Floating glass squares — hidden by default */
+.glass-card-box .glass-floaters {
   display: block;
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 5;
+  inset: 0;
+  z-index: 1;
   pointer-events: none;
   overflow: hidden;
   border-radius: 1.5rem;
 }
 
-.box span::before {
+.glass-card-box .glass-floaters::before,
+.glass-card-box .glass-floaters::after {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100px;
-  height: 100px;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(2px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 0.5rem;
   opacity: 0;
-  transition: opacity 0.3s;
+  pointer-events: none;
 }
 
-.box span::after {
-  content: "";
-  position: absolute;
-  bottom: 5%;
-  right: 5%;
+.glass-card-box .glass-floaters::before {
+  top: 50%;
+  left: 50%;
   width: 60px;
   height: 60px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(2px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 0.5rem;
-  opacity: 0;
-  transition: opacity 0.3s;
+  transform: translate(-50%, -50%);
+}
+
+.glass-card-box .glass-floaters::after {
+  bottom: 8%;
+  right: 8%;
+  width: 40px;
+  height: 40px;
 }
 
 /* Glass squares only visible on medium+ heat */
-.card-heat-medium .box span::before,
-.card-heat-medium .box span::after {
-  opacity: 1;
+.card-heat-medium .glass-card-box .glass-floaters::before,
+.card-heat-medium .glass-card-box .glass-floaters::after {
+  opacity: 0.5;
   animation: glass-float 4s ease-in-out infinite alternate;
 }
 
-.card-heat-high .box span::before,
-.card-heat-high .box span::after {
-  opacity: 1;
+.card-heat-high .glass-card-box .glass-floaters::before,
+.card-heat-high .glass-card-box .glass-floaters::after {
+  opacity: 0.6;
   animation: glass-float 2s ease-in-out infinite alternate;
 }
 
 /* Fire flicker for high heat */
-.card-heat-high .box {
+.card-heat-high .glass-card-box {
   animation: fire-flicker 0.15s ease-in-out infinite alternate;
 }
 
