@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer } from "lucide-react";
 import { BurnerTimer } from "@/components/feed/BurnerTimer";
+import { SelfDestructWrapper } from "@/components/feed/SelfDestructWrapper";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
@@ -449,6 +450,7 @@ export default function Gossip() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
             >
+              <SelfDestructWrapper expiresAt={post.expires_at}>
               <div className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500">
                 <div className="flex gap-3">
                   <Avatar className="h-9 w-9 ring-1 ring-white/10">
@@ -514,6 +516,7 @@ export default function Gossip() {
                   </div>
                 </div>
               </div>
+              </SelfDestructWrapper>
             </motion.div>
           ))}
         </div>
