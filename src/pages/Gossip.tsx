@@ -91,7 +91,7 @@ export default function Gossip() {
       .eq("user_id", user?.id ?? "");
 
     if (error) {
-      console.error(error);
+      console.error("[Gossip]", sanitizeError(error));
       return;
     }
 
