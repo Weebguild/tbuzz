@@ -1,11 +1,13 @@
-import { PostImageExpander } from "@/components/feed/PostImageExpander";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut } from "lucide-react";
+import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import { PostImageExpander } from "@/components/feed/PostImageExpander";
 
 interface ProfileData {
   user_id: string;
@@ -22,8 +24,17 @@ interface PhotoPost {
   reaction_count: number;
 }
 
+interface TextPost {
+  id: string;
+  content: string;
+  created_at: string;
+  reaction_count: number;
+  comment_count: number;
+  has_liked: boolean;
+}
+
 export default function Profile() {
-  const { id } = useParams(); // Get user ID from URL if visiting someone else
+  const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -32,45 +43,90 @@ export default function Profile() {
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [photos, setPhotos] = useState<PhotoPost[]>([]);
+  const [textPosts, setTextPosts] = useState<TextPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"posts" | "gallery">("gallery");
+  const [activeTab, setActiveTab] = useState<"posts" | "gallery">("posts");
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!targetUserId) return;
-      setLoading(true);
+  const fetchProfileData = useCallback(async () => {
+    if (!targetUserId) return;
 
-      // 1. Fetch Profile Info
-      const { data: profileData } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).single();
+    // 1. Fetch Profile Info
+    const { data: profileData } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).single();
 
-      if (profileData) setProfile(profileData);
+    if (profileData) setProfile(profileData);
 
-      // 2. Fetch Only Posts With Images for the Gallery
-      const { data: photoPosts } = await supabase
-        .from("posts")
-        .select("id, image_url")
-        .eq("user_id", targetUserId)
-        .not("image_url", "is", null)
-        .order("created_at", { ascending: false });
+    // 2. Fetch Photos (Posts with images)
+    const { data: photoPosts } = await supabase
+      .from("posts")
+      .select("id, image_url")
+      .eq("user_id", targetUserId)
+      .not("image_url", "is", null)
+      .order("created_at", { ascending: false });
+
+    // 3. Fetch Text Posts (Posts without images)
+    const { data: textPostsData } = await supabase
+      .from("posts")
+      .select("id, content, created_at")
+      .eq("user_id", targetUserId)
+      .is("image_url", null)
+      .order("created_at", { ascending: false });
+
+    // Fetch reactions and comments for all fetched posts
+    const allPostIds = [...(photoPosts?.map((p) => p.id) || []), ...(textPostsData?.map((p) => p.id) || [])];
+
+    if (allPostIds.length > 0) {
+      const [{ data: reactions }, { data: comments }] = await Promise.all([
+        supabase.from("reactions").select("post_id, user_id").in("post_id", allPostIds),
+        supabase.from("comments").select("post_id").in("post_id", allPostIds),
+      ]);
 
       if (photoPosts) {
-        // Fetch reaction counts for these photos
-        const postIds = photoPosts.map((p) => p.id);
-        const { data: reactions } = await supabase.from("reactions").select("post_id").in("post_id", postIds);
-
-        const enrichedPhotos = photoPosts.map((photo) => ({
-          ...photo,
-          reaction_count: reactions?.filter((r) => r.post_id === photo.id).length || 0,
-        }));
-        setPhotos(enrichedPhotos);
+        setPhotos(
+          photoPosts.map((photo) => ({
+            ...photo,
+            reaction_count: reactions?.filter((r) => r.post_id === photo.id).length || 0,
+          })),
+        );
       }
 
-      setLoading(false);
-    };
+      if (textPostsData) {
+        setTextPosts(
+          textPostsData.map((post) => ({
+            ...post,
+            reaction_count: reactions?.filter((r) => r.post_id === post.id).length || 0,
+            comment_count: comments?.filter((c) => c.post_id === post.id).length || 0,
+            has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) || false,
+          })),
+        );
+      }
+    }
 
+    setLoading(false);
+  }, [targetUserId, user?.id]);
+
+  useEffect(() => {
     fetchProfileData();
-  }, [targetUserId]);
+  }, [fetchProfileData]);
+
+  const toggleLike = async (postId: string, hasLiked: boolean) => {
+    if (!user) return;
+
+    // Optimistically update UI
+    setTextPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? { ...p, has_liked: !hasLiked, reaction_count: hasLiked ? p.reaction_count - 1 : p.reaction_count + 1 }
+          : p,
+      ),
+    );
+
+    if (hasLiked) {
+      await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", user.id);
+    } else {
+      await supabase.from("reactions").insert({ user_id: user.id, post_id: postId, reaction_type: "like" });
+    }
+  };
 
   if (loading) {
     return (
@@ -91,9 +147,7 @@ export default function Profile() {
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Profile</h1>
         {isOwnProfile && (
           <button
-            onClick={() => {
-              /* We will add the custom logout dialog here later */
-            }}
+            onClick={() => toast("Logout confirmation coming soon!")}
             className="h-10 w-10 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-destructive"
           >
             <LogOut className="h-5 w-5" />
@@ -103,7 +157,6 @@ export default function Profile() {
 
       {/* ── PROFILE INFO CARD (Midnight Glass) ── */}
       <div className="rounded-3xl glass-panel p-6 mb-6 relative overflow-hidden">
-        {/* Subtle background glow for the profile card */}
         <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/20 rounded-full blur-[50px] pointer-events-none" />
 
         <div className="flex flex-col items-center text-center relative z-10">
@@ -154,8 +207,71 @@ export default function Profile() {
         </button>
       </div>
 
-      {/* ── GALLERY VIEW (The Editorial Bento Grid) ── */}
+      {/* ── TAB CONTENT ── */}
       <AnimatePresence mode="wait">
+        {/* TEXT POSTS FEED */}
+        {activeTab === "posts" && (
+          <motion.div
+            key="posts"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-4"
+          >
+            {textPosts.length === 0 ? (
+              <div className="py-20 text-center">
+                <LayoutList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground font-medium">No text posts yet.</p>
+              </div>
+            ) : (
+              textPosts.map((post, i) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                      {profile.avatar_url ? (
+                        <AvatarImage src={profile.avatar_url} />
+                      ) : (
+                        <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                          {profile.display_name.charAt(0)}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">{profile.display_name}</p>
+                      <p className="text-xs text-muted-foreground/80">
+                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm leading-relaxed text-foreground/90 mb-4">{post.content}</p>
+
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => toggleLike(post.id, post.has_liked)}
+                      className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
+                      {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
+                    </button>
+                    <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      <MessageCircle className="h-4 w-4" />
+                      {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
+                    </button>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </motion.div>
+        )}
+
+        {/* GALLERY GRID */}
         {activeTab === "gallery" && (
           <motion.div
             key="gallery"
@@ -171,9 +287,7 @@ export default function Profile() {
               </div>
             ) : (
               photos.map((photo, i) => {
-                // Editorial Grid Logic: Every 3rd image is a cinematic wide shot
                 const isWide = i % 3 === 0;
-
                 return (
                   <motion.div
                     key={photo.id}
@@ -181,7 +295,6 @@ export default function Profile() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.05 }}
                     className={`relative overflow-hidden rounded-3xl glass-panel group cursor-pointer border border-white/5 ${isWide ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"}`}
-                    // ── REPLACE THE ONCLICK WITH THIS ──
                     onClick={() => setExpandedPhoto(photo)}
                   >
                     <img
@@ -190,8 +303,6 @@ export default function Profile() {
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       loading="lazy"
                     />
-
-                    {/* Dark gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                       <div className="flex items-center gap-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                         <Heart className="h-4 w-4 text-[#EC4899] fill-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
@@ -204,22 +315,9 @@ export default function Profile() {
             )}
           </motion.div>
         )}
-
-        {/* Placeholder for 'Posts' tab content */}
-        {activeTab === "posts" && (
-          <motion.div
-            key="posts"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="text-center py-20"
-          >
-            <p className="text-sm text-muted-foreground font-medium">Text posts feed goes here.</p>
-          </motion.div>
-        )}
       </AnimatePresence>
 
-      {/* ── ADD THIS ENTIRE BLOCK HERE ── */}
+      {/* ── SPLIT-SCREEN IMAGE EXPANDER ── */}
       <AnimatePresence>
         {expandedPhoto && (
           <PostImageExpander
@@ -230,12 +328,11 @@ export default function Profile() {
             commentCount={0}
             onClose={() => setExpandedPhoto(null)}
             onToggleLike={() => {
-              /* Profile-specific toggle like function */
+              toast.success("Liked from profile!");
             }}
           />
         )}
       </AnimatePresence>
-      {/* ── END OF NEW BLOCK ── */}
     </div>
   );
 }
