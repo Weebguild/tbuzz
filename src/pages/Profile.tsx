@@ -169,6 +169,15 @@ export default function Profile() {
   };
 
   useEffect(() => {
+    // Reset state when switching profiles
+    setProfile(null);
+    setPhotos([]);
+    setTextPosts([]);
+    setFollowersCount(0);
+    setFollowingCount(0);
+    setIsFollowing(false);
+    setActiveTab("posts");
+    setExpandedPhoto(null);
     fetchProfileData();
   }, [fetchProfileData]);
 
