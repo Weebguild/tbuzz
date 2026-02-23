@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp } from "lucide-react";
+import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer } from "lucide-react";
+import { BurnerTimer } from "@/components/feed/BurnerTimer";
 import { formatDistanceToNow } from "date-fns";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
 import {
@@ -33,6 +34,7 @@ interface GossipPost {
   gossip_alias: string;
   gossip_avatar: string;
   created_at: string;
+  expires_at: string | null;
   upvote_count: number;
   has_upvoted: boolean;
   tagged_users: { user_id: string; display_name: string }[];
@@ -63,6 +65,7 @@ export default function Gossip() {
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [selectedTags, setSelectedTags] = useState<TagSuggestion[]>([]);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const [isBurner, setIsBurner] = useState(false);
 
   const getTimeRangeDate = (range: TimeRange): Date => {
     const now = new Date();
@@ -87,8 +90,14 @@ export default function Gossip() {
     // Also fetch own posts to know which ones we can delete
     const { data: ownPosts } = await supabase
       .from("gossip_posts")
-      .select("id")
+      .select("id, expires_at")
       .eq("user_id", user?.id ?? "");
+
+    // Fetch expires_at for all posts (needed for burner display)
+    const { data: expiryData } = await supabase
+      .from("gossip_posts")
+      .select("id, expires_at")
+      .in("id", data.map((p) => p.id));
 
     if (error) {
       console.error("[Gossip]", sanitizeError(error));
@@ -111,8 +120,10 @@ export default function Gossip() {
 
     let enriched = data.map((post) => {
       const upvoteCount = reactions?.filter((r) => r.gossip_post_id === post.id).length ?? 0;
+      const expiry = expiryData?.find((e) => e.id === post.id);
       return {
         ...post,
+        expires_at: expiry?.expires_at ?? null,
         upvote_count: upvoteCount,
         has_upvoted: reactions?.some((r) => r.gossip_post_id === post.id && r.user_id === user?.id) ?? false,
         tagged_users:
@@ -188,6 +199,7 @@ export default function Gossip() {
           content: content.trim(),
           gossip_alias: profile.anonymous_alias ?? "Anonymous",
           gossip_avatar: "mask",
+          expires_at: isBurner ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
         })
         .select("id")
         .single();
@@ -201,6 +213,7 @@ export default function Gossip() {
 
       setContent("");
       setSelectedTags([]);
+      setIsBurner(false);
       setShowComposer(false);
       toast.success("Gossip posted!");
       fetchGossip();
@@ -380,7 +393,19 @@ export default function Gossip() {
                 </div>
               )}
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setIsBurner(!isBurner)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    isBurner
+                      ? "bg-red-500/10 backdrop-blur-md text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                      : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  <Timer className="h-3.5 w-3.5" />
+                  24h Burner
+                </button>
                 <button
                   onClick={handlePost}
                   disabled={posting || !content.trim()}
@@ -426,6 +451,7 @@ export default function Gossip() {
                         <span className="text-[11px] text-muted-foreground/80">
                           {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                         </span>
+                        {post.expires_at && <BurnerTimer expiresAt={post.expires_at} />}
                       </div>
                       {post.is_own && (
                         <DropdownMenu>
