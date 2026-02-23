@@ -42,6 +42,7 @@ interface GossipPost {
   tagged_users: { user_id: string; display_name: string }[];
   is_own: boolean;
   is_flagged?: boolean;
+  hotness_score: number;
 }
 
 interface TagSuggestion {
@@ -102,10 +103,10 @@ export default function Gossip() {
       .select("id, expires_at")
       .eq("user_id", user?.id ?? "");
 
-    // Fetch expires_at for all posts (needed for burner display)
-    const { data: expiryData } = await supabase
+    // Fetch expires_at and hotness_score for all posts
+    const { data: extraData } = await supabase
       .from("gossip_posts")
-      .select("id, expires_at")
+      .select("id, expires_at, hotness_score")
       .in("id", data.map((p) => p.id));
 
     if (error) {
@@ -129,10 +130,11 @@ export default function Gossip() {
 
     let enriched = data.map((post) => {
       const upvoteCount = reactions?.filter((r) => r.gossip_post_id === post.id).length ?? 0;
-      const expiry = expiryData?.find((e) => e.id === post.id);
+      const extra = extraData?.find((e) => e.id === post.id);
       return {
         ...post,
-        expires_at: expiry?.expires_at ?? null,
+        expires_at: extra?.expires_at ?? null,
+        hotness_score: extra?.hotness_score ?? 0,
         upvote_count: upvoteCount,
         has_upvoted: reactions?.some((r) => r.gossip_post_id === post.id && r.user_id === user?.id) ?? false,
         tagged_users:
@@ -451,7 +453,9 @@ export default function Gossip() {
               transition={{ delay: i * 0.03 }}
             >
               <SelfDestructWrapper expiresAt={post.expires_at}>
-              <div className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500">
+              <div className={`rounded-3xl glass-panel p-4 transition-colors duration-500 ${
+                post.hotness_score > 0.7 ? "heat-high" : post.hotness_score >= 0.3 ? "heat-medium" : "heat-low"
+              }`}>
                 <div className="flex gap-3">
                   <Avatar className="h-9 w-9 ring-1 ring-white/10">
                     <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
@@ -466,6 +470,11 @@ export default function Gossip() {
                           {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                         </span>
                         {post.expires_at && <BurnerTimer expiresAt={post.expires_at} />}
+                        {post.hotness_score > 0.7 && (
+                          <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/50">
+                            🔥 HOT
+                          </span>
+                        )}
                       </div>
                       {post.is_own && (
                         <DropdownMenu>
