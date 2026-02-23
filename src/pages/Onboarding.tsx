@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,7 +80,7 @@ export default function Onboarding() {
       await refreshProfile();
       toast.success("Profile created! Welcome to T");
       navigate("/feed", { replace: true });
-    } catch (error: any) { toast.error(error.message); }
+    } catch (error: any) { toast.error(sanitizeError(error)); }
     finally { setLoading(false); }
   };
 

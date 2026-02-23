@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -74,13 +75,20 @@ export default function Gossip() {
     if (!profile) return;
     const since = getTimeRangeDate(timeRange).toISOString();
 
+    // Use anonymous view for reading gossip (hides user_id)
     const { data, error } = await supabase
-      .from("gossip_posts")
-      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id, user_id, is_flagged")
+      .from("anonymous_gossip_posts")
+      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
       .eq("university_id", profile.university_id)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(50);
+
+    // Also fetch own posts to know which ones we can delete
+    const { data: ownPosts } = await supabase
+      .from("gossip_posts")
+      .select("id")
+      .eq("user_id", user?.id ?? "");
 
     if (error) {
       console.error(error);
@@ -114,7 +122,7 @@ export default function Gossip() {
               const p = taggedProfiles.find((tp) => tp.user_id === t.tagged_user_id);
               return { user_id: t.tagged_user_id, display_name: p?.display_name ?? "Unknown" };
             }) ?? [],
-        is_own: post.user_id === user?.id,
+        is_own: ownPosts?.some((op) => op.id === post.id) ?? false,
       };
     });
 
@@ -197,7 +205,7 @@ export default function Gossip() {
       toast.success("Gossip posted!");
       fetchGossip();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(sanitizeError(error));
     } finally {
       setPosting(false);
     }
@@ -215,7 +223,7 @@ export default function Gossip() {
 
   const reportPost = async (postId: string) => {
     if (!user) return;
-    await supabase.from("gossip_posts").update({ is_flagged: true }).eq("id", postId);
+    // Report via reports table only (no direct UPDATE on gossip_posts)
     const { error } = await supabase
       .from("reports")
       .insert({ reporter_user_id: user.id, reported_gossip_post_id: postId, reason: "Flagged by user" });
@@ -225,7 +233,7 @@ export default function Gossip() {
   const deleteGossip = async (postId: string) => {
     const { error } = await supabase.from("gossip_posts").delete().eq("id", postId);
     if (error) {
-      toast.error(error.message);
+      toast.error(sanitizeError(error));
     } else {
       toast.success("Gossip deleted");
       fetchGossip();
