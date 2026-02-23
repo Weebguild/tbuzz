@@ -13,6 +13,7 @@ import { formatDistanceToNow } from "date-fns";
 import { TrendingTicker } from "@/components/feed/TrendingTicker";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
 import { ImagePreviewEditor } from "@/components/feed/ImagePreviewEditor";
+import { NeonSparkOverlay } from "@/components/feed/NeonSparkOverlay";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
 import {
   DropdownMenu,
@@ -437,9 +438,15 @@ export default function Feed() {
 
                 {/* Post image - tappable for fullscreen */}
                 {post.image_url && (
-                  <button className="w-full mt-2" onClick={() => setExpandedImage(post)}>
-                    <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover" loading="lazy" />
-                  </button>
+                  <NeonSparkOverlay
+                    className="w-full mt-2 cursor-pointer overflow-hidden"
+                    onDoubleTap={() => {
+                      if (!post.has_liked) toggleLike(post.id, false);
+                    }}
+                    onSingleTap={() => setExpandedImage(post)}
+                  >
+                    <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover pointer-events-none" loading="lazy" />
+                  </NeonSparkOverlay>
                 )}
 
                 {/* Post content */}
