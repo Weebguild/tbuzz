@@ -265,7 +265,8 @@ export default function Profile() {
     }
   };
 
-  if (loading && showSkeleton) {
+  if (loading) {
+    if (!showSkeleton) return null;
     return (
       <div className="px-4 pt-6 pb-24 space-y-4">
         <PostSkeleton />
