@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer } from "lucide-react";
 import { BurnerTimer } from "@/components/feed/BurnerTimer";
+import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
 import {
@@ -421,8 +422,10 @@ export default function Gossip() {
 
       {/* Posts */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="space-y-3">
+          <PostSkeleton />
+          <PostSkeleton />
+          <PostSkeleton />
         </div>
       ) : posts.length === 0 ? (
         <div className="py-20 text-center">
