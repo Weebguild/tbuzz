@@ -376,12 +376,14 @@ export default function Feed() {
       </AnimatePresence>
 
       {/* Posts */}
-      {loading && showSkeleton ? (
-        <div className="space-y-4">
-          <PostSkeleton />
-          <PostSkeleton />
-          <PostSkeleton />
-        </div>
+      {loading ? (
+        showSkeleton ? (
+          <div className="space-y-4">
+            <PostSkeleton />
+            <PostSkeleton />
+            <PostSkeleton />
+          </div>
+        ) : null
       ) : posts.length === 0 ? (
         <div className="py-20 text-center">
           <p className="text-muted-foreground text-sm font-medium">No posts yet. Be the first!</p>
