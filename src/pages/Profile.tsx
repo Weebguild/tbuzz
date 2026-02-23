@@ -55,7 +55,7 @@ interface TextPost {
 }
 
 export default function Profile() {
-  const { id } = useParams();
+  const { userId: id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
 
