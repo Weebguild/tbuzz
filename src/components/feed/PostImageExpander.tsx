@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
+// Type for our temporary neon sparks
+interface Spark {
+  id: number;
+  x: number;
+  y: number;
+}
+
 interface Comment {
   id: string;
   content: string;
@@ -42,7 +49,10 @@ export function PostImageExpander({
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
 
-  // Optimistic UI state so clicking like feels instant and doesn't close the view
+  // Spark state for the double-tap animation
+  const [sparks, setSparks] = useState<Spark[]>([]);
+
+  // Optimistic UI state
   const [localLiked, setLocalLiked] = useState(hasLiked);
   const [localLikeCount, setLocalLikeCount] = useState(reactionCount);
   const [localCommentCount, setLocalCommentCount] = useState(commentCount);
@@ -84,6 +94,31 @@ export function PostImageExpander({
     onToggleLike();
   };
 
+  // ── THE DOUBLE TAP LOGIC ──
+  const handleDoubleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+
+    // 1. Get exact tap coordinates relative to the image container
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const newSpark: Spark = { id: Date.now(), x, y };
+    setSparks((prev) => [...prev, newSpark]);
+
+    // 2. Only trigger the like if they haven't liked it yet (Instagram rules: double tap never un-likes)
+    if (!localLiked) {
+      setLocalLiked(true);
+      setLocalLikeCount((prev) => prev + 1);
+      onToggleLike();
+    }
+
+    // 3. Remove the spark from the DOM after the animation completes
+    setTimeout(() => {
+      setSparks((prev) => prev.filter((s) => s.id !== newSpark.id));
+    }, 1000);
+  };
+
   const submitComment = async () => {
     if (!newComment.trim() || !user) return;
     const { error } = await supabase
@@ -110,10 +145,11 @@ export function PostImageExpander({
       {/* ── TOP: IMAGE AREA ── */}
       <motion.div
         layout
-        className={`relative flex items-center justify-center w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`relative flex items-center justify-center w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden cursor-pointer ${
           isSplitScreen ? "h-[45vh] bg-black border-b border-white/10" : "h-screen"
         }`}
         onClick={() => !isSplitScreen && onClose()}
+        onDoubleClick={handleDoubleTap} // Attach the gesture here!
       >
         <button
           onClick={(e) => {
@@ -125,12 +161,39 @@ export function PostImageExpander({
           <X className="h-5 w-5" />
         </button>
 
-        <motion.img layout src={imageUrl} alt="Expanded" className="w-full h-full object-contain" />
+        <motion.img
+          layout
+          src={imageUrl}
+          alt="Expanded"
+          className="w-full h-full object-contain pointer-events-none" // pointer-events-none ensures the div catches the double tap
+        />
+
+        {/* ── THE NEON SPARKS OVERLAY ── */}
+        <AnimatePresence>
+          {sparks.map((spark) => (
+            <motion.div
+              key={spark.id}
+              initial={{ scale: 0, opacity: 1, y: 0, rotate: -20 }}
+              animate={{
+                scale: [0, 1.5, 1.2], // Pops huge, then settles slightly
+                opacity: [1, 1, 0], // Fades out at the very end
+                y: -60, // Floats upwards like a bubble
+                rotate: 0,
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute pointer-events-none z-50 flex items-center justify-center"
+              style={{ left: spark.x, top: spark.y, transform: "translate(-50%, -50%)" }}
+            >
+              <Heart className="h-24 w-24 fill-[#EC4899] text-[#EC4899] drop-shadow-[0_0_40px_rgba(236,72,153,1)]" />
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {/* Floating Action Bar */}
         <motion.div
           layout
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 px-6 py-3 rounded-full glass-panel border border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.8)]"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 px-6 py-3 rounded-full glass-panel border border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.8)] z-50"
           onClick={(e) => e.stopPropagation()}
         >
           <button onClick={handleLikeClick} className="flex items-center gap-2 text-white group">
@@ -152,7 +215,7 @@ export function PostImageExpander({
         </motion.div>
       </motion.div>
 
-      {/* ── BOTTOM: EDITORIAL COMMENT SPLIT ── */}
+      {/* ── BOTTOM: EDITORIAL COMMENT SPLIT (Unchanged) ── */}
       <AnimatePresence>
         {isSplitScreen && (
           <motion.div
@@ -162,7 +225,6 @@ export function PostImageExpander({
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="flex-1 bg-gradient-to-b from-[#0A0A0A] to-black flex flex-col overflow-hidden relative"
           >
-            {/* Ambient Top Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent shadow-[0_0_20px_rgba(124,58,237,0.5)]" />
 
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5 no-scrollbar pb-24">
@@ -202,8 +264,7 @@ export function PostImageExpander({
               )}
             </div>
 
-            {/* Sticky Input Bar */}
-            <div className="p-4 bg-black/60 backdrop-blur-xl border-t border-white/5 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="p-4 bg-black/60 backdrop-blur-xl border-t border-white/5 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
               <div className="flex gap-2 max-w-lg mx-auto">
                 <Input
                   placeholder="Add a comment..."
