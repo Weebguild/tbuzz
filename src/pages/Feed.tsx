@@ -531,19 +531,14 @@ export default function Feed() {
       <AnimatePresence>
         {expandedImage && expandedImage.image_url && (
           <PostImageExpander
+            postId={expandedImage.id}
             imageUrl={expandedImage.image_url}
             hasLiked={expandedImage.has_liked}
             reactionCount={expandedImage.reaction_count}
             commentCount={expandedImage.comment_count}
             onClose={() => setExpandedImage(null)}
-            onToggleLike={() => {
-              toggleLike(expandedImage.id, expandedImage.has_liked);
-              setExpandedImage(null);
-            }}
-            onToggleComments={() => {
-              toggleComments(expandedImage.id);
-              setExpandedImage(null);
-            }}
+            // NOTICE: We removed setExpandedImage(null) here so it stays open!
+            onToggleLike={() => toggleLike(expandedImage.id, expandedImage.has_liked)}
           />
         )}
       </AnimatePresence>

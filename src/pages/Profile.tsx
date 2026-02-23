@@ -1,3 +1,4 @@
+import { PostImageExpander } from "@/components/feed/PostImageExpander";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,7 @@ export default function Profile() {
   const [photos, setPhotos] = useState<PhotoPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "gallery">("gallery");
+  const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -179,9 +181,8 @@ export default function Profile() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.05 }}
                     className={`relative overflow-hidden rounded-3xl glass-panel group cursor-pointer border border-white/5 ${isWide ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"}`}
-                    onClick={() => {
-                      /* We will wire this up to the Split-Screen view next! */
-                    }}
+                    // ── REPLACE THE ONCLICK WITH THIS ──
+                    onClick={() => setExpandedPhoto(photo)}
                   >
                     <img
                       src={photo.image_url}
@@ -217,6 +218,24 @@ export default function Profile() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── ADD THIS ENTIRE BLOCK HERE ── */}
+      <AnimatePresence>
+        {expandedPhoto && (
+          <PostImageExpander
+            postId={expandedPhoto.id}
+            imageUrl={expandedPhoto.image_url}
+            hasLiked={false}
+            reactionCount={expandedPhoto.reaction_count}
+            commentCount={0}
+            onClose={() => setExpandedPhoto(null)}
+            onToggleLike={() => {
+              /* Profile-specific toggle like function */
+            }}
+          />
+        )}
+      </AnimatePresence>
+      {/* ── END OF NEW BLOCK ── */}
     </div>
   );
 }
