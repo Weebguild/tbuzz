@@ -17,6 +17,7 @@ import {
   UserCheck,
   AlertTriangle,
 } from "lucide-react";
+import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
@@ -259,8 +260,10 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="px-4 pt-6 pb-24 space-y-4">
+        <PostSkeleton />
+        <PostSkeleton />
+        <PostSkeleton />
       </div>
     );
   }

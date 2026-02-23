@@ -87,3 +87,11 @@
     @apply bg-white/[0.02] backdrop-blur-[24px] border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
   }
 }
+
+@keyframes shimmer {
+  0% { transform: translateX(-150%) skewX(-15deg); }
+  100% { transform: translateX(150%) skewX(-15deg); }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}

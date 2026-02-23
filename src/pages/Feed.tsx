@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical } from "lucide-react";
+import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import { TrendingTicker } from "@/components/feed/TrendingTicker";
@@ -369,8 +370,10 @@ export default function Feed() {
 
       {/* Posts */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="space-y-4">
+          <PostSkeleton />
+          <PostSkeleton />
+          <PostSkeleton />
         </div>
       ) : posts.length === 0 ? (
         <div className="py-20 text-center">
