@@ -4,7 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence, animate } from "framer-motion";
-import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle, UserPlus, UserCheck, AlertTriangle } from "lucide-react";
+import {
+  Grid,
+  LayoutList,
+  Heart,
+  MapPin,
+  Calendar,
+  Loader2,
+  LogOut,
+  MessageCircle,
+  UserPlus,
+  UserCheck,
+  AlertTriangle,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
@@ -191,6 +203,41 @@ export default function Profile() {
     setExpandedPhoto(null);
     fetchProfileData();
   }, [fetchProfileData]);
+  // ── ANTIGRAVITY: REALTIME LIKES LISTENER ──
+  useEffect(() => {
+    const reactionChannel = supabase
+      .channel("public:reactions-profile")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, (payload) => {
+        if (payload.eventType === "INSERT") {
+          setTextPosts((prev) =>
+            prev.map((p) => (p.id === payload.new.post_id ? { ...p, reaction_count: p.reaction_count + 1 } : p)),
+          );
+          setPhotos((prev) =>
+            prev.map((p) => (p.id === payload.new.post_id ? { ...p, reaction_count: p.reaction_count + 1 } : p)),
+          );
+        } else if (payload.eventType === "DELETE") {
+          setTextPosts((prev) =>
+            prev.map((p) =>
+              p.id === payload.old.post_id ? { ...p, reaction_count: Math.max(0, p.reaction_count - 1) } : p,
+            ),
+          );
+          setPhotos((prev) =>
+            prev.map((p) =>
+              p.id === payload.old.post_id ? { ...p, reaction_count: Math.max(0, p.reaction_count - 1) } : p,
+            ),
+          );
+        }
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log("⚡ Midnight Glass Realtime connected!");
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(reactionChannel);
+    };
+  }, []);
 
   const toggleLike = async (postId: string, hasLiked: boolean) => {
     if (!user) return;
