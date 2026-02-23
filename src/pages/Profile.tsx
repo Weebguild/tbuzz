@@ -97,6 +97,13 @@ export default function Profile() {
   const [followLoading, setFollowLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+
+  useEffect(() => {
+    if (!loading) { setShowSkeleton(false); return; }
+    const t = setTimeout(() => setShowSkeleton(true), 300);
+    return () => clearTimeout(t);
+  }, [loading]);
   const [activeTab, setActiveTab] = useState<"posts" | "gallery">("posts");
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
 
@@ -258,7 +265,7 @@ export default function Profile() {
     }
   };
 
-  if (loading) {
+  if (loading && showSkeleton) {
     return (
       <div className="px-4 pt-6 pb-24 space-y-4">
         <PostSkeleton />
