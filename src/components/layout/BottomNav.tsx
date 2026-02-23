@@ -107,14 +107,14 @@ export function BottomNav() {
                   key={r.user_id}
                   className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5"
                 >
-                  <Link
-                    to={`/profile/${r.user_id}`}
+                  <button
                     onClick={() => {
                       setShowSearch(false);
                       setSearchQuery("");
                       setSearchResults([]);
+                      navigate(`/profile/${r.user_id}`);
                     }}
-                    className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity text-left"
                   >
                     <Avatar className="h-11 w-11 shrink-0 ring-2 ring-transparent">
                       {r.avatar_url ? (
@@ -131,7 +131,7 @@ export function BottomNav() {
                         {[r.year, r.department].filter(Boolean).join(" · ") || "Student"}
                       </p>
                     </div>
-                  </Link>
+                  </button>
                   <button
                     onClick={() => toggleFollow(r.user_id)}
                     className={cn(
