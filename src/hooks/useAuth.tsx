@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         setSession(session);
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          setTimeout(() => fetchProfile(session.user.id), 0);
         } else {
           setProfile(null);
         }
@@ -60,10 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        fetchProfile(session.user.id);
       }
       setLoading(false);
     });
