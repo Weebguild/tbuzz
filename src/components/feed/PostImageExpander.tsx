@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Heart, MessageCircle, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +52,9 @@ export function PostImageExpander({
   // Spark state for the double-tap animation
   const [sparks, setSparks] = useState<Spark[]>([]);
 
+  // Timer to distinguish between single tap (close) and double tap (like)
+  const tapTimer = useRef<number | null>(null);
+
   // Optimistic UI state
   const [localLiked, setLocalLiked] = useState(hasLiked);
   const [localLikeCount, setLocalLikeCount] = useState(reactionCount);
@@ -94,29 +97,43 @@ export function PostImageExpander({
     onToggleLike();
   };
 
-  // ── THE DOUBLE TAP LOGIC ──
-  const handleDoubleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+  // ── THE SMART TAP LOGIC ──
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
 
-    // 1. Get exact tap coordinates relative to the image container
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const newSpark: Spark = { id: Date.now(), x, y };
-    setSparks((prev) => [...prev, newSpark]);
+    // If the timer is already running, this is tap #2! (Double Tap)
+    if (tapTimer.current) {
+      window.clearTimeout(tapTimer.current);
+      tapTimer.current = null;
 
-    // 2. Only trigger the like if they haven't liked it yet (Instagram rules: double tap never un-likes)
-    if (!localLiked) {
-      setLocalLiked(true);
-      setLocalLikeCount((prev) => prev + 1);
-      onToggleLike();
+      // Launch the sparks
+      const newSpark: Spark = { id: Date.now(), x, y };
+      setSparks((prev) => [...prev, newSpark]);
+
+      // Only trigger the like if they haven't liked it yet
+      if (!localLiked) {
+        setLocalLiked(true);
+        setLocalLikeCount((prev) => prev + 1);
+        onToggleLike();
+      }
+
+      // Cleanup spark
+      setTimeout(() => {
+        setSparks((prev) => prev.filter((s) => s.id !== newSpark.id));
+      }, 1000);
+    } else {
+      // This is tap #1. Start the timer to see if tap #2 is coming.
+      tapTimer.current = window.setTimeout(() => {
+        tapTimer.current = null; // Timer ran out, so it's a single tap.
+        if (!isSplitScreen) {
+          onClose(); // Close the image
+        }
+      }, 250); // 250ms is the standard double-tap threshold
     }
-
-    // 3. Remove the spark from the DOM after the animation completes
-    setTimeout(() => {
-      setSparks((prev) => prev.filter((s) => s.id !== newSpark.id));
-    }, 1000);
   };
 
   const submitComment = async () => {
@@ -148,8 +165,7 @@ export function PostImageExpander({
         className={`relative flex items-center justify-center w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden cursor-pointer ${
           isSplitScreen ? "h-[45vh] bg-black border-b border-white/10" : "h-screen"
         }`}
-        onClick={() => !isSplitScreen && onClose()}
-        onDoubleClick={handleDoubleTap} // Attach the gesture here!
+        onClick={handleTap}
       >
         <button
           onClick={(e) => {
@@ -161,12 +177,7 @@ export function PostImageExpander({
           <X className="h-5 w-5" />
         </button>
 
-        <motion.img
-          layout
-          src={imageUrl}
-          alt="Expanded"
-          className="w-full h-full object-contain pointer-events-none" // pointer-events-none ensures the div catches the double tap
-        />
+        <motion.img layout src={imageUrl} alt="Expanded" className="w-full h-full object-contain pointer-events-none" />
 
         {/* ── THE NEON SPARKS OVERLAY ── */}
         <AnimatePresence>
@@ -175,9 +186,9 @@ export function PostImageExpander({
               key={spark.id}
               initial={{ scale: 0, opacity: 1, y: 0, rotate: -20 }}
               animate={{
-                scale: [0, 1.5, 1.2], // Pops huge, then settles slightly
-                opacity: [1, 1, 0], // Fades out at the very end
-                y: -60, // Floats upwards like a bubble
+                scale: [0, 1.5, 1.2],
+                opacity: [1, 1, 0],
+                y: -60,
                 rotate: 0,
               }}
               exit={{ opacity: 0 }}
@@ -215,7 +226,7 @@ export function PostImageExpander({
         </motion.div>
       </motion.div>
 
-      {/* ── BOTTOM: EDITORIAL COMMENT SPLIT (Unchanged) ── */}
+      {/* ── BOTTOM: EDITORIAL COMMENT SPLIT ── */}
       <AnimatePresence>
         {isSplitScreen && (
           <motion.div
