@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,6 +64,14 @@ export default function Gossip() {
   const [selectedTags, setSelectedTags] = useState<TagSuggestion[]>([]);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
+  const userIdRef = useRef<string | undefined>(user?.id);
+  useEffect(() => {
+    userIdRef.current = user?.id;
+  }, [user?.id]);
+
+  // Keep a ref to ownPostIds so realtime callback can read it without stale closure
+  const ownPostIdsRef = useRef<Set<string>>(new Set());
+
   const getTimeRangeDate = (range: TimeRange): Date => {
     const now = new Date();
     if (range === "week") return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -71,11 +79,25 @@ export default function Gossip() {
     return new Date(now.getFullYear(), 0, 1);
   };
 
+  const applySort = (list: GossipPost[], mode: FilterMode): GossipPost[] => {
+    if (mode === "trending") {
+      const now = new Date().getTime();
+      return [...list].sort((a, b) => {
+        const ageA = (now - new Date(a.created_at).getTime()) / (1000 * 60 * 60);
+        const ageB = (now - new Date(b.created_at).getTime()) / (1000 * 60 * 60);
+        const heatA = (a.upvote_count * 1.5 + a.tagged_users.length * 2.0) / Math.pow(ageA + 2, 1.8);
+        const heatB = (b.upvote_count * 1.5 + b.tagged_users.length * 2.0) / Math.pow(ageB + 2, 1.8);
+        return heatB - heatA;
+      });
+    }
+    if (mode === "popularity") return [...list].sort((a, b) => b.upvote_count - a.upvote_count);
+    return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  };
+
   const fetchGossip = async () => {
     if (!profile) return;
     const since = getTimeRangeDate(timeRange).toISOString();
 
-    // Use anonymous view for reading gossip (hides user_id)
     const { data, error } = await supabase
       .from("anonymous_gossip_posts")
       .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
@@ -84,7 +106,6 @@ export default function Gossip() {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    // Also fetch own posts to know which ones we can delete
     const { data: ownPosts } = await supabase
       .from("gossip_posts")
       .select("id")
@@ -94,6 +115,9 @@ export default function Gossip() {
       console.error("[Gossip]", sanitizeError(error));
       return;
     }
+
+    const ownSet = new Set(ownPosts?.map((op) => op.id) ?? []);
+    ownPostIdsRef.current = ownSet;
 
     const postIds = data.map((p) => p.id);
 
@@ -109,40 +133,121 @@ export default function Gossip() {
       taggedProfiles = tp ?? [];
     }
 
-    let enriched = data.map((post) => {
-      const upvoteCount = reactions?.filter((r) => r.gossip_post_id === post.id).length ?? 0;
-      return {
-        ...post,
-        upvote_count: upvoteCount,
-        has_upvoted: reactions?.some((r) => r.gossip_post_id === post.id && r.user_id === user?.id) ?? false,
-        tagged_users:
-          tags
-            ?.filter((t) => t.gossip_post_id === post.id)
-            .map((t) => {
-              const p = taggedProfiles.find((tp) => tp.user_id === t.tagged_user_id);
-              return { user_id: t.tagged_user_id, display_name: p?.display_name ?? "Unknown" };
-            }) ?? [],
-        is_own: ownPosts?.some((op) => op.id === post.id) ?? false,
-      };
-    });
+    const enriched: GossipPost[] = data.map((post) => ({
+      ...post,
+      upvote_count: reactions?.filter((r) => r.gossip_post_id === post.id).length ?? 0,
+      has_upvoted: reactions?.some((r) => r.gossip_post_id === post.id && r.user_id === user?.id) ?? false,
+      tagged_users:
+        tags
+          ?.filter((t) => t.gossip_post_id === post.id)
+          .map((t) => {
+            const p = taggedProfiles.find((tp) => tp.user_id === t.tagged_user_id);
+            return { user_id: t.tagged_user_id, display_name: p?.display_name ?? "Unknown" };
+          }) ?? [],
+      is_own: ownSet.has(post.id),
+    }));
 
-    // ── THE GOSSIP GRAVITY ALGORITHM ──
-    if (filterMode === "trending") {
-      const now = new Date().getTime();
-      enriched.sort((a, b) => {
-        const ageHoursA = (now - new Date(a.created_at).getTime()) / (1000 * 60 * 60);
-        const ageHoursB = (now - new Date(b.created_at).getTime()) / (1000 * 60 * 60);
-        const heatA = (a.upvote_count * 1.5 + a.tagged_users.length * 2.0) / Math.pow(ageHoursA + 2, 1.8);
-        const heatB = (b.upvote_count * 1.5 + b.tagged_users.length * 2.0) / Math.pow(ageHoursB + 2, 1.8);
-        return heatB - heatA;
-      });
-    } else if (filterMode === "popularity") {
-      enriched.sort((a, b) => b.upvote_count - a.upvote_count);
-    }
-
-    setPosts(enriched);
+    setPosts(applySort(enriched, filterMode));
     setLoading(false);
   };
+
+  // ─── REALTIME SUBSCRIPTIONS ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!profile) return;
+
+    // Channel 1: live upvotes on gossip posts
+    const reactionsChannel = supabase
+      .channel("gossip:reactions")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, (payload) => {
+        const row = (payload.new ?? payload.old) as { gossip_post_id?: string; user_id?: string } | null;
+        if (!row?.gossip_post_id) return; // skip feed post reactions (no gossip_post_id)
+
+        const postId = row.gossip_post_id;
+        const isOwnAction = row.user_id === userIdRef.current;
+
+        setPosts((prev) => {
+          const updated = prev.map((p) => {
+            if (p.id !== postId) return p;
+            if (payload.eventType === "INSERT") {
+              return {
+                ...p,
+                upvote_count: p.upvote_count + 1,
+                has_upvoted: isOwnAction ? true : p.has_upvoted,
+              };
+            }
+            if (payload.eventType === "DELETE") {
+              return {
+                ...p,
+                upvote_count: Math.max(0, p.upvote_count - 1),
+                has_upvoted: isOwnAction ? false : p.has_upvoted,
+              };
+            }
+            return p;
+          });
+          // Re-sort live so trending order stays accurate
+          return applySort(updated, filterMode);
+        });
+      })
+      .subscribe();
+
+    // Channel 2: new gossip posts from others
+    const gossipChannel = supabase
+      .channel("gossip:posts")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "gossip_posts",
+          filter: `university_id=eq.${profile.university_id}`,
+        },
+        async (payload) => {
+          const newRow = payload.new as {
+            id: string;
+            content: string;
+            gossip_alias: string;
+            gossip_avatar: string;
+            created_at: string;
+            user_id: string;
+          };
+          // Skip own posts — we already add them locally via handlePost
+          if (newRow.user_id === userIdRef.current) return;
+
+          // Check time range filter
+          const since = getTimeRangeDate(timeRange).getTime();
+          if (new Date(newRow.created_at).getTime() < since) return;
+
+          const newPost: GossipPost = {
+            id: newRow.id,
+            content: newRow.content,
+            gossip_alias: newRow.gossip_alias,
+            gossip_avatar: newRow.gossip_avatar,
+            created_at: newRow.created_at,
+            upvote_count: 0,
+            has_upvoted: false,
+            tagged_users: [],
+            is_own: false,
+          };
+
+          setPosts((prev) => applySort([newPost, ...prev], filterMode));
+          toast("New gossip just dropped 🎭", {
+            description: newRow.content.slice(0, 60) + (newRow.content.length > 60 ? "…" : ""),
+            duration: 3000,
+          });
+        },
+      )
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "gossip_posts" }, (payload) => {
+        const deletedId = (payload.old as { id: string }).id;
+        setPosts((prev) => prev.filter((p) => p.id !== deletedId));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(reactionsChannel);
+      supabase.removeChannel(gossipChannel);
+    };
+  }, [profile, filterMode, timeRange]);
+  // ──────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     fetchGossip();
@@ -213,17 +318,32 @@ export default function Gossip() {
 
   const toggleUpvote = async (postId: string, hasUpvoted: boolean) => {
     if (!user) return;
+
+    // Optimistic update
+    setPosts((prev) =>
+      applySort(
+        prev.map((p) =>
+          p.id !== postId
+            ? p
+            : {
+                ...p,
+                has_upvoted: !hasUpvoted,
+                upvote_count: hasUpvoted ? Math.max(0, p.upvote_count - 1) : p.upvote_count + 1,
+              },
+        ),
+        filterMode,
+      ),
+    );
+
     if (hasUpvoted) {
       await supabase.from("reactions").delete().eq("gossip_post_id", postId).eq("user_id", user.id);
     } else {
       await supabase.from("reactions").insert({ user_id: user.id, gossip_post_id: postId, reaction_type: "upvote" });
     }
-    fetchGossip();
   };
 
   const reportPost = async (postId: string) => {
     if (!user) return;
-    // Report via reports table only (no direct UPDATE on gossip_posts)
     const { error } = await supabase
       .from("reports")
       .insert({ reporter_user_id: user.id, reported_gossip_post_id: postId, reason: "Flagged by user" });
@@ -236,7 +356,6 @@ export default function Gossip() {
       toast.error(sanitizeError(error));
     } else {
       toast.success("Gossip deleted");
-      fetchGossip();
     }
     setDeletePostId(null);
   };
@@ -290,7 +409,6 @@ export default function Gossip() {
             </button>
           ))}
         </div>
-        {/* Conditional time range row */}
         <AnimatePresence>
           {filterMode === "popularity" && (
             <motion.div
@@ -338,7 +456,6 @@ export default function Gossip() {
                 className="bg-black/20 border border-white/10 rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
               />
 
-              {/* Tag users */}
               <div className="relative">
                 <div className="flex items-center gap-2">
                   <AtSign className="h-4 w-4 text-muted-foreground" />
