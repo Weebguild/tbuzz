@@ -109,6 +109,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          expires_at: string | null
           gossip_alias: string
           gossip_avatar: string
           id: string
@@ -120,6 +121,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          expires_at?: string | null
           gossip_alias: string
           gossip_avatar?: string
           id?: string
@@ -131,6 +133,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          expires_at?: string | null
           gossip_alias?: string
           gossip_avatar?: string
           id?: string
