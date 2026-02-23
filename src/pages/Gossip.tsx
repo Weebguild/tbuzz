@@ -453,74 +453,79 @@ export default function Gossip() {
               transition={{ delay: i * 0.03 }}
             >
               <SelfDestructWrapper expiresAt={post.expires_at}>
-              <div className={`rounded-3xl glass-panel p-4 transition-colors duration-500 ${
-                post.hotness_score > 0.7 ? "heat-high" : post.hotness_score >= 0.3 ? "heat-medium" : "heat-low"
+              <div className={`${
+                post.hotness_score > 0.7 ? "card-heat-high" : post.hotness_score >= 0.3 ? "card-heat-medium" : "card-heat-low"
               }`}>
-                <div className="flex gap-3">
-                  <Avatar className="h-9 w-9 ring-1 ring-white/10">
-                    <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
-                          {post.gossip_alias}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground/80">
-                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                        </span>
-                        {post.expires_at && <BurnerTimer expiresAt={post.expires_at} />}
-                        {post.hotness_score > 0.7 && (
-                          <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/50">
-                            🔥 HOT TEA
-                          </span>
+                <div className="box">
+                  <span></span>
+                  <div className="container">
+                    <div className="flex gap-3">
+                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                        <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
+                              {post.gossip_alias}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground/80">
+                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                            </span>
+                            {post.expires_at && <BurnerTimer expiresAt={post.expires_at} />}
+                            {post.hotness_score > 0.7 && (
+                              <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/50">
+                                🔥 HOT TEA
+                              </span>
+                            )}
+                          </div>
+                          {post.is_own && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
+                                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
+                                <DropdownMenuItem
+                                  onClick={() => setDeletePostId(post.id)}
+                                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                >
+                                  Delete Gossip
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                        <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{post.content}</p>
+                        {post.tagged_users.length > 0 && (
+                          <div className="mt-2.5 flex flex-wrap gap-1.5">
+                            {post.tagged_users.map((t) => (
+                              <span
+                                key={t.user_id}
+                                className="inline-flex px-2.5 py-0.5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 text-[10px] font-bold"
+                              >
+                                @{t.display_name}
+                              </span>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                      {post.is_own && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
-                              <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
-                            <DropdownMenuItem
-                              onClick={() => setDeletePostId(post.id)}
-                              className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                            >
-                              Delete Gossip
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{post.content}</p>
-                    {post.tagged_users.length > 0 && (
-                      <div className="mt-2.5 flex flex-wrap gap-1.5">
-                        {post.tagged_users.map((t) => (
-                          <span
-                            key={t.user_id}
-                            className="inline-flex px-2.5 py-0.5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 text-[10px] font-bold"
+                        <div className="mt-3.5 flex items-center gap-4">
+                          <button
+                            onClick={() => toggleUpvote(post.id, post.has_upvoted)}
+                            className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_upvoted ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
                           >
-                            @{t.display_name}
-                          </span>
-                        ))}
+                            <ArrowUp className={`h-4 w-4 ${post.has_upvoted ? "fill-current" : ""}`} />
+                            {post.upvote_count > 0 && <span className="text-[11px] font-bold">{post.upvote_count}</span>}
+                          </button>
+                          <button
+                            onClick={() => reportPost(post.id)}
+                            className="text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            Report
+                          </button>
+                        </div>
                       </div>
-                    )}
-                    <div className="mt-3.5 flex items-center gap-4">
-                      <button
-                        onClick={() => toggleUpvote(post.id, post.has_upvoted)}
-                        className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_upvoted ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
-                      >
-                        <ArrowUp className={`h-4 w-4 ${post.has_upvoted ? "fill-current" : ""}`} />
-                        {post.upvote_count > 0 && <span className="text-[11px] font-bold">{post.upvote_count}</span>}
-                      </button>
-                      <button
-                        onClick={() => reportPost(post.id)}
-                        className="text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        Report
-                      </button>
                     </div>
                   </div>
                 </div>
