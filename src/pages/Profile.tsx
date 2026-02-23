@@ -1,13 +1,34 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, animate } from "framer-motion";
 import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
+
+// ── CUSTOM COMPONENT: SMOOTH COUNTING ANIMATION ──
+function AnimatedNumber({ value }: { value: number }) {
+  const nodeRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const node = nodeRef.current;
+    if (node) {
+      const controls = animate(0, value, {
+        duration: 1.5,
+        ease: "easeOut",
+        onUpdate(v) {
+          node.textContent = Math.round(v).toString();
+        },
+      });
+      return () => controls.stop();
+    }
+  }, [value]);
+
+  return <span ref={nodeRef}>{value}</span>;
+}
 
 interface ProfileData {
   user_id: string;
@@ -44,6 +65,11 @@ export default function Profile() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [photos, setPhotos] = useState<PhotoPost[]>([]);
   const [textPosts, setTextPosts] = useState<TextPost[]>([]);
+
+  // NEW STATE: Follower Stats
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "gallery">("posts");
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
@@ -56,7 +82,16 @@ export default function Profile() {
 
     if (profileData) setProfile(profileData);
 
-    // 2. Fetch Photos (Posts with images)
+    // 2. Fetch Follower / Following Counts
+    const [{ count: followers }, { count: following }] = await Promise.all([
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId),
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId),
+    ]);
+
+    setFollowersCount(followers || 0);
+    setFollowingCount(following || 0);
+
+    // 3. Fetch Photos (Posts with images)
     const { data: photoPosts } = await supabase
       .from("posts")
       .select("id, image_url")
@@ -64,7 +99,7 @@ export default function Profile() {
       .not("image_url", "is", null)
       .order("created_at", { ascending: false });
 
-    // 3. Fetch Text Posts (Posts without images)
+    // 4. Fetch Text Posts (Posts without images)
     const { data: textPostsData } = await supabase
       .from("posts")
       .select("id, content, created_at")
@@ -112,7 +147,6 @@ export default function Profile() {
   const toggleLike = async (postId: string, hasLiked: boolean) => {
     if (!user) return;
 
-    // Optimistically update UI
     setTextPosts((prev) =>
       prev.map((p) =>
         p.id === postId
@@ -188,6 +222,29 @@ export default function Profile() {
           <p className="text-sm text-foreground/80 leading-relaxed max-w-[280px]">
             {profile.bio || "No bio added yet."}
           </p>
+
+          {/* ── FOLLOWER STATS (Animated) ── */}
+          <div className="flex items-center justify-center gap-8 mt-6 pt-5 border-t border-white/5 w-full">
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-display text-white tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                <AnimatedNumber value={followersCount} />
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-1 font-bold">
+                Followers
+              </span>
+            </div>
+
+            <div className="w-px h-8 bg-white/10" />
+
+            <div className="flex flex-col items-center">
+              <span className="text-3xl font-display text-white tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                <AnimatedNumber value={followingCount} />
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-1 font-bold">
+                Following
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
