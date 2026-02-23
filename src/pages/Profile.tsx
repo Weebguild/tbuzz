@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence, animate } from "framer-motion";
-import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle } from "lucide-react";
+import { Grid, LayoutList, Heart, MapPin, Calendar, Loader2, LogOut, MessageCircle, UserPlus, UserCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
@@ -66,9 +66,11 @@ export default function Profile() {
   const [photos, setPhotos] = useState<PhotoPost[]>([]);
   const [textPosts, setTextPosts] = useState<TextPost[]>([]);
 
-  // NEW STATE: Follower Stats
+  // Follow state
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "gallery">("posts");
@@ -90,6 +92,17 @@ export default function Profile() {
 
     setFollowersCount(followers || 0);
     setFollowingCount(following || 0);
+
+    // Check if current user follows this profile
+    if (!isOwnProfile && user?.id) {
+      const { data: followData } = await supabase
+        .from("follows")
+        .select("id")
+        .eq("follower_user_id", user.id)
+        .eq("following_user_id", targetUserId)
+        .maybeSingle();
+      setIsFollowing(!!followData);
+    }
 
     // 3. Fetch Photos (Posts with images)
     const { data: photoPosts } = await supabase
@@ -138,7 +151,22 @@ export default function Profile() {
     }
 
     setLoading(false);
-  }, [targetUserId, user?.id]);
+  }, [targetUserId, user?.id, isOwnProfile]);
+
+  const toggleFollow = async () => {
+    if (!user || !targetUserId || isOwnProfile) return;
+    setFollowLoading(true);
+    if (isFollowing) {
+      await supabase.from("follows").delete().eq("follower_user_id", user.id).eq("following_user_id", targetUserId);
+      setIsFollowing(false);
+      setFollowersCount((c) => Math.max(0, c - 1));
+    } else {
+      await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId });
+      setIsFollowing(true);
+      setFollowersCount((c) => c + 1);
+    }
+    setFollowLoading(false);
+  };
 
   useEffect(() => {
     fetchProfileData();
@@ -222,6 +250,29 @@ export default function Profile() {
           <p className="text-sm text-foreground/80 leading-relaxed max-w-[280px]">
             {profile.bio || "No bio added yet."}
           </p>
+
+          {/* Follow/Unfollow Button */}
+          {!isOwnProfile && (
+            <button
+              onClick={toggleFollow}
+              disabled={followLoading}
+              className={`mt-4 flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
+                isFollowing
+                  ? "border border-white/10 text-muted-foreground hover:bg-white/5 hover:border-destructive/50 hover:text-destructive"
+                  : "bg-primary text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105"
+              }`}
+            >
+              {isFollowing ? (
+                <>
+                  <UserCheck className="h-4 w-4" /> Following
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" /> Follow
+                </>
+              )}
+            </button>
+          )}
 
           {/* ── FOLLOWER STATS (Animated) ── */}
           <div className="flex items-center justify-center gap-8 mt-6 pt-5 border-t border-white/5 w-full">
