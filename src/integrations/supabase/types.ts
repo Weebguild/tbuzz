@@ -112,6 +112,7 @@ export type Database = {
           expires_at: string | null
           gossip_alias: string
           gossip_avatar: string
+          hotness_score: number | null
           id: string
           is_flagged: boolean
           tagged_user_id: string | null
@@ -124,6 +125,7 @@ export type Database = {
           expires_at?: string | null
           gossip_alias: string
           gossip_avatar?: string
+          hotness_score?: number | null
           id?: string
           is_flagged?: boolean
           tagged_user_id?: string | null
@@ -136,6 +138,7 @@ export type Database = {
           expires_at?: string | null
           gossip_alias?: string
           gossip_avatar?: string
+          hotness_score?: number | null
           id?: string
           is_flagged?: boolean
           tagged_user_id?: string | null
