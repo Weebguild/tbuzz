@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,7 +86,7 @@ export default function Feed() {
     if (!profile) return;
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: gossipPosts } = await supabase
-      .from("gossip_posts")
+      .from("anonymous_gossip_posts")
       .select("id, gossip_alias, content, created_at")
       .eq("university_id", profile.university_id)
       .gte("created_at", weekAgo)
@@ -172,7 +173,7 @@ export default function Feed() {
       toast.success("Posted!");
       fetchPosts();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(sanitizeError(error));
     } finally {
       setPosting(false);
     }
@@ -201,7 +202,7 @@ export default function Feed() {
   const deletePost = async (postId: string) => {
     const { error } = await supabase.from("posts").delete().eq("id", postId);
     if (error) {
-      toast.error(error.message);
+      toast.error(sanitizeError(error));
     } else {
       toast.success("Post deleted");
       fetchPosts();
@@ -246,7 +247,7 @@ export default function Feed() {
     if (!text || !user) return;
     const { error } = await supabase.from("comments").insert({ user_id: user.id, post_id: postId, content: text });
     if (error) {
-      toast.error(error.message);
+      toast.error(sanitizeError(error));
       return;
     }
     setCommentInputs((prev) => ({ ...prev, [postId]: "" }));

@@ -127,10 +127,9 @@ export default function Leaderboard() {
 
     // 2. Fetch those specific gossip posts
     const { data: posts } = await supabase
-      .from("gossip_posts")
+      .from("anonymous_gossip_posts")
       .select("id, content, gossip_alias, created_at")
       .in("id", postIds)
-      .eq("is_flagged", false)
       .order("created_at", { ascending: false });
 
     setUserGossip(posts || []);

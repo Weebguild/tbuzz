@@ -3,6 +3,7 @@ import { useMousePosition } from "@/hooks/use-mouse-position";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,7 +78,7 @@ export default function Auth() {
         toast.success("Check your email to verify your account!");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(sanitizeError(error));
     } finally {
       setLoading(false);
     }
