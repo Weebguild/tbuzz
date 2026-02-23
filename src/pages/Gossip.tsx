@@ -472,7 +472,7 @@ export default function Gossip() {
                         {post.expires_at && <BurnerTimer expiresAt={post.expires_at} />}
                         {post.hotness_score > 0.7 && (
                           <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/50">
-                            🔥 HOT
+                            🔥 HOT TEA
                           </span>
                         )}
                       </div>
