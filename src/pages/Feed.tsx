@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+]import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
@@ -76,6 +76,10 @@ export default function Feed() {
   const [expandedImage, setExpandedImage] = useState<Post | null>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
+  // Keep a ref to the current user id for use inside realtime callbacks
+  const userIdRef = useRef<string | undefined>(user?.id);
+  useEffect(() => { userIdRef.current = user?.id; }, [user?.id]);
+
   const fetchFollowing = async () => {
     if (!user) return;
     const { data } = await supabase.from("follows").select("following_user_id").eq("follower_user_id", user.id);
@@ -139,6 +143,157 @@ export default function Feed() {
     setLoading(false);
   };
 
+  // ─── REALTIME SUBSCRIPTIONS ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!profile) return;
+
+    // Channel 1: reactions on posts (live like counts)
+    const reactionsChannel = supabase
+      .channel("feed:reactions")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "reactions" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { post_id?: string; user_id?: string } | null;
+          if (!row?.post_id) return; // skip gossip reactions (no post_id)
+
+          const postId = row.post_id;
+          const isOwnAction = row.user_id === userIdRef.current;
+
+          setPosts((prev) =>
+            prev.map((p) => {
+              if (p.id !== postId) return p;
+              if (payload.eventType === "INSERT") {
+                return {
+                  ...p,
+                  reaction_count: p.reaction_count + 1,
+                  has_liked: isOwnAction ? true : p.has_liked,
+                };
+              }
+              if (payload.eventType === "DELETE") {
+                return {
+                  ...p,
+                  reaction_count: Math.max(0, p.reaction_count - 1),
+                  has_liked: isOwnAction ? false : p.has_liked,
+                };
+              }
+              return p;
+            })
+          );
+
+          // Also update expandedImage if it's open for this post
+          setExpandedImage((prev) => {
+            if (!prev || prev.id !== postId) return prev;
+            if (payload.eventType === "INSERT") {
+              return {
+                ...prev,
+                reaction_count: prev.reaction_count + 1,
+                has_liked: isOwnAction ? true : prev.has_liked,
+              };
+            }
+            if (payload.eventType === "DELETE") {
+              return {
+                ...prev,
+                reaction_count: Math.max(0, prev.reaction_count - 1),
+                has_liked: isOwnAction ? false : prev.has_liked,
+              };
+            }
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    // Channel 2: comments on posts (live comment counts)
+    const commentsChannel = supabase
+      .channel("feed:comments")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "comments" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { post_id?: string } | null;
+          if (!row?.post_id) return;
+          const postId = row.post_id;
+
+          setPosts((prev) =>
+            prev.map((p) => {
+              if (p.id !== postId) return p;
+              if (payload.eventType === "INSERT") {
+                return { ...p, comment_count: p.comment_count + 1 };
+              }
+              if (payload.eventType === "DELETE") {
+                return { ...p, comment_count: Math.max(0, p.comment_count - 1) };
+              }
+              return p;
+            })
+          );
+
+          // If comments are expanded for this post, reload them live
+          setExpandedComments((prev) => {
+            if (prev.has(postId)) loadComments(postId);
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    // Channel 3: new posts from others (prepend to feed with a toast nudge)
+    const postsChannel = supabase
+      .channel("feed:posts")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "posts",
+          filter: `university_id=eq.${profile.university_id}`,
+        },
+        async (payload) => {
+          const newRow = payload.new as Post;
+          // Don't duplicate posts we just created ourselves
+          if (newRow.user_id === userIdRef.current) return;
+
+          // Fetch author profile for the new post
+          const { data: authorProfile } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, avatar_url")
+            .eq("user_id", newRow.user_id)
+            .single();
+
+          const enrichedPost: Post = {
+            ...newRow,
+            profiles: authorProfile ?? undefined,
+            reaction_count: 0,
+            comment_count: 0,
+            has_liked: false,
+          };
+
+          setPosts((prev) => [enrichedPost, ...prev]);
+          toast(`${authorProfile?.display_name ?? "Someone"} just posted`, {
+            description: newRow.content.slice(0, 60) + (newRow.content.length > 60 ? "…" : ""),
+            duration: 3000,
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "posts" },
+        (payload) => {
+          const deletedId = (payload.old as { id: string }).id;
+          setPosts((prev) => prev.filter((p) => p.id !== deletedId));
+          setExpandedImage((prev) => (prev?.id === deletedId ? null : prev));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(reactionsChannel);
+      supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(postsChannel);
+    };
+  }, [profile]);
+  // ──────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     fetchFollowing();
   }, [user]);
@@ -181,12 +336,34 @@ export default function Feed() {
 
   const toggleLike = async (postId: string, hasLiked: boolean) => {
     if (!user) return;
+
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id !== postId
+          ? p
+          : {
+              ...p,
+              has_liked: !hasLiked,
+              reaction_count: hasLiked ? Math.max(0, p.reaction_count - 1) : p.reaction_count + 1,
+            }
+      )
+    );
+    setExpandedImage((prev) =>
+      prev?.id !== postId
+        ? prev
+        : {
+            ...prev,
+            has_liked: !hasLiked,
+            reaction_count: hasLiked ? Math.max(0, prev.reaction_count - 1) : prev.reaction_count + 1,
+          }
+    );
+
     if (hasLiked) {
       await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", user.id);
     } else {
       await supabase.from("reactions").insert({ user_id: user.id, post_id: postId, reaction_type: "like" });
     }
-    fetchPosts();
   };
 
   const toggleFollow = async (targetUserId: string) => {
@@ -205,7 +382,6 @@ export default function Feed() {
       toast.error(sanitizeError(error));
     } else {
       toast.success("Post deleted");
-      fetchPosts();
     }
     setDeletePostId(null);
   };
@@ -252,7 +428,6 @@ export default function Feed() {
     }
     setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
     loadComments(postId);
-    fetchPosts();
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,7 +444,6 @@ export default function Feed() {
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Feed</h1>
 
-        {/* NEW: Wraps the ActivityDrawer and Composer Button together */}
         <div className="flex items-center gap-3">
           <ActivityDrawer />
           <button
@@ -313,7 +487,6 @@ export default function Feed() {
                     className="bg-black/20 border border-white/10 rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
                   />
 
-                  {/* Image preview editor */}
                   {imageFile && !imageConfirmed && (
                     <ImagePreviewEditor
                       file={imageFile}
@@ -435,7 +608,7 @@ export default function Feed() {
                   )}
                 </div>
 
-                {/* Post image - tappable for fullscreen */}
+                {/* Post image */}
                 {post.image_url && (
                   <button className="w-full mt-2" onClick={() => setExpandedImage(post)}>
                     <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover" loading="lazy" />
@@ -538,7 +711,6 @@ export default function Feed() {
             reactionCount={expandedImage.reaction_count}
             commentCount={expandedImage.comment_count}
             onClose={() => setExpandedImage(null)}
-            // NOTICE: We removed setExpandedImage(null) here so it stays open!
             onToggleLike={() => toggleLike(expandedImage.id, expandedImage.has_liked)}
           />
         )}
