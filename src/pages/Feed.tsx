@@ -68,7 +68,10 @@ export default function Feed() {
   const [showSkeleton, setShowSkeleton] = useState(false);
 
   useEffect(() => {
-    if (!loading) { setShowSkeleton(false); return; }
+    if (!loading) {
+      setShowSkeleton(false);
+      return;
+    }
     const t = setTimeout(() => setShowSkeleton(true), 300);
     return () => clearTimeout(t);
   }, [loading]);
@@ -104,12 +107,19 @@ export default function Feed() {
     if (!gossipPosts || gossipPosts.length === 0) return;
 
     const postIds = gossipPosts.map((p) => p.id);
-    const { data: reactions } = await supabase.from("reactions").select("gossip_post_id").in("gossip_post_id", postIds);
 
-    const scored = gossipPosts.map((p) => ({
-      ...p,
-      score: reactions?.filter((r) => r.gossip_post_id === p.id).length ?? 0,
-    }));
+    // Fetch the actual hotness_score computed by your Edge Function
+    const { data: scores } = await supabase.from("gossip_posts").select("id, hotness_score").in("id", postIds);
+
+    const scored = gossipPosts.map((p) => {
+      const postScore = scores?.find((s) => s.id === p.id)?.hotness_score ?? 0;
+      return {
+        ...p,
+        score: postScore,
+      };
+    });
+
+    // Sort descending by the backend calculated score
     scored.sort((a, b) => b.score - a.score);
     setTrendingGossip(scored.slice(0, 3));
   };
@@ -479,7 +489,12 @@ export default function Feed() {
                     }}
                     onSingleTap={() => setExpandedImage(post)}
                   >
-                    <img src={post.image_url} alt="Post" className="w-full max-h-80 object-cover pointer-events-none" loading="lazy" />
+                    <img
+                      src={post.image_url}
+                      alt="Post"
+                      className="w-full max-h-80 object-cover pointer-events-none"
+                      loading="lazy"
+                    />
                   </NeonSparkOverlay>
                 )}
 
