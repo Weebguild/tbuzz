@@ -7,6 +7,7 @@ interface TrendingItem {
   id: string;
   gossip_alias: string;
   content: string;
+  score: number; // Added to receive the hotness_score from Feed.tsx
 }
 
 interface TrendingTickerProps {
@@ -76,6 +77,10 @@ export function TrendingTicker({ items }: TrendingTickerProps) {
                 #{index + 1} Trending
               </span>
               <span className="text-xs font-bold text-foreground">{current.gossip_alias}</span>
+              <span className="ml-auto text-[10px] font-bold text-[#EC4899] flex items-center gap-1">
+                <Flame className="h-3 w-3" />
+                {(current.score * 100).toFixed(1)}°
+              </span>
             </div>
             <p className="text-sm font-medium text-foreground/90 line-clamp-2 leading-relaxed italic">
               "{current.content}"

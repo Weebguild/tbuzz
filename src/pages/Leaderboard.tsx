@@ -21,6 +21,7 @@ interface UserGossip {
   content: string;
   gossip_alias: string;
   created_at: string;
+  hotness_score: number; // Added hotness score
 }
 
 type TimeRange = "week" | "month";
@@ -129,10 +130,20 @@ export default function Leaderboard() {
     const { data: posts } = await supabase
       .from("anonymous_gossip_posts")
       .select("id, content, gossip_alias, created_at")
-      .in("id", postIds)
-      .order("created_at", { ascending: false });
+      .in("id", postIds);
 
-    setUserGossip(posts || []);
+    // 3. Fetch hotness scores to sort the tea
+    const { data: scores } = await supabase.from("gossip_posts").select("id, hotness_score").in("id", postIds);
+
+    const enrichedPosts = (posts || []).map((p) => {
+      const score = scores?.find((s) => s.id === p.id)?.hotness_score || 0;
+      return { ...p, hotness_score: score };
+    });
+
+    // Sort by hottest tea first
+    enrichedPosts.sort((a, b) => b.hotness_score - a.hotness_score);
+
+    setUserGossip(enrichedPosts);
     setLoadingGossip(false);
   };
 
@@ -306,6 +317,15 @@ export default function Leaderboard() {
                     <span className="text-[10px] text-muted-foreground">
                       {formatDistanceToNow(new Date(gossip.created_at), { addSuffix: true })}
                     </span>
+
+                    {/* Visual Hotness Indicator in Leaderboard */}
+                    {gossip.hotness_score > 0 && (
+                      <span
+                        className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full border ${gossip.hotness_score > 0.7 ? "bg-red-500/20 text-red-400 border-red-500/50" : "bg-orange-500/20 text-orange-400 border-orange-500/50"}`}
+                      >
+                        🔥 {(gossip.hotness_score * 100).toFixed(1)}°
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm leading-relaxed text-foreground/90 pl-8">{gossip.content}</p>
                 </motion.div>
