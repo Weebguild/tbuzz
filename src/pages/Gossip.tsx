@@ -170,6 +170,28 @@ export default function Gossip() {
     fetchGossip();
   }, [profile, filterMode, timeRange]);
 
+  // ── REALTIME: Listen for changes to gossip_posts, reactions, gossip_tags ──
+  useEffect(() => {
+    if (!profile) return;
+
+    const channel = supabase
+      .channel("gossip-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "gossip_posts" }, () => {
+        fetchGossip();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => {
+        fetchGossip();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => {
+        fetchGossip();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile, filterMode, timeRange]);
+
   const searchTags = async (query: string) => {
     setTagQuery(query);
     if (!query.trim() || !profile) {

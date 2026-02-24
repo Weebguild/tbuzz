@@ -156,6 +156,28 @@ export default function Feed() {
     fetchTrendingGossip();
   }, [profile, followingIds]);
 
+  // ── REALTIME: Listen for changes to posts, reactions, comments ──
+  useEffect(() => {
+    if (!profile) return;
+
+    const channel = supabase
+      .channel("feed-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => {
+        fetchPosts();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => {
+        fetchPosts();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile]);
+
   const handlePost = async () => {
     if (!user || !profile || !newPost.trim()) return;
     setPosting(true);
