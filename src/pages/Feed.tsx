@@ -58,6 +58,7 @@ interface TrendingGossip {
   id: string;
   gossip_alias: string;
   content: string;
+  score: number;
 }
 
 export default function Feed() {
