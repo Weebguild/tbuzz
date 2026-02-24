@@ -119,6 +119,7 @@
 .card-heat-medium,
 .card-heat-high {
   border-radius: 2rem;
+  overflow: hidden;
 }
 
 .card-heat-high {

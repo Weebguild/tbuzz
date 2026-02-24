@@ -470,9 +470,9 @@ export default function Gossip() {
           {posts.map((post, i) => (
             <motion.div
               key={post.id}
-              initial={{ opacity: 0, y: 15 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
+              transition={{ duration: 0.3 }}
             >
               <SelfDestructWrapper expiresAt={post.expires_at}>
                 <div
