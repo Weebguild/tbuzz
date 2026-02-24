@@ -8,23 +8,30 @@ interface SelfDestructWrapperProps {
 
 export function SelfDestructWrapper({ children, expiresAt }: SelfDestructWrapperProps) {
   const [alive, setAlive] = useState(true);
+  const [isShattering, setIsShattering] = useState(false);
 
   useEffect(() => {
     if (!expiresAt) return;
 
     const check = () => {
       const remaining = new Date(expiresAt).getTime() - Date.now();
+
+      // TRIGGER PHASE 1: The Shatter (1 second before it dies)
+      if (remaining <= 1000 && remaining > 0 && !isShattering) {
+        setIsShattering(true);
+      }
+
+      // TRIGGER PHASE 2: Complete Removal
       if (remaining <= 0) {
         setAlive(false);
       }
     };
 
     check();
-    const id = setInterval(check, 1000);
+    const id = setInterval(check, 500); // Check faster for better accuracy
     return () => clearInterval(id);
-  }, [expiresAt]);
+  }, [expiresAt, isShattering]);
 
-  // No expiry — render normally
   if (!expiresAt) return <>{children}</>;
 
   return (
@@ -32,17 +39,16 @@ export function SelfDestructWrapper({ children, expiresAt }: SelfDestructWrapper
       {alive && (
         <motion.div
           layout
+          className={isShattering ? "is-shattering" : ""}
           initial={{ opacity: 1, scale: 1, height: "auto" }}
+          animate={{
+            x: isShattering ? [-4, 4, -4, 4, 0] : 0, // Violent shake during shatter
+            filter: isShattering ? "brightness(1.5)" : "brightness(1)",
+          }}
           exit={{
-            opacity: [1, 1, 0.8, 0],
-            scale: [1, 1.02, 1.03, 0.95],
-            x: [0, -2, 2, -1, 1, 0],
-            filter: [
-              "blur(0px) brightness(1)",
-              "blur(0px) brightness(1.3)",
-              "blur(2px) brightness(1.5)",
-              "blur(8px) brightness(0.5)",
-            ],
+            opacity: [1, 0.8, 0],
+            scale: [1, 0.95, 0.8],
+            filter: "blur(12px) brightness(0.2)",
             height: 0,
             marginTop: 0,
             marginBottom: 0,
@@ -50,10 +56,9 @@ export function SelfDestructWrapper({ children, expiresAt }: SelfDestructWrapper
             paddingBottom: 0,
           }}
           transition={{
-            duration: 1.2,
-            ease: [0.22, 1, 0.36, 1],
-            height: { delay: 0.8, duration: 0.4, ease: "easeInOut" },
-            x: { duration: 0.3, repeat: 2, repeatType: "mirror" },
+            duration: 0.6,
+            height: { delay: 0.4, duration: 0.4, ease: "easeInOut" },
+            x: { duration: 0.4 },
           }}
           style={{ overflow: "hidden" }}
         >
