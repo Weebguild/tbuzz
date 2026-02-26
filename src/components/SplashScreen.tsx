@@ -1,260 +1,292 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 
-const PARTICLES = [
-  { id: 0, angle: 0, distance: 160, size: 6, delay: 0, color: "#EC4899" },
-  { id: 1, angle: 45, distance: 130, size: 4, delay: 0.02, color: "#7C3AED" },
-  { id: 2, angle: 90, distance: 180, size: 5, delay: 0.01, color: "#ffffff" },
-  { id: 3, angle: 135, distance: 150, size: 7, delay: 0.03, color: "#EC4899" },
-  { id: 4, angle: 180, distance: 170, size: 4, delay: 0.02, color: "#7C3AED" },
-  { id: 5, angle: 225, distance: 140, size: 6, delay: 0.01, color: "#ffffff" },
-  { id: 6, angle: 270, distance: 190, size: 5, delay: 0.03, color: "#EC4899" },
-  { id: 7, angle: 315, distance: 155, size: 7, delay: 0.02, color: "#7C3AED" },
+// Floating orb configuration
+const FLOATING_ORBS = [
+  { width: 128, height: 128, top: "15%", left: "10%", delay: 1 },
+  { width: 80, height: 80, top: "25%", right: "15%", delay: 2 },
+  { width: 160, height: 160, bottom: "20%", left: "20%", delay: 0.5 },
+  { width: 96, height: 96, bottom: "30%", right: "25%", delay: 1.5 },
+  { width: 64, height: 64, top: "40%", left: "5%", delay: 3 },
+  { width: 112, height: 112, top: "10%", right: "30%", delay: 2.5 },
 ];
 
-const SPARKS = [
-  { id: 0, angle: 20, distance: 100, delay: 0.0 },
-  { id: 1, angle: 65, distance: 130, delay: 0.02 },
-  { id: 2, angle: 110, distance: 90, delay: 0.04 },
-  { id: 3, angle: 155, distance: 150, delay: 0.01 },
-  { id: 4, angle: 200, distance: 110, delay: 0.03 },
-  { id: 5, angle: 245, distance: 140, delay: 0.02 },
-  { id: 6, angle: 290, distance: 120, delay: 0.04 },
-  { id: 7, angle: 335, distance: 160, delay: 0.01 },
+// Ring wave configuration
+const RING_WAVES = [
+  { delay: 0, color: "#a855f7" },
+  { delay: 0.15, color: "#ec4899" },
+  { delay: 0.3, color: "#a855f7" },
 ];
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<"idle" | "tension" | "burst">("idle");
-  const [isFading, setIsFading] = useState(false);
-  const bubbleControls = useAnimation();
+  const bubbleRef = useRef<HTMLDivElement>(null);
 
+  // Bubble physics - mouse interactive
   useEffect(() => {
-    if (phase === "idle") {
-      bubbleControls.start({
-        y: [0, -8, 0],
-        x: [0, 3, 0],
-        transition: { duration: 1.5, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" as const },
-      });
-    }
-  }, [phase, bubbleControls]);
+    const bubble = bubbleRef.current;
+    if (!bubble) return;
 
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase("tension"), 500);
-    const t2 = setTimeout(() => setPhase("burst"), 1200);
-    const t3 = setTimeout(() => setIsFading(true), 1350);
-    const t4 = setTimeout(() => onComplete(), 1900);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
-  }, [onComplete]);
-
-  useEffect(() => {
-    if (phase !== "tension") return;
-    let start: number | null = null;
+    let mouseX = 0;
+    let mouseY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    const tension = 0.08;
+    const damping = 0.92;
+    let velocityX = 0;
+    let velocityY = 0;
     let rafId: number;
-    const totalMs = 700;
 
-    const tick = (ts: number) => {
-      if (!start) start = ts;
-      const elapsed = ts - start;
-      const progress = Math.min(elapsed / totalMs, 1);
-      const amp = 0.3 + Math.pow(progress, 2.5) * 10;
-      const freq = 22 + progress * 30;
-      const t = elapsed / 1000;
-      bubbleControls.set({
-        x: Math.sin(t * freq) * amp,
-        y: Math.cos(t * freq * 0.7) * amp * 0.7,
-        rotate: Math.sin(t * freq * 0.5) * progress * 2.5,
-        scale: 1 + progress * 0.06,
-      });
-      if (progress < 1) rafId = requestAnimationFrame(tick);
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX = (e.clientX - window.innerWidth / 2) / 50;
+      mouseY = (e.clientY - window.innerHeight / 2) / 50;
     };
 
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [phase, bubbleControls]);
+    const updatePhysics = () => {
+      const targetX = mouseX * 15;
+      const targetY = mouseY * 15;
 
-  const isBurst = phase === "burst";
+      const forceX = (targetX - currentX) * tension;
+      const forceY = (targetY - currentY) * tension;
+
+      velocityX += forceX;
+      velocityY += forceY;
+
+      velocityX *= damping;
+      velocityY *= damping;
+
+      currentX += velocityX;
+      currentY += velocityY;
+
+      const existingTransform = bubble.style.transform || "";
+      bubble.style.transform = existingTransform.includes("translate")
+        ? existingTransform.replace(/translate\([^)]+\)/, `translate(${currentX}px, ${currentY}px)`)
+        : `translate(${currentX}px, ${currentY}px)`;
+
+      rafId = requestAnimationFrame(updatePhysics);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    rafId = requestAnimationFrame(updatePhysics);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // Auto-complete after duration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onComplete();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] bg-black flex flex-col justify-center items-center overflow-hidden font-display"
-      animate={{ opacity: isFading ? 0 : 1 }}
-      transition={{ duration: 0.55, ease: "easeInOut" }}
+      className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center overflow-hidden"
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
     >
-      {/* Aurora orbs */}
+      {/* Aurora Background Orbs */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div
-          className="absolute top-[20%] left-[25%] w-[45vmin] h-[45vmin] rounded-full bg-[#7C3AED] blur-[110px]"
-          animate={
-            isBurst
-              ? { opacity: 0, scale: 3, transition: { duration: 0.5, ease: "easeOut" } }
-              : phase === "tension"
-                ? { opacity: [0.35, 0.55, 0.35], scale: [1, 1.15, 1] }
-                : { opacity: 0.35, scale: 1 }
-          }
-          transition={phase === "tension" ? { duration: 0.7, repeat: Infinity, repeatType: "mirror" } : undefined}
+          className="absolute top-[-20%] left-[-10%] w-[60vmax] h-[60vmax] rounded-full"
+          style={{ background: "hsl(263, 70%, 50%)", filter: "blur(80px)" }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.4, 0.6, 0.4],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
         />
         <motion.div
-          className="absolute bottom-[20%] right-[15%] w-[55vmin] h-[55vmin] rounded-full bg-[#EC4899] blur-[120px]"
-          animate={
-            isBurst
-              ? { opacity: 0, scale: 3.5, transition: { duration: 0.55, ease: "easeOut" } }
-              : phase === "tension"
-                ? { opacity: [0.25, 0.45, 0.25], scale: [1, 1.1, 1] }
-                : { opacity: 0.25, scale: 1 }
-          }
-          transition={phase === "tension" ? { duration: 0.8, repeat: Infinity, repeatType: "mirror", delay: 0.15 } : undefined}
+          className="absolute bottom-[-15%] right-[-10%] w-[50vmax] h-[50vmax] rounded-full"
+          style={{ background: "hsl(330, 81%, 60%)", filter: "blur(80px)" }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.4, 0.6, 0.4],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: -4,
+          }}
         />
       </div>
 
-      {/* Central stage */}
-      <div className="relative flex items-center justify-center w-48 h-48">
-        <AnimatePresence>
-          {isBurst && (
-            <>
-              {/* Two shockwave rings */}
-              {[
-                { delay: 0.0, color: "#7C3AED", maxScale: 6 },
-                { delay: 0.08, color: "#EC4899", maxScale: 8 },
-              ].map((ring, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute inset-0 rounded-full"
-                  style={{ border: `2px solid ${ring.color}` }}
-                  initial={{ scale: 0.6, opacity: 0.85 }}
-                  animate={{ scale: ring.maxScale, opacity: 0, borderWidth: "0px" }}
-                  transition={{ duration: 0.6, delay: ring.delay, ease: [0.16, 1, 0.3, 1] }}
-                />
-              ))}
+      {/* Floating Glass Orbs */}
+      {FLOATING_ORBS.map((orb, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: orb.width,
+            height: orb.height,
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            backdropFilter: "blur(8px)",
+          }}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: 1,
+            y: [0, -20, 0],
+            scale: [1, 1.05, 1],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: orb.delay,
+          }}
+        />
+      ))}
 
-              {/* Debris */}
-              {PARTICLES.map((p) => {
-                const rad = (p.angle * Math.PI) / 180;
-                return (
-                  <motion.div
-                    key={"p" + p.id}
-                    className="absolute rounded-full"
-                    style={{
-                      width: p.size, height: p.size, background: p.color,
-                      top: "50%", left: "50%",
-                      marginTop: -p.size / 2, marginLeft: -p.size / 2,
-                      boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
-                    }}
-                    initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-                    animate={{ x: Math.cos(rad) * p.distance, y: Math.sin(rad) * p.distance, opacity: 0, scale: 0 }}
-                    transition={{ duration: 0.5, delay: p.delay, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                );
-              })}
+      {/* Central Bubble Container */}
+      <div
+        className="relative flex items-center justify-center"
+        style={{ width: 280, height: 280 }}
+      >
+        {/* Ring Waves */}
+        {RING_WAVES.map((ring, i) => (
+          <motion.div
+            key={i}
+            className="absolute inset-0 rounded-full"
+            style={{ border: `2px solid ${ring.color}` }}
+            initial={{ scale: 0.5, opacity: 0.8 }}
+            animate={{ scale: 4, opacity: 0 }}
+            transition={{
+              duration: 2,
+              delay: ring.delay,
+              ease: "easeOut",
+            }}
+          />
+        ))}
 
-              {/* Sparks */}
-              {SPARKS.map((s) => {
-                const rad = (s.angle * Math.PI) / 180;
-                return (
-                  <motion.div
-                    key={"s" + s.id}
-                    className="absolute"
-                    style={{
-                      width: 1.5, height: 8,
-                      background: "linear-gradient(to bottom, #ffffff, transparent)",
-                      top: "50%", left: "50%",
-                      marginTop: -4, marginLeft: -0.75,
-                      rotate: `${s.angle + 90}deg`, transformOrigin: "top center",
-                    }}
-                    initial={{ x: 0, y: 0, opacity: 1, scaleY: 1 }}
-                    animate={{ x: Math.cos(rad) * s.distance * 0.5, y: Math.sin(rad) * s.distance * 0.5, opacity: 0, scaleY: 0 }}
-                    transition={{ duration: 0.35, delay: s.delay, ease: "easeOut" }}
-                  />
-                );
-              })}
+        {/* Main Bubble with Physics */}
+        <motion.div
+          ref={bubbleRef}
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: "rgba(255, 255, 255, 0.015)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+            boxShadow: `
+              0 0 60px rgba(168, 85, 247, 0.4),
+              0 0 120px rgba(236, 72, 153, 0.2),
+              inset 0 0 60px rgba(168, 85, 247, 0.1)
+            `,
+            willChange: "transform",
+          }}
+          animate={{
+            y: [0, -12, 0],
+            x: [0, 6, 0],
+            scale: [1, 1.02, 1],
+          }}
+          transition={{
+            duration: 3,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
+        >
+          {/* Inner gradient */}
+          <div
+            className="absolute inset-2 rounded-full"
+            style={{
+              background: "radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.15) 0%, transparent 60%)",
+            }}
+          />
 
-              {/* Flash */}
-              <motion.div
-                className="absolute inset-[-50%] rounded-full bg-white"
-                initial={{ opacity: 0.9, scale: 0.4 }}
-                animate={{ opacity: 0, scale: 3 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-            </>
-          )}
-        </AnimatePresence>
+          {/* Highlight */}
+          <div
+            className="absolute inset-3 rounded-full opacity-40"
+            style={{
+              background: "radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.3) 0%, transparent 50%)",
+            }}
+          />
 
-        {/* Bubble */}
-        <AnimatePresence>
-          {!isBurst && (
-            <motion.div
-              key="bubble"
-              animate={bubbleControls}
-              exit={{
-                scale: [1.06, 1.5, 0],
-                scaleX: [1, 0.8, 0],
-                opacity: [1, 1, 0],
-                transition: { duration: 0.2, ease: [0.175, 0.885, 0.32, 1.275] },
+          {/* T Logo */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <motion.h1
+              className="font-display text-[140px] leading-none select-none"
+              style={{
+                backgroundImage: "linear-gradient(135deg, #fff 0%, #c4b5fd 30%, #f9a8d4 70%, #fff 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                fontFamily: "'Bebas Neue', sans-serif",
               }}
-              className="absolute inset-0 rounded-full flex items-center justify-center bg-white/5 backdrop-blur-md border border-white/15"
-              style={{ willChange: "transform" }}
+              animate={{
+                filter: [
+                  "drop-shadow(0 0 20px rgba(168, 85, 247, 0.5))",
+                  "drop-shadow(0 0 40px rgba(236, 72, 153, 0.8))",
+                  "drop-shadow(0 0 20px rgba(168, 85, 247, 0.5))",
+                ],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+              }}
             >
-              <motion.div
-                className="absolute inset-0 rounded-full"
-                animate={
-                  phase === "tension"
-                    ? { boxShadow: [
-                        "0 0 20px rgba(124,58,237,0.15), inset 0 0 20px rgba(124,58,237,0.1)",
-                        "0 0 80px rgba(236,72,153,0.7), inset 0 0 80px rgba(124,58,237,0.9)",
-                      ] }
-                    : { boxShadow: "0 15px 35px rgba(0,0,0,0.5), inset 0 0 20px rgba(124,58,237,0.1)" }
-                }
-                transition={phase === "tension" ? { duration: 0.7, ease: "easeIn" } : {}}
-              />
-              <motion.div
-                className="absolute inset-2 rounded-full"
-                style={{ background: "radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.22) 0%, transparent 55%)" }}
-                animate={{ opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 1.2, repeat: Infinity, repeatType: "mirror" }}
-              />
-              <motion.h1
-                className="relative z-10 text-8xl font-normal leading-none select-none"
-                style={{
-                  backgroundImage: "linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #f9a8d4 100%)",
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-                }}
-                animate={
-                  phase === "tension"
-                    ? { filter: ["drop-shadow(0 0 4px #7C3AED)", "drop-shadow(0 0 20px #EC4899)"] }
-                    : { filter: "drop-shadow(0 0 0px transparent)" }
-                }
-                transition={phase === "tension" ? { duration: 0.7, ease: "easeIn" } : {}}
-              >
-                T
-              </motion.h1>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              T
+            </motion.h1>
+          </div>
+
+          {/* Shimmer Overlay */}
+          <motion.div
+            className="absolute inset-0 rounded-full opacity-30 overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+            }}
+            animate={{
+              left: ["-150%", "200%"],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+        </motion.div>
       </div>
 
-      {/* Text */}
+      {/* Text Content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <motion.h2
-          className="absolute text-2xl tracking-[0.3em] text-white/80 uppercase"
-          style={{ top: "calc(50% + 120px)" }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={
-            !isBurst ? { opacity: 0.8, y: 0 } : { opacity: 0, letterSpacing: "1.5em", y: 20, filter: "blur(6px)" }
-          }
-          transition={!isBurst ? { delay: 0.2, duration: 0.35 } : { duration: 0.3, ease: "easeIn" }}
+          className="absolute text-2xl tracking-[0.4em] text-white/70 uppercase font-display"
+          style={{ top: "calc(50% + 160px)", fontFamily: "'Bebas Neue', sans-serif" }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 0.7, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
         >
           YOUR CAMPUS BUZZ
         </motion.h2>
+
         <motion.p
-          className="absolute bottom-12 text-sm tracking-[0.4em] text-white/40 uppercase"
-          initial={{ opacity: 0, y: 6 }}
-          animate={
-            !isBurst ? { opacity: 0.4, y: 0 } : { opacity: 0, letterSpacing: "1.2em", y: 15, filter: "blur(4px)" }
-          }
-          transition={!isBurst ? { delay: 0.3, duration: 0.35 } : { duration: 0.25, ease: "easeIn" }}
+          className="absolute bottom-10 text-xs tracking-[0.5em] text-white/30 uppercase"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 0.3, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
         >
           CREATED BY SID AND MONTU
         </motion.p>
       </div>
+
+      {/* Vignette */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)",
+        }}
+      />
     </motion.div>
   );
 }
