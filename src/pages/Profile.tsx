@@ -16,6 +16,8 @@ import {
   UserPlus,
   UserCheck,
   AlertTriangle,
+  Bookmark,
+  ArrowUp,
 } from "lucide-react";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
@@ -77,6 +79,26 @@ interface TextPost {
   has_liked: boolean;
 }
 
+interface SavedPost {
+  id: string;
+  content: string;
+  image_url: string | null;
+  created_at: string;
+  author_name: string;
+  author_avatar: string | null;
+}
+
+interface SavedGossip {
+  id: string;
+  content: string;
+  gossip_alias: string;
+  created_at: string;
+  upvote_count: number;
+}
+
+type ProfileTab = "posts" | "gallery" | "saved";
+type SavedSubFilter = "posts" | "gossip";
+
 export default function Profile() {
   const { userId: id } = useParams();
   const { user, signOut } = useAuth();
@@ -104,18 +126,22 @@ export default function Profile() {
     const t = setTimeout(() => setShowSkeleton(true), 300);
     return () => clearTimeout(t);
   }, [loading]);
-  const [activeTab, setActiveTab] = useState<"posts" | "gallery">("posts");
+  const [activeTab, setActiveTab] = useState<ProfileTab>("posts");
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
+
+  // Saved tab state
+  const [savedSubFilter, setSavedSubFilter] = useState<SavedSubFilter>("posts");
+  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
+  const [savedGossips, setSavedGossips] = useState<SavedGossip[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
 
   const fetchProfileData = useCallback(async () => {
     if (!targetUserId) return;
     setLoading(true);
-    // 1. Fetch Profile Info
     const { data: profileData } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).single();
 
     if (profileData) setProfile(profileData);
 
-    // 2. Fetch Follower / Following Counts
     const [{ count: followers }, { count: following }] = await Promise.all([
       supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId),
       supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId),
@@ -124,7 +150,6 @@ export default function Profile() {
     setFollowersCount(followers || 0);
     setFollowingCount(following || 0);
 
-    // Check if current user follows this profile
     if (!isOwnProfile && user?.id) {
       const { data: followData } = await supabase
         .from("follows")
@@ -135,7 +160,6 @@ export default function Profile() {
       setIsFollowing(!!followData);
     }
 
-    // 3. Fetch Photos (Posts with images)
     const { data: photoPosts } = await supabase
       .from("posts")
       .select("id, image_url")
@@ -143,7 +167,6 @@ export default function Profile() {
       .not("image_url", "is", null)
       .order("created_at", { ascending: false });
 
-    // 4. Fetch Text Posts (Posts without images)
     const { data: textPostsData } = await supabase
       .from("posts")
       .select("id, content, created_at")
@@ -151,7 +174,6 @@ export default function Profile() {
       .is("image_url", null)
       .order("created_at", { ascending: false });
 
-    // Fetch reactions and comments for all fetched posts
     const allPostIds = [...(photoPosts?.map((p) => p.id) || []), ...(textPostsData?.map((p) => p.id) || [])];
 
     if (allPostIds.length > 0) {
@@ -184,6 +206,92 @@ export default function Profile() {
     setLoading(false);
   }, [targetUserId, user?.id, isOwnProfile]);
 
+  const fetchSavedItems = useCallback(async () => {
+    if (!user || !isOwnProfile) return;
+    setLoadingSaved(true);
+
+    if (savedSubFilter === "posts") {
+      const { data: saved } = await supabase
+        .from("saved_posts")
+        .select("post_id, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (saved && saved.length > 0) {
+        const postIds = saved.map((s) => s.post_id);
+        const { data: posts } = await supabase
+          .from("posts")
+          .select("id, content, image_url, created_at, user_id")
+          .in("id", postIds);
+
+        if (posts) {
+          const userIds = [...new Set(posts.map((p) => p.user_id))];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, avatar_url")
+            .in("user_id", userIds);
+
+          const enriched: SavedPost[] = saved.map((s) => {
+            const post = posts.find((p) => p.id === s.post_id);
+            const prof = profiles?.find((pr) => pr.user_id === post?.user_id);
+            return {
+              id: post?.id ?? s.post_id,
+              content: post?.content ?? "",
+              image_url: post?.image_url ?? null,
+              created_at: post?.created_at ?? s.created_at,
+              author_name: prof?.display_name ?? "Unknown",
+              author_avatar: prof?.avatar_url ?? null,
+            };
+          });
+          setSavedPosts(enriched);
+        }
+      } else {
+        setSavedPosts([]);
+      }
+    } else {
+      const { data: saved } = await supabase
+        .from("saved_gossips")
+        .select("gossip_post_id, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (saved && saved.length > 0) {
+        const gossipIds = saved.map((s) => s.gossip_post_id);
+        const { data: gossips } = await supabase
+          .from("anonymous_gossip_posts")
+          .select("id, content, gossip_alias, created_at")
+          .in("id", gossipIds);
+
+        const { data: reactions } = await supabase
+          .from("reactions")
+          .select("gossip_post_id")
+          .in("gossip_post_id", gossipIds);
+
+        const enriched: SavedGossip[] = saved.map((s) => {
+          const gossip = gossips?.find((g) => g.id === s.gossip_post_id);
+          return {
+            id: gossip?.id ?? s.gossip_post_id,
+            content: gossip?.content ?? "",
+            gossip_alias: gossip?.gossip_alias ?? "Anonymous",
+            created_at: gossip?.created_at ?? s.created_at,
+            upvote_count: reactions?.filter((r) => r.gossip_post_id === s.gossip_post_id).length ?? 0,
+          };
+        });
+        setSavedGossips(enriched);
+      } else {
+        setSavedGossips([]);
+      }
+    }
+
+    setLoadingSaved(false);
+  }, [user, isOwnProfile, savedSubFilter]);
+
+  useEffect(() => {
+    if (activeTab === "saved" && isOwnProfile) {
+      fetchSavedItems();
+    }
+  }, [activeTab, savedSubFilter, fetchSavedItems, isOwnProfile]);
+
   const toggleFollow = async () => {
     if (!user || !targetUserId || isOwnProfile) return;
     setFollowLoading(true);
@@ -200,7 +308,6 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    // Reset state when switching profiles
     setProfile(null);
     setPhotos([]);
     setTextPosts([]);
@@ -209,9 +316,12 @@ export default function Profile() {
     setIsFollowing(false);
     setActiveTab("posts");
     setExpandedPhoto(null);
+    setSavedPosts([]);
+    setSavedGossips([]);
     fetchProfileData();
   }, [fetchProfileData]);
-  // ── ANTIGRAVITY: REALTIME LIKES LISTENER ──
+
+  // ── REALTIME LIKES ──
   useEffect(() => {
     const reactionChannel = supabase
       .channel("public:reactions-profile")
@@ -236,11 +346,7 @@ export default function Profile() {
           );
         }
       })
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("⚡ Midnight Glass Realtime connected!");
-        }
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(reactionChannel);
@@ -265,6 +371,20 @@ export default function Profile() {
     }
   };
 
+  const unsavPost = async (postId: string) => {
+    if (!user) return;
+    await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", user.id);
+    setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+    toast.success("Removed from saved");
+  };
+
+  const unsavGossip = async (gossipId: string) => {
+    if (!user) return;
+    await supabase.from("saved_gossips").delete().eq("gossip_post_id", gossipId).eq("user_id", user.id);
+    setSavedGossips((prev) => prev.filter((g) => g.id !== gossipId));
+    toast.success("Removed from saved");
+  };
+
   if (loading) {
     if (!showSkeleton) return null;
     return (
@@ -279,6 +399,12 @@ export default function Profile() {
   if (!profile) {
     return <div className="min-h-screen flex justify-center items-center text-muted-foreground">User not found.</div>;
   }
+
+  const tabs: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
+    { key: "posts", label: "Posts", icon: <LayoutList className="h-4 w-4" /> },
+    { key: "gallery", label: "Gallery", icon: <Grid className="h-4 w-4" /> },
+    ...(isOwnProfile ? [{ key: "saved" as ProfileTab, label: "Saved", icon: <Bookmark className="h-4 w-4" /> }] : []),
+  ];
 
   return (
     <div className="px-4 pt-6 pb-24">
@@ -295,7 +421,7 @@ export default function Profile() {
         )}
       </div>
 
-      {/* ── PROFILE INFO CARD (Midnight Glass) ── */}
+      {/* ── PROFILE INFO CARD ── */}
       <div className="rounded-3xl glass-panel p-6 mb-6 relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/20 rounded-full blur-[50px] pointer-events-none" />
 
@@ -329,7 +455,6 @@ export default function Profile() {
             {profile.bio || "No bio added yet."}
           </p>
 
-          {/* Follow/Unfollow Button */}
           {!isOwnProfile && (
             <button
               onClick={toggleFollow}
@@ -352,7 +477,7 @@ export default function Profile() {
             </button>
           )}
 
-          {/* ── FOLLOWER STATS (Animated) ── */}
+          {/* ── FOLLOWER STATS ── */}
           <div className="flex items-center justify-center gap-8 mt-6 pt-5 border-t border-white/5 w-full">
             <div className="flex flex-col items-center">
               <span className="text-3xl font-display text-white tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
@@ -378,19 +503,16 @@ export default function Profile() {
       </div>
 
       {/* ── TABS ── */}
-      <div className="flex gap-2 mb-6 p-1 glass-panel rounded-full max-w-[200px] mx-auto">
-        <button
-          onClick={() => setActiveTab("posts")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === "posts" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
-        >
-          <LayoutList className="h-4 w-4" /> Posts
-        </button>
-        <button
-          onClick={() => setActiveTab("gallery")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === "gallery" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
-        >
-          <Grid className="h-4 w-4" /> Gallery
-        </button>
+      <div className={`flex gap-2 mb-6 p-1 glass-panel rounded-full mx-auto ${isOwnProfile ? "max-w-[300px]" : "max-w-[200px]"}`}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.key ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+          >
+            {tab.icon} {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* ── TAB CONTENT ── */}
@@ -498,6 +620,130 @@ export default function Profile() {
                   </motion.div>
                 );
               })
+            )}
+          </motion.div>
+        )}
+
+        {/* SAVED TAB - only own profile */}
+        {activeTab === "saved" && isOwnProfile && (
+          <motion.div
+            key="saved"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-4"
+          >
+            {/* Sub-filter */}
+            <div className="flex gap-2 p-1 glass-panel rounded-full max-w-[220px] mx-auto">
+              <button
+                onClick={() => setSavedSubFilter("posts")}
+                className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "posts" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+              >
+                Posts
+              </button>
+              <button
+                onClick={() => setSavedSubFilter("gossip")}
+                className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "gossip" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+              >
+                Gossip
+              </button>
+            </div>
+
+            {loadingSaved ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : savedSubFilter === "posts" ? (
+              savedPosts.length === 0 ? (
+                <div className="py-20 text-center">
+                  <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground font-medium">No saved posts yet.</p>
+                </div>
+              ) : (
+                savedPosts.map((post, i) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                        {post.author_avatar ? (
+                          <AvatarImage src={post.author_avatar} />
+                        ) : (
+                          <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                            {post.author_name.charAt(0)}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-foreground">{post.author_name}</p>
+                        <p className="text-xs text-muted-foreground/80">
+                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                      <motion.button
+                        onClick={() => unsavPost(post.id)}
+                        whileTap={{ scale: 1.4 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                        className="text-foreground"
+                      >
+                        <Bookmark className="h-4 w-4 fill-current" />
+                      </motion.button>
+                    </div>
+                    {post.image_url && (
+                      <img src={post.image_url} alt="Saved post" className="w-full rounded-xl max-h-48 object-cover mb-3 border border-white/5" loading="lazy" />
+                    )}
+                    <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
+                  </motion.div>
+                ))
+              )
+            ) : (
+              savedGossips.length === 0 ? (
+                <div className="py-20 text-center">
+                  <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground font-medium">No saved gossip yet.</p>
+                </div>
+              ) : (
+                savedGossips.map((gossip, i) => (
+                  <motion.div
+                    key={gossip.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                        <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
+                          {gossip.gossip_alias}
+                        </span>
+                        <p className="text-xs text-muted-foreground/80">
+                          {formatDistanceToNow(new Date(gossip.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                      <motion.button
+                        onClick={() => unsavGossip(gossip.id)}
+                        whileTap={{ scale: 1.4 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                        className="text-foreground"
+                      >
+                        <Bookmark className="h-4 w-4 fill-current" />
+                      </motion.button>
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground/90 mb-3">{gossip.content}</p>
+                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                      <ArrowUp className="h-3.5 w-3.5" />
+                      <span className="font-bold">{gossip.upvote_count}</span>
+                    </div>
+                  </motion.div>
+                ))
+              )
             )}
           </motion.div>
         )}

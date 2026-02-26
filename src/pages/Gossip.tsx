@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer } from "lucide-react";
+import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer, Bookmark } from "lucide-react";
 import { BurnerTimer } from "@/components/feed/BurnerTimer";
 import { SelfDestructWrapper } from "@/components/feed/SelfDestructWrapper";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
@@ -43,6 +43,7 @@ interface GossipPost {
   is_own: boolean;
   is_flagged?: boolean;
   hotness_score: number;
+  has_saved: boolean;
 }
 
 interface TagSuggestion {
@@ -54,11 +55,16 @@ interface TagSuggestion {
 type FilterMode = "trending" | "recent" | "popularity";
 type TimeRange = "week" | "month" | "year";
 
+const PAGE_SIZE = 20;
+
 export default function Gossip() {
   const { user, profile } = useAuth();
   const [posts, setPosts] = useState<GossipPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading) {
@@ -87,44 +93,25 @@ export default function Gossip() {
     return new Date(now.getFullYear(), 0, 1);
   };
 
-  const fetchGossip = async () => {
-    if (!profile) return;
-    const since = getTimeRangeDate(timeRange).toISOString();
+  const enrichGossipData = useCallback(async (data: any[], append = false) => {
+    if (!user || !profile) return;
 
-    // Use anonymous view for reading gossip (hides user_id)
-    const { data, error } = await supabase
-      .from("anonymous_gossip_posts")
-      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
-      .eq("university_id", profile.university_id)
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    // Also fetch own posts to know which ones we can delete
     const { data: ownPosts } = await supabase
       .from("gossip_posts")
       .select("id, expires_at")
-      .eq("user_id", user?.id ?? "");
-
-    // Fetch expires_at and hotness_score for all posts
-    const { data: extraData } = await supabase
-      .from("gossip_posts")
-      .select("id, expires_at, hotness_score")
-      .in(
-        "id",
-        data.map((p) => p.id),
-      );
-
-    if (error) {
-      console.error("[Gossip]", sanitizeError(error));
-      return;
-    }
+      .eq("user_id", user.id);
 
     const postIds = data.map((p) => p.id);
 
-    const [{ data: reactions }, { data: tags }] = await Promise.all([
+    const { data: extraData } = await supabase
+      .from("gossip_posts")
+      .select("id, expires_at, hotness_score")
+      .in("id", postIds);
+
+    const [{ data: reactions }, { data: tags }, { data: savedGossips }] = await Promise.all([
       supabase.from("reactions").select("gossip_post_id, user_id").in("gossip_post_id", postIds),
       supabase.from("gossip_tags").select("gossip_post_id, tagged_user_id").in("gossip_post_id", postIds),
+      supabase.from("saved_gossips").select("gossip_post_id").eq("user_id", user.id).in("gossip_post_id", postIds),
     ]);
 
     const taggedUserIds = [...new Set(tags?.map((t) => t.tagged_user_id) ?? [])];
@@ -143,6 +130,7 @@ export default function Gossip() {
         hotness_score: extra?.hotness_score ?? 0,
         upvote_count: upvoteCount,
         has_upvoted: reactions?.some((r) => r.gossip_post_id === post.id && r.user_id === user?.id) ?? false,
+        has_saved: savedGossips?.some((s) => s.gossip_post_id === post.id) ?? false,
         tagged_users:
           tags
             ?.filter((t) => t.gossip_post_id === post.id)
@@ -154,43 +142,97 @@ export default function Gossip() {
       };
     });
 
-    // ── THE GOSSIP GRAVITY ALGORITHM ──
     if (filterMode === "trending") {
-      // Now using the actual score calculated by your Edge Function!
       enriched.sort((a, b) => b.hotness_score - a.hotness_score);
     } else if (filterMode === "popularity") {
       enriched.sort((a, b) => b.upvote_count - a.upvote_count);
     }
 
-    setPosts(enriched);
+    if (append) {
+      setPosts((prev) => [...prev, ...enriched]);
+    } else {
+      setPosts(enriched);
+    }
+  }, [user, profile, filterMode]);
+
+  const fetchGossip = useCallback(async () => {
+    if (!profile) return;
+    const since = getTimeRangeDate(timeRange).toISOString();
+
+    const { data, error } = await supabase
+      .from("anonymous_gossip_posts")
+      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
+      .eq("university_id", profile.university_id)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .range(0, PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("[Gossip]", sanitizeError(error));
+      return;
+    }
+
+    setHasMore((data?.length ?? 0) === PAGE_SIZE);
+    await enrichGossipData(data ?? []);
     setLoading(false);
-  };
+  }, [profile, timeRange, enrichGossipData]);
+
+  const fetchMoreGossip = useCallback(async () => {
+    if (!profile || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const since = getTimeRangeDate(timeRange).toISOString();
+    const from = posts.length;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, error } = await supabase
+      .from("anonymous_gossip_posts")
+      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
+      .eq("university_id", profile.university_id)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error("[Gossip]", sanitizeError(error));
+      setLoadingMore(false);
+      return;
+    }
+
+    setHasMore((data?.length ?? 0) === PAGE_SIZE);
+    await enrichGossipData(data ?? [], true);
+    setLoadingMore(false);
+  }, [profile, posts.length, loadingMore, hasMore, timeRange, enrichGossipData]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchMoreGossip();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, fetchMoreGossip]);
 
   useEffect(() => {
     fetchGossip();
   }, [profile, filterMode, timeRange]);
 
-  // ── REALTIME: Listen for changes to gossip_posts, reactions, gossip_tags ──
+  // ── REALTIME ──
   useEffect(() => {
     if (!profile) return;
-
     const channel = supabase
       .channel("gossip-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "gossip_posts" }, () => {
-        fetchGossip();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => {
-        fetchGossip();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => {
-        fetchGossip();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "gossip_posts" }, () => fetchGossip())
+      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => fetchGossip())
+      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => fetchGossip())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile, filterMode, timeRange]);
+    return () => { supabase.removeChannel(channel); };
+  }, [profile, filterMode, timeRange, fetchGossip]);
 
   const searchTags = async (query: string) => {
     setTagQuery(query);
@@ -267,9 +309,18 @@ export default function Gossip() {
     fetchGossip();
   };
 
+  const toggleSaveGossip = async (postId: string, hasSaved: boolean) => {
+    if (!user) return;
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, has_saved: !hasSaved } : p));
+    if (hasSaved) {
+      await supabase.from("saved_gossips").delete().eq("gossip_post_id", postId).eq("user_id", user.id);
+    } else {
+      await supabase.from("saved_gossips").insert({ user_id: user.id, gossip_post_id: postId });
+    }
+  };
+
   const reportPost = async (postId: string) => {
     if (!user) return;
-    // Report via reports table only (no direct UPDATE on gossip_posts)
     const { error } = await supabase
       .from("reports")
       .insert({ reporter_user_id: user.id, reported_gossip_post_id: postId, reason: "Flagged by user" });
@@ -336,7 +387,6 @@ export default function Gossip() {
             </button>
           ))}
         </div>
-        {/* Conditional time range row */}
         <AnimatePresence>
           {filterMode === "popularity" && (
             <motion.div
@@ -467,7 +517,7 @@ export default function Gossip() {
         </div>
       ) : (
         <div className="space-y-3">
-          {posts.map((post, i) => (
+          {posts.map((post) => (
             <motion.div
               key={post.id}
               initial={false}
@@ -555,6 +605,16 @@ export default function Gossip() {
                               Report
                             </button>
 
+                            {/* Bookmark */}
+                            <motion.button
+                              onClick={() => toggleSaveGossip(post.id, post.has_saved)}
+                              whileTap={{ scale: 1.4 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                              className={`text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            >
+                              <Bookmark className={`h-4 w-4 ${post.has_saved ? "fill-current" : ""}`} />
+                            </motion.button>
+
                             {/* Visual Hotness Indicator */}
                             <div className="flex items-center gap-2 ml-auto">
                               <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden">
@@ -576,6 +636,11 @@ export default function Gossip() {
               </SelfDestructWrapper>
             </motion.div>
           ))}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+          </div>
         </div>
       )}
 
