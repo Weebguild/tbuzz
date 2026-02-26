@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical } from "lucide-react";
+import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark } from "lucide-react";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
@@ -43,6 +43,7 @@ interface Post {
   reaction_count: number;
   comment_count: number;
   has_liked: boolean;
+  has_saved: boolean;
 }
 
 interface Comment {
@@ -61,12 +62,17 @@ interface TrendingGossip {
   score: number;
 }
 
+const PAGE_SIZE = 20;
+
 export default function Feed() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading) {
@@ -108,56 +114,101 @@ export default function Feed() {
     if (!gossipPosts || gossipPosts.length === 0) return;
 
     const postIds = gossipPosts.map((p) => p.id);
-
-    // Fetch the actual hotness_score computed by your Edge Function
     const { data: scores } = await supabase.from("gossip_posts").select("id, hotness_score").in("id", postIds);
 
     const scored = gossipPosts.map((p) => {
       const postScore = scores?.find((s) => s.id === p.id)?.hotness_score ?? 0;
-      return {
-        ...p,
-        score: postScore,
-      };
+      return { ...p, score: postScore };
     });
 
-    // Sort descending by the backend calculated score
     scored.sort((a, b) => b.score - a.score);
     setTrendingGossip(scored.slice(0, 3));
   };
 
-  const fetchPosts = async () => {
+  const enrichPosts = useCallback(async (postsData: any[], append = false) => {
+    if (!user) return;
+    const userIds = [...new Set(postsData.map((p) => p.user_id))];
+    const postIds = postsData.map((p) => p.id);
+
+    const [{ data: profiles }, { data: reactions }, { data: comments }, { data: savedPosts }] = await Promise.all([
+      supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", userIds),
+      supabase.from("reactions").select("post_id, user_id").in("post_id", postIds),
+      supabase.from("comments").select("post_id").in("post_id", postIds),
+      supabase.from("saved_posts").select("post_id").eq("user_id", user.id).in("post_id", postIds),
+    ]);
+
+    const enriched: Post[] = postsData.map((post) => ({
+      ...post,
+      profiles: profiles?.find((p) => p.user_id === post.user_id),
+      reaction_count: reactions?.filter((r) => r.post_id === post.id).length ?? 0,
+      comment_count: comments?.filter((c) => c.post_id === post.id).length ?? 0,
+      has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) ?? false,
+      has_saved: savedPosts?.some((s) => s.post_id === post.id) ?? false,
+    }));
+
+    if (append) {
+      setPosts((prev) => [...prev, ...enriched]);
+    } else {
+      setPosts(enriched);
+    }
+  }, [user]);
+
+  const fetchPosts = useCallback(async () => {
     if (!profile) return;
     const { data: postsData, error } = await supabase
       .from("posts")
       .select("*")
       .eq("university_id", profile.university_id)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .range(0, PAGE_SIZE - 1);
     if (error) {
       console.error("[Feed]", sanitizeError(error));
       return;
     }
 
-    const userIds = [...new Set(postsData.map((p) => p.user_id))];
-    const postIds = postsData.map((p) => p.id);
-
-    const [{ data: profiles }, { data: reactions }, { data: comments }] = await Promise.all([
-      supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", userIds),
-      supabase.from("reactions").select("post_id, user_id").in("post_id", postIds),
-      supabase.from("comments").select("post_id").in("post_id", postIds),
-    ]);
-
-    const enriched = postsData.map((post) => ({
-      ...post,
-      profiles: profiles?.find((p) => p.user_id === post.user_id),
-      reaction_count: reactions?.filter((r) => r.post_id === post.id).length ?? 0,
-      comment_count: comments?.filter((c) => c.post_id === post.id).length ?? 0,
-      has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) ?? false,
-    }));
-
-    setPosts(enriched);
+    setHasMore(postsData.length === PAGE_SIZE);
+    await enrichPosts(postsData);
     setLoading(false);
-  };
+  }, [profile, enrichPosts]);
+
+  const fetchMorePosts = useCallback(async () => {
+    if (!profile || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const from = posts.length;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data: postsData, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("university_id", profile.university_id)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error("[Feed]", sanitizeError(error));
+      setLoadingMore(false);
+      return;
+    }
+
+    setHasMore(postsData.length === PAGE_SIZE);
+    await enrichPosts(postsData, true);
+    setLoadingMore(false);
+  }, [profile, posts.length, loadingMore, hasMore, enrichPosts]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchMorePosts();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, fetchMorePosts]);
 
   useEffect(() => {
     fetchFollowing();
@@ -167,27 +218,17 @@ export default function Feed() {
     fetchTrendingGossip();
   }, [profile, followingIds]);
 
-  // ── REALTIME: Listen for changes to posts, reactions, comments ──
+  // ── REALTIME ──
   useEffect(() => {
     if (!profile) return;
-
     const channel = supabase
       .channel("feed-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => {
-        fetchPosts();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => {
-        fetchPosts();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => {
-        fetchPosts();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => fetchPosts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => fetchPosts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => fetchPosts())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile]);
+    return () => { supabase.removeChannel(channel); };
+  }, [profile, fetchPosts]);
 
   const handlePost = async () => {
     if (!user || !profile || !newPost.trim()) return;
@@ -229,6 +270,17 @@ export default function Feed() {
       await supabase.from("reactions").insert({ user_id: user.id, post_id: postId, reaction_type: "like" });
     }
     fetchPosts();
+  };
+
+  const toggleSave = async (postId: string, hasSaved: boolean) => {
+    if (!user) return;
+    // Optimistic update
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, has_saved: !hasSaved } : p));
+    if (hasSaved) {
+      await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", user.id);
+    } else {
+      await supabase.from("saved_posts").insert({ user_id: user.id, post_id: postId });
+    }
   };
 
   const toggleFollow = async (targetUserId: string) => {
@@ -310,8 +362,6 @@ export default function Feed() {
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Feed</h1>
-
-        {/* NEW: Wraps the ActivityDrawer and Composer Button together */}
         <div className="flex items-center gap-3">
           <ActivityDrawer />
           <button
@@ -355,7 +405,6 @@ export default function Feed() {
                     className="bg-black/20 border border-white/10 rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
                   />
 
-                  {/* Image preview editor */}
                   {imageFile && !imageConfirmed && (
                     <ImagePreviewEditor
                       file={imageFile}
@@ -423,12 +472,12 @@ export default function Feed() {
         </div>
       ) : (
         <div className="space-y-4">
-          {posts.map((post, i) => (
+          {posts.map((post) => (
             <motion.div
               key={post.id}
-              initial={{ opacity: 0, y: 15 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
+              transition={{ duration: 0.3 }}
             >
               <div className="rounded-3xl glass-panel overflow-hidden hover:border-primary/30 transition-colors duration-500">
                 {/* Post header */}
@@ -481,7 +530,7 @@ export default function Feed() {
                   )}
                 </div>
 
-                {/* Post image - tappable for fullscreen */}
+                {/* Post image */}
                 {post.image_url && (
                   <NeonSparkOverlay
                     className="w-full mt-2 cursor-pointer overflow-hidden"
@@ -520,6 +569,14 @@ export default function Feed() {
                     <MessageCircle className="h-4 w-4" />
                     {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
                   </button>
+                  <motion.button
+                    onClick={() => toggleSave(post.id, post.has_saved)}
+                    whileTap={{ scale: 1.4 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    className={`ml-auto text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Bookmark className={`h-4 w-4 ${post.has_saved ? "fill-current" : ""}`} />
+                  </motion.button>
                 </div>
 
                 {/* Comments */}
@@ -582,6 +639,11 @@ export default function Feed() {
               </div>
             </motion.div>
           ))}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+          </div>
         </div>
       )}
 
@@ -595,7 +657,6 @@ export default function Feed() {
             reactionCount={expandedImage.reaction_count}
             commentCount={expandedImage.comment_count}
             onClose={() => setExpandedImage(null)}
-            // NOTICE: We removed setExpandedImage(null) here so it stays open!
             onToggleLike={() => toggleLike(expandedImage.id, expandedImage.has_liked)}
           />
         )}
