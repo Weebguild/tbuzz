@@ -64,12 +64,17 @@ export function UserHoverCard({ userId, children, className }: UserHoverCardProp
 
     const createLoop = useCallback((index: number) => {
         if (imagePosts.length === 0) return;
-        const clipId = clipIds[index % clipIds.length];
+
+        // Ensure we're within bounds
+        const safeIndex = index % imagePosts.length;
+        const clipId = clipIds[safeIndex % clipIds.length];
         const selector = `#${clipId} .path`;
 
-        if (masterTl.current) masterTl.current.kill();
+        if (masterTl.current) {
+            masterTl.current.kill();
+        }
 
-        const imgPost = imagePosts[index % imagePosts.length];
+        const imgPost = imagePosts[safeIndex];
         if (imageRef.current && imgPost.image_url) {
             imageRef.current.setAttribute("href", imgPost.image_url);
         }
@@ -77,26 +82,13 @@ export function UserHoverCard({ userId, children, className }: UserHoverCardProp
             mainGroupRef.current.setAttribute("clip-path", `url(#${clipId})`);
         }
 
+        // Reset the paths for the new shape
         gsap.set(selector, { scale: 0, transformOrigin: "50% 50%" });
 
         const tl = gsap.timeline({
-            repeat: -1,
-            repeatDelay: 0.6,
-            onRepeat: () => {
-                // Cycle to next image + clip shape on each loop
-                activeImageIndex.current = (activeImageIndex.current + 1) % Math.max(imagePosts.length, 1);
-                const nextClipId = clipIds[activeImageIndex.current % clipIds.length];
-                const nextImg = imagePosts[activeImageIndex.current % imagePosts.length];
-
-                if (imageRef.current && nextImg?.image_url) {
-                    imageRef.current.setAttribute("href", nextImg.image_url);
-                }
-                if (mainGroupRef.current) {
-                    mainGroupRef.current.setAttribute("clip-path", `url(#${nextClipId})`);
-                }
-                // Reset the new shape's paths
-                const nextSelector = `#${nextClipId} .path`;
-                gsap.set(nextSelector, { scale: 0, transformOrigin: "50% 50%" });
+            onComplete: () => {
+                // Pause briefly before the next one starts
+                gsap.delayedCall(0.8, () => createLoop(index + 1));
             },
         });
 
