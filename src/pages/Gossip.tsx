@@ -13,6 +13,7 @@ import { SelfDestructWrapper } from "@/components/feed/SelfDestructWrapper";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
+import { UserHoverCard } from "@/components/ui/UserHoverCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -374,13 +375,12 @@ export default function Gossip() {
             <button
               key={mode}
               onClick={() => setFilterMode(mode)}
-              className={`flex items-center px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap transition-all ${
-                filterMode === mode
+              className={`flex items-center px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap transition-all ${filterMode === mode
                   ? mode === "trending"
                     ? "bg-[#7C3AED] text-white shadow-[0_0_15px_rgba(124,58,237,0.4)]"
                     : "bg-foreground text-background"
                   : "bg-black/40 border border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white"
-              }`}
+                }`}
             >
               {getFilterIcon(mode)}
               {mode}
@@ -480,11 +480,10 @@ export default function Gossip() {
                 <button
                   type="button"
                   onClick={() => setIsBurner(!isBurner)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    isBurner
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isBurner
                       ? "bg-red-500/10 backdrop-blur-md text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]"
                       : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
-                  }`}
+                    }`}
                 >
                   <Timer className="h-3.5 w-3.5" />
                   24h Burner
@@ -579,12 +578,13 @@ export default function Gossip() {
                           {post.tagged_users.length > 0 && (
                             <div className="mt-2.5 flex flex-wrap gap-1.5">
                               {post.tagged_users.map((t) => (
-                                <span
-                                  key={t.user_id}
-                                  className="inline-flex px-2.5 py-0.5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 text-[10px] font-bold"
-                                >
-                                  @{t.display_name}
-                                </span>
+                                <UserHoverCard key={t.user_id} userId={t.user_id}>
+                                  <span
+                                    className="inline-flex px-2.5 py-0.5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 text-[10px] font-bold"
+                                  >
+                                    @{t.display_name}
+                                  </span>
+                                </UserHoverCard>
                               ))}
                             </div>
                           )}

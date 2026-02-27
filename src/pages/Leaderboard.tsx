@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Trophy, Crown, Calendar, CalendarDays, Flame, User as UserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { UserHoverCard } from "@/components/ui/UserHoverCard";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -159,22 +160,20 @@ export default function Leaderboard() {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setTimeRange("week")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
-            timeRange === "week"
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${timeRange === "week"
               ? "bg-[#7C3AED] text-white shadow-[0_0_15px_rgba(124,58,237,0.4)]"
               : "bg-muted text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <Calendar className="h-4 w-4" />
           This Week
         </button>
         <button
           onClick={() => setTimeRange("month")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
-            timeRange === "month"
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${timeRange === "month"
               ? "bg-[#EC4899] text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]"
               : "bg-muted text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <CalendarDays className="h-4 w-4" />
           This Month
@@ -247,9 +246,11 @@ export default function Leaderboard() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                        {entry.display_name}
-                      </span>
+                      <UserHoverCard userId={entry.user_id}>
+                        <span className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                          {entry.display_name}
+                        </span>
+                      </UserHoverCard>
                       {entry.rank === 1 && <Crown className="h-4 w-4 text-yellow-500 shrink-0" />}
                     </div>
                     <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 mt-0.5">

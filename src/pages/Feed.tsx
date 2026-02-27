@@ -16,6 +16,7 @@ import { PostImageExpander } from "@/components/feed/PostImageExpander";
 import { ImagePreviewEditor } from "@/components/feed/ImagePreviewEditor";
 import { NeonSparkOverlay } from "@/components/feed/NeonSparkOverlay";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
+import { UserHoverCard } from "@/components/ui/UserHoverCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -494,12 +495,14 @@ export default function Feed() {
                     </Avatar>
                   </button>
                   <div className="flex-1 min-w-0">
-                    <button
-                      onClick={() => navigate(`/profile/${post.user_id}`)}
-                      className="font-semibold text-sm text-foreground hover:text-primary transition-colors"
-                    >
-                      {post.profiles?.display_name ?? "Unknown"}
-                    </button>
+                    <UserHoverCard userId={post.user_id}>
+                      <button
+                        onClick={() => navigate(`/profile/${post.user_id}`)}
+                        className="font-semibold text-sm text-foreground hover:text-primary transition-colors"
+                      >
+                        {post.profiles?.display_name ?? "Unknown"}
+                      </button>
+                    </UserHoverCard>
                     <p className="text-xs text-muted-foreground/80">
                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </p>
@@ -603,12 +606,14 @@ export default function Feed() {
                           </button>
                           <div>
                             <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => navigate(`/profile/${c.user_id}`)}
-                                className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
-                              >
-                                {c.display_name}
-                              </button>
+                              <UserHoverCard userId={c.user_id}>
+                                <button
+                                  onClick={() => navigate(`/profile/${c.user_id}`)}
+                                  className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                                >
+                                  {c.display_name}
+                                </button>
+                              </UserHoverCard>
                               <span className="text-[10px] text-muted-foreground/60">
                                 {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                               </span>
