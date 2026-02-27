@@ -24,6 +24,19 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Edit3 } from "lucide-react";
+import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -135,12 +148,22 @@ export default function Profile() {
   const [savedGossips, setSavedGossips] = useState<SavedGossip[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
 
+  // Edit state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
   const fetchProfileData = useCallback(async () => {
     if (!targetUserId) return;
     setLoading(true);
     const { data: profileData } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).single();
 
-    if (profileData) setProfile(profileData);
+    if (profileData) {
+      setProfile(profileData);
+      setEditName(profileData.display_name);
+      setEditBio(profileData.bio || "");
+    }
 
     const [{ count: followers }, { count: following }] = await Promise.all([
       supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId),
@@ -307,6 +330,44 @@ export default function Profile() {
     setFollowLoading(false);
   };
 
+  const handleSaveProfile = async () => {
+    if (!user || !profile || !isOwnProfile) return;
+    if (!editName.trim()) {
+      toast.error("Username cannot be empty");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          display_name: editName.trim(),
+          bio: editBio.trim(),
+        })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setProfile((prev) =>
+        prev
+          ? {
+            ...prev,
+            display_name: editName.trim(),
+            bio: editBio.trim(),
+          }
+          : null,
+      );
+      setIsEditOpen(false);
+      toast.success("Profile updated successfully!");
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error(error.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     setProfile(null);
     setPhotos([]);
@@ -411,14 +472,73 @@ export default function Profile() {
       {/* ── HEADER ── */}
       <div className="flex justify-between items-start mb-8">
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Profile</h1>
-        {isOwnProfile && (
-          <button
-            onClick={() => setShowLogoutDialog(true)}
-            className="h-10 w-10 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-destructive"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
-        )}
+        <div className="flex gap-2">
+          {isOwnProfile && (
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+              <DialogTrigger asChild>
+                <button className="h-10 px-4 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-white gap-2 text-sm font-bold">
+                  <Edit3 className="h-4 w-4" />
+                  Edit Profile
+                </button>
+              </DialogTrigger>
+              <DialogContent className="glass-panel border-white/10 bg-[#0A0A0A]/95 backdrop-blur-2xl text-foreground rounded-3xl sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold tracking-tight">Edit Profile</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-6 py-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Username
+                    </Label>
+                    <Input
+                      id="name"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Your display name"
+                      className="bg-white/5 border-white/10 rounded-xl focus:ring-primary focus:border-primary transition-all"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="bio" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Bio
+                    </Label>
+                    <Textarea
+                      id="bio"
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      placeholder="Tell us about yourself..."
+                      className="bg-white/5 border-white/10 rounded-xl min-h-[100px] focus:ring-primary focus:border-primary transition-all resize-none"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                    className="w-full rounded-full bg-primary hover:bg-primary/90 text-white font-bold h-12 shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all active:scale-95"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+          {isOwnProfile && (
+            <button
+              onClick={() => setShowLogoutDialog(true)}
+              className="h-10 w-10 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-destructive"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── PROFILE INFO CARD ── */}
@@ -459,11 +579,10 @@ export default function Profile() {
             <button
               onClick={toggleFollow}
               disabled={followLoading}
-              className={`mt-4 flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
-                isFollowing
-                  ? "border border-white/10 text-muted-foreground hover:bg-white/5 hover:border-destructive/50 hover:text-destructive"
-                  : "bg-primary text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105"
-              }`}
+              className={`mt-4 flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all ${isFollowing
+                ? "border border-white/10 text-muted-foreground hover:bg-white/5 hover:border-destructive/50 hover:text-destructive"
+                : "bg-primary text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105"
+                }`}
             >
               {isFollowing ? (
                 <>
