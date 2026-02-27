@@ -30,21 +30,26 @@ function MicroExpander({
   disabled,
 }: MicroExpanderProps) {
   const [isHovered, setIsHovered] = React.useState(false);
+  const [isPressed, setIsPressed] = React.useState(false);
   const showText = isHovered && !isLoading;
 
   return (
-    <button
+    <motion.button
+      animate={{ scale: isPressed ? 0.88 : 1 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 20, mass: 0.4 }}
       className={cn(
-        'relative inline-flex h-10 cursor-pointer items-center gap-1.5 overflow-hidden rounded-full text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+        'relative inline-flex h-10 min-w-[40px] cursor-pointer items-center gap-1.5 overflow-hidden rounded-full text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
         showText ? 'px-3 pr-4' : 'w-10 justify-center',
         variantStyles[variant],
         className,
       )}
-      style={{ transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}
+      style={{ transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s, border-color 0.15s, color 0.15s' }}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => { setIsHovered(false); setIsPressed(false); }}
       onFocus={() => setIsHovered(true)}
       onBlur={() => setIsHovered(false)}
+      onMouseDown={() => setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
       onClick={(e) => {
         if (isLoading) return;
         onClick?.(e);
@@ -60,18 +65,20 @@ function MicroExpander({
         )}
       </span>
 
-      {showText && (
-        <motion.span
-          initial={{ opacity: 0, width: 0 }}
-          animate={{ opacity: 1, width: 'auto' }}
-          exit={{ opacity: 0, width: 0 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="overflow-hidden text-xs font-semibold"
-        >
-          {text}
-        </motion.span>
-      )}
-    </button>
+      <AnimatePresence>
+        {showText && (
+          <motion.span
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: 'auto' }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="overflow-hidden text-xs font-semibold"
+          >
+            {text}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
   );
 }
 
