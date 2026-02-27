@@ -654,10 +654,12 @@ export default function Feed() {
             postId={expandedImage.id}
             imageUrl={expandedImage.image_url}
             hasLiked={expandedImage.has_liked}
+            hasSaved={expandedImage.has_saved}
             reactionCount={expandedImage.reaction_count}
             commentCount={expandedImage.comment_count}
             onClose={() => setExpandedImage(null)}
             onToggleLike={() => toggleLike(expandedImage.id, expandedImage.has_liked)}
+            onToggleSave={() => toggleSave(expandedImage.id, expandedImage.has_saved)}
           />
         )}
       </AnimatePresence>
