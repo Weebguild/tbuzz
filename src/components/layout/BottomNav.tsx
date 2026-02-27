@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, MessageSquare, Trophy, User, Plus, Search } from "lucide-react";
 import { motion } from "framer-motion";
@@ -71,6 +71,18 @@ export function BottomNav() {
       setFollowingIds((prev) => new Set(prev).add(targetUserId));
     }
   };
+
+  // Hide when post expander is open
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setHidden(document.body.hasAttribute("data-expander-open"));
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-expander-open"] });
+    return () => observer.disconnect();
+  }, []);
+
+  if (hidden) return null;
 
   return (
     <>

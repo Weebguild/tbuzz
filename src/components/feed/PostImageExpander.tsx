@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Heart, MessageCircle, Send, Loader2 } from "lucide-react";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import { X, Heart, MessageCircle, Send, Loader2, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { MicroExpander } from "@/components/ui/micro-expander";
 
-// Type for our temporary neon sparks
 interface Spark {
   id: number;
   x: number;
@@ -28,37 +28,50 @@ interface PostImageExpanderProps {
   postId: string;
   imageUrl: string;
   hasLiked: boolean;
+  hasSaved?: boolean;
   reactionCount: number;
   commentCount: number;
   onClose: () => void;
   onToggleLike: () => void;
+  onToggleSave?: () => void;
 }
 
 export function PostImageExpander({
   postId,
   imageUrl,
   hasLiked,
+  hasSaved = false,
   reactionCount,
   commentCount,
   onClose,
   onToggleLike,
+  onToggleSave,
 }: PostImageExpanderProps) {
   const { user } = useAuth();
   const [isSplitScreen, setIsSplitScreen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
-
-  // Spark state for the double-tap animation
   const [sparks, setSparks] = useState<Spark[]>([]);
-
-  // Timer to distinguish between single tap (close) and double tap (like)
   const tapTimer = useRef<number | null>(null);
 
-  // Optimistic UI state
   const [localLiked, setLocalLiked] = useState(hasLiked);
   const [localLikeCount, setLocalLikeCount] = useState(reactionCount);
   const [localCommentCount, setLocalCommentCount] = useState(commentCount);
+  const [localSaved, setLocalSaved] = useState(hasSaved);
+
+  // Drag-to-dismiss
+  const dragY = useMotionValue(0);
+  const dragOpacity = useTransform(dragY, [0, 300], [1, 0]);
+  const dragScale = useTransform(dragY, [0, 300], [1, 0.85]);
+
+  // Hide bottom nav on mount
+  useEffect(() => {
+    document.body.setAttribute("data-expander-open", "true");
+    return () => {
+      document.body.removeAttribute("data-expander-open");
+    };
+  }, []);
 
   const fetchComments = async () => {
     setLoadingComments(true);
@@ -85,54 +98,44 @@ export function PostImageExpander({
   };
 
   useEffect(() => {
-    if (isSplitScreen) {
-      fetchComments();
-    }
+    if (isSplitScreen) fetchComments();
   }, [isSplitScreen]);
 
-  const handleLikeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleLikeClick = () => {
     setLocalLiked(!localLiked);
     setLocalLikeCount((prev) => (localLiked ? prev - 1 : prev + 1));
     onToggleLike();
   };
 
-  // ── THE SMART TAP LOGIC ──
+  const handleSaveClick = () => {
+    setLocalSaved(!localSaved);
+    onToggleSave?.();
+  };
+
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // If the timer is already running, this is tap #2! (Double Tap)
     if (tapTimer.current) {
       window.clearTimeout(tapTimer.current);
       tapTimer.current = null;
-
-      // Launch the sparks
       const newSpark: Spark = { id: Date.now(), x, y };
       setSparks((prev) => [...prev, newSpark]);
-
-      // Only trigger the like if they haven't liked it yet
       if (!localLiked) {
         setLocalLiked(true);
         setLocalLikeCount((prev) => prev + 1);
         onToggleLike();
       }
-
-      // Cleanup spark
       setTimeout(() => {
         setSparks((prev) => prev.filter((s) => s.id !== newSpark.id));
       }, 1000);
     } else {
-      // This is tap #1. Start the timer to see if tap #2 is coming.
       tapTimer.current = window.setTimeout(() => {
-        tapTimer.current = null; // Timer ran out, so it's a single tap.
-        if (!isSplitScreen) {
-          onClose(); // Close the image
-        }
-      }, 250); // 250ms is the standard double-tap threshold
+        tapTimer.current = null;
+        if (!isSplitScreen) onClose();
+      }, 250);
     }
   };
 
@@ -146,7 +149,6 @@ export function PostImageExpander({
       toast.error("Failed to post comment");
       return;
     }
-
     setNewComment("");
     setLocalCommentCount((prev) => prev + 1);
     fetchComments();
@@ -158,11 +160,23 @@ export function PostImageExpander({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col font-sans"
+      style={{ opacity: dragOpacity }}
     >
       {/* ── TOP: IMAGE AREA ── */}
       <motion.div
         layout
-        className={`relative flex items-center justify-center w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden cursor-pointer select-none [-webkit-tap-highlight-color:transparent] ${
+        drag={!isSplitScreen ? "y" : false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.7}
+        style={{ y: dragY, scale: dragScale }}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 120) {
+            onClose();
+          } else {
+            dragY.set(0);
+          }
+        }}
+        className={`relative flex items-center justify-center w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden cursor-grab active:cursor-grabbing select-none [-webkit-tap-highlight-color:transparent] ${
           isSplitScreen ? "h-[45vh] bg-black border-b border-white/10" : "h-screen"
         }`}
         onClick={handleTap}
@@ -177,9 +191,16 @@ export function PostImageExpander({
           <X className="h-5 w-5" />
         </button>
 
+        {/* Drag hint indicator */}
+        {!isSplitScreen && (
+          <div className="absolute top-[env(safe-area-inset-top,20px)] left-1/2 -translate-x-1/2 z-50">
+            <div className="w-10 h-1 rounded-full bg-white/30" />
+          </div>
+        )}
+
         <motion.img layout src={imageUrl} alt="Expanded" className="w-full h-full object-contain pointer-events-none" />
 
-        {/* ── THE NEON SPARKS OVERLAY ── */}
+        {/* ── NEON SPARKS ── */}
         <AnimatePresence>
           {sparks.map((spark) => (
             <motion.div
@@ -196,37 +217,70 @@ export function PostImageExpander({
               className="absolute pointer-events-none z-50 flex items-center justify-center"
               style={{ left: spark.x, top: spark.y, transform: "translate(-50%, -50%)" }}
             >
-              <Heart className="h-24 w-24 fill-[#EC4899] text-[#EC4899] drop-shadow-[0_0_40px_rgba(236,72,153,1)]" />
+              <Heart className="h-24 w-24 fill-[hsl(var(--accent))] text-[hsl(var(--accent))] drop-shadow-[0_0_40px_hsl(var(--accent))]" />
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {/* Floating Action Bar */}
+        {/* Floating Action Bar with MicroExpanders */}
         <motion.div
           layout
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 px-6 py-3 rounded-full glass-panel border border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.8)] z-50"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-full glass-panel border border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.8)] z-50"
           onClick={(e) => e.stopPropagation()}
         >
-          <button onClick={handleLikeClick} className="flex items-center gap-2 text-white group">
-            <Heart
-              className={`h-6 w-6 transition-all duration-300 ${localLiked ? "fill-[#EC4899] text-[#EC4899] drop-shadow-[0_0_15px_rgba(236,72,153,0.8)] scale-110" : "group-hover:text-[#EC4899]"}`}
-            />
-            {localLikeCount > 0 && <span className="text-sm font-bold">{localLikeCount}</span>}
-          </button>
+          <MicroExpander
+            text={localLikeCount > 0 ? `${localLikeCount}` : "Like"}
+            icon={
+              <Heart
+                className={`h-5 w-5 transition-all duration-300 ${
+                  localLiked
+                    ? "fill-[hsl(var(--accent))] text-[hsl(var(--accent))] drop-shadow-[0_0_15px_hsl(var(--accent)/0.8)]"
+                    : ""
+                }`}
+              />
+            }
+            variant="ghost"
+            onClick={handleLikeClick}
+            className={`h-10 ${localLiked ? "text-accent" : "text-white hover:text-accent"}`}
+          />
 
           <div className="w-[1px] h-6 bg-white/20" />
 
-          <button
+          <MicroExpander
+            text={localCommentCount > 0 ? `${localCommentCount}` : "Comment"}
+            icon={
+              <MessageCircle
+                className={`h-5 w-5 ${isSplitScreen ? "fill-primary text-primary" : ""}`}
+              />
+            }
+            variant="ghost"
             onClick={() => setIsSplitScreen(!isSplitScreen)}
-            className={`flex items-center gap-2 transition-colors ${isSplitScreen ? "text-primary drop-shadow-[0_0_10px_rgba(124,58,237,0.8)]" : "text-white hover:text-primary"}`}
-          >
-            <MessageCircle className={`h-6 w-6 ${isSplitScreen ? "fill-primary" : ""}`} />
-            {localCommentCount > 0 && <span className="text-sm font-bold">{localCommentCount}</span>}
-          </button>
+            className={`h-10 ${
+              isSplitScreen
+                ? "text-primary drop-shadow-[0_0_10px_hsl(var(--primary)/0.8)]"
+                : "text-white hover:text-primary"
+            }`}
+          />
+
+          <div className="w-[1px] h-6 bg-white/20" />
+
+          <MicroExpander
+            text={localSaved ? "Saved" : "Save"}
+            icon={
+              <Bookmark
+                className={`h-5 w-5 transition-all duration-300 ${
+                  localSaved ? "fill-current" : ""
+                }`}
+              />
+            }
+            variant="ghost"
+            onClick={handleSaveClick}
+            className={`h-10 ${localSaved ? "text-foreground" : "text-white hover:text-foreground"}`}
+          />
         </motion.div>
       </motion.div>
 
-      {/* ── BOTTOM: EDITORIAL COMMENT SPLIT ── */}
+      {/* ── BOTTOM: COMMENT SPLIT ── */}
       <AnimatePresence>
         {isSplitScreen && (
           <motion.div
@@ -234,9 +288,9 @@ export function PostImageExpander({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="flex-1 bg-gradient-to-b from-[#0A0A0A] to-black flex flex-col overflow-hidden relative"
+            className="flex-1 bg-gradient-to-b from-[hsl(var(--background))] to-black flex flex-col overflow-hidden relative"
           >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent shadow-[0_0_20px_rgba(124,58,237,0.5)]" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent shadow-[0_0_20px_hsl(var(--primary)/0.5)]" />
 
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5 no-scrollbar pb-24">
               {loadingComments ? (
@@ -263,19 +317,19 @@ export function PostImageExpander({
                     </Avatar>
                     <div>
                       <div className="flex items-baseline gap-2 mb-0.5">
-                        <span className="text-sm font-bold text-white tracking-wide">{c.display_name}</span>
-                        <span className="text-[10px] text-white/40">
+                        <span className="text-sm font-bold text-foreground tracking-wide">{c.display_name}</span>
+                        <span className="text-[10px] text-muted-foreground/40">
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-sm text-white/80 leading-relaxed">{c.content}</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            <div className="p-4 bg-black/60 backdrop-blur-xl border-t border-white/5 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+            <div className="p-4 bg-background/60 backdrop-blur-xl border-t border-white/5 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
               <div className="flex gap-2 max-w-lg mx-auto">
                 <Input
                   placeholder="Add a comment..."
@@ -287,7 +341,7 @@ export function PostImageExpander({
                 <button
                   onClick={submitComment}
                   disabled={!newComment.trim()}
-                  className="h-11 w-11 flex items-center justify-center rounded-full bg-primary text-white disabled:opacity-30 disabled:bg-white/10 shrink-0 transition-transform active:scale-95 shadow-[0_0_15px_rgba(124,58,237,0.4)] disabled:shadow-none"
+                  className="h-11 w-11 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 disabled:bg-white/10 shrink-0 transition-transform active:scale-95 shadow-[0_0_15px_hsl(var(--primary)/0.4)] disabled:shadow-none"
                 >
                   <Send className="h-4 w-4 ml-0.5" />
                 </button>
