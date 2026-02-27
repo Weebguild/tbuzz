@@ -603,6 +603,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      resolve_username_to_email: {
+        Args: { target_display_name: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

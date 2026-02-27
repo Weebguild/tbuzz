@@ -94,7 +94,7 @@ export default function Auth() {
         // If it doesn't look like an email, try resolving it as a display_name (username)
         if (!email.includes("@")) {
           const { data, error: profileError } = await supabase
-            .rpc("resolve_username_to_email", { target_display_name: email });
+            .rpc("resolve_username_to_email" as any, { target_display_name: email });
 
           if (profileError) {
             console.error("Profile lookup error:", profileError);
@@ -109,7 +109,7 @@ export default function Auth() {
             return;
           }
 
-          loginEmail = data;
+          loginEmail = data as string;
         }
 
         const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
