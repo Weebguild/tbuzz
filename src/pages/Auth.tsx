@@ -94,10 +94,7 @@ export default function Auth() {
         // If it doesn't look like an email, try resolving it as a display_name (username)
         if (!email.includes("@")) {
           const { data, error: profileError } = await supabase
-            .from("profiles")
-            .select("email")
-            .eq("display_name", email)
-            .maybeSingle();
+            .rpc("resolve_username_to_email", { target_display_name: email });
 
           if (profileError) {
             console.error("Profile lookup error:", profileError);
@@ -112,13 +109,7 @@ export default function Auth() {
             return;
           }
 
-          if (!data.email) {
-            toast.error("Email not found for this username. Try using email.");
-            setLoading(false);
-            return;
-          }
-
-          loginEmail = data.email;
+          loginEmail = data;
         }
 
         const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });

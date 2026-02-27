@@ -43,3 +43,18 @@ DROP TRIGGER IF EXISTS before_profile_insert_email ON public.profiles;
 CREATE TRIGGER before_profile_insert_email
   BEFORE INSERT ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_profile_email_on_insert();
+
+-- SECURITY DEFINER function to allow login resolution without full profile read access
+CREATE OR REPLACE FUNCTION public.resolve_username_to_email(target_display_name TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN (SELECT email FROM public.profiles WHERE display_name = target_display_name LIMIT 1);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.resolve_username_to_email(TEXT) TO anon, authenticated;
+
