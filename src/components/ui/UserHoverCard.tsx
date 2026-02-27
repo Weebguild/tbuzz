@@ -152,20 +152,29 @@ export function UserHoverCard({ userId, children, className }: UserHoverCardProp
                 following: followingCount || 0,
             });
 
-            // Fetch top 3 recent posts (prefer ones with images)
+            // Fetch posts with reaction counts to determine "top 3"
             const { data: postsData } = await supabase
                 .from("posts")
-                .select("id, content, image_url, created_at")
+                .select("id, content, image_url, created_at, reactions(id)")
                 .eq("user_id", userId)
                 .order("created_at", { ascending: false })
-                .limit(6);
+                .limit(40); // Fetch a larger sample to find the top ones
 
             if (postsData) {
-                // Prioritize image posts, then fill with text posts, max 3
-                const withImages = postsData.filter((p) => p.image_url);
-                const withoutImages = postsData.filter((p) => !p.image_url);
-                const combined = [...withImages, ...withoutImages].slice(0, 3);
-                setRecentPosts(combined);
+                // Map to include reaction counts
+                const processed = postsData.map(p => ({
+                    ...p,
+                    reaction_count: (p.reactions as any[])?.length || 0
+                }));
+
+                // Sort by reaction count (popularity) first, then date
+                processed.sort((a, b) => b.reaction_count - a.reaction_count || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+                // Take top 3
+                const topPostsData = processed.slice(0, 3);
+
+                // Keep the logic for initializing recentPosts state (renamed the logic variable for clarity)
+                setRecentPosts(topPostsData);
             }
         } catch (error) {
             console.error("Error fetching user preview data:", error);
