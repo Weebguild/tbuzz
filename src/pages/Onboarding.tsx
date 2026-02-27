@@ -76,12 +76,18 @@ export default function Onboarding() {
         avatar_url: avatarUrl, anonymous_alias: anonymousAlias.trim(),
         year: year || null, department: department || null, stream: stream || null,
       });
-      if (error) throw error;
-      await refreshProfile();
       toast.success("Profile created! Welcome to T");
       navigate("/feed", { replace: true });
-    } catch (error: any) { toast.error(sanitizeError(error)); }
-    finally { setLoading(false); }
+    } catch (error: any) {
+      console.error("Onboarding error:", error);
+      if (error.code === "23505") {
+        toast.error("This username is already taken. Please choose another one.");
+      } else {
+        toast.error(sanitizeError(error));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -89,7 +89,39 @@ export default function Auth() {
         }
       }
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        let loginEmail = email;
+
+        // If it doesn't look like an email, try resolving it as a display_name (username)
+        if (!email.includes("@")) {
+          const { data, error: profileError } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("display_name", email)
+            .maybeSingle();
+
+          if (profileError) {
+            console.error("Profile lookup error:", profileError);
+            toast.error("Error looking up username");
+            setLoading(false);
+            return;
+          }
+
+          if (!data) {
+            toast.error("User not found with that username");
+            setLoading(false);
+            return;
+          }
+
+          if (!data.email) {
+            toast.error("Email not found for this username. Try using email.");
+            setLoading(false);
+            return;
+          }
+
+          loginEmail = data.email;
+        }
+
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         toast.success("Welcome back!");
       } else {
@@ -156,14 +188,14 @@ export default function Auth() {
             >
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                  University Email
+                  {isLogin ? "Email or Username" : "University Email"}
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="you@university.ac.uk"
+                    type={isLogin ? "text" : "email"}
+                    placeholder={isLogin ? "you@university.ac.uk or username" : "you@university.ac.uk"}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required

@@ -362,7 +362,11 @@ export default function Profile() {
       toast.success("Profile updated successfully!");
     } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error(error.message || "Failed to update profile");
+      if (error.code === "23505") {
+        toast.error("This username is already taken. Please choose another one.");
+      } else {
+        toast.error(error.message || "Failed to update profile");
+      }
     } finally {
       setIsSaving(false);
     }
