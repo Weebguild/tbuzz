@@ -14,6 +14,7 @@ import Gossip from "./pages/Gossip";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import AvatarCrop from "./pages/AvatarCrop";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -56,6 +57,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={session ? <Navigate to="/feed" replace /> : <Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/onboarding" element={session && !profile ? <Onboarding /> : <Navigate to="/feed" replace />} />
       <Route
         path="/avatar-crop"

@@ -48,6 +48,30 @@ export default function Auth() {
     return (data?.length ?? 0) > 0;
   };
 
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setResetSent(true);
+      toast.success("Check your email for the reset link!");
+    } catch (error: any) {
+      toast.error(sanitizeError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLogin && !passwordsMatch) {
@@ -215,18 +239,59 @@ export default function Auth() {
             </motion.form>
           </AnimatePresence>
 
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setConfirmPassword("");
-              }}
-              className="text-sm text-primary hover:underline transition-colors"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-          </div>
+          {forgotMode ? (
+            <form onSubmit={handleForgotPassword} className="mt-4 space-y-4">
+              {resetSent ? (
+                <p className="text-sm text-center text-muted-foreground">
+                  Reset link sent! Check your inbox.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Enter your email and we'll send a reset link.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={loading || !email}
+                    className="w-full h-11 rounded-full bg-foreground text-background font-semibold text-sm disabled:opacity-40 transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Reset Link"}
+                  </button>
+                </>
+              )}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setForgotMode(false); setResetSent(false); }}
+                  className="text-sm text-primary hover:underline transition-colors"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="mt-4 text-center space-y-2">
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => setForgotMode(true)}
+                  className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors block mx-auto"
+                >
+                  Forgot password?
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setConfirmPassword("");
+                }}
+                className="text-sm text-primary hover:underline transition-colors"
+              >
+                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
