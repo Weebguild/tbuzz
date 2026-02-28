@@ -13,6 +13,8 @@ import Feed from "./pages/Feed";
 import Gossip from "./pages/Gossip";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
+import Messages from "./pages/Messages";
+import ChatRoom from "./pages/ChatRoom";
 import AvatarCrop from "./pages/AvatarCrop";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -77,6 +79,8 @@ function AppRoutes() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/gossip" element={<Gossip />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/messages/:conversationId" element={<ChatRoom />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:userId" element={<Profile />} />
       </Route>

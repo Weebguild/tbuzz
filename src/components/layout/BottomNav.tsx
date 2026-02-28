@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Trophy, User, Plus, Search } from "lucide-react";
+import { Home, MessageSquare, Mail, User, Plus, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,7 @@ const tabs = [
   { path: "/feed", icon: Home },
   { path: "/gossip", icon: MessageSquare },
   { path: "center", icon: Plus, isCenter: true },
-  { path: "/leaderboard", icon: Trophy },
+  { path: "/messages", icon: Mail },
   { path: "/profile", icon: User },
 ];
 
@@ -32,6 +32,7 @@ export function BottomNav() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const openSearch = async () => {
     setShowSearch(true);
@@ -81,6 +82,26 @@ export function BottomNav() {
     observer.observe(document.body, { attributes: true, attributeFilter: ["data-expander-open"] });
     return () => observer.disconnect();
   }, []);
+
+  // Unread messages count
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .neq("sender_id", user.id)
+        .eq("is_read", false);
+      setUnreadCount(count ?? 0);
+    };
+    fetchUnread();
+
+    const channel = supabase
+      .channel("unread-messages-nav")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   if (hidden) return null;
 
@@ -189,7 +210,7 @@ export function BottomNav() {
               );
             }
 
-            const isActive = location.pathname === tab.path || (tab.path === "/feed" && location.pathname === "/");
+            const isActive = location.pathname === tab.path || (tab.path === "/feed" && location.pathname === "/") || (tab.path === "/messages" && location.pathname.startsWith("/messages"));
 
             return (
               <Link
@@ -206,16 +227,23 @@ export function BottomNav() {
                   />
                 )}
 
-                <tab.icon
-                  className={cn(
-                    "h-[22px] w-[22px] transition-all duration-300 relative z-10",
-                    isActive
-                      ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
-                      : "text-muted-foreground group-hover:text-white/70",
+                <div className="relative z-10">
+                  <tab.icon
+                    className={cn(
+                      "h-[22px] w-[22px] transition-all duration-300",
+                      isActive
+                        ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
+                        : "text-muted-foreground group-hover:text-white/70",
+                    )}
+                    fill={isActive ? "currentColor" : "none"}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                  {tab.path === "/messages" && unreadCount > 0 && (
+                    <div className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-primary flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-white leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                    </div>
                   )}
-                  fill={isActive ? "currentColor" : "none"}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
+                </div>
 
                 {/* Active Bottom Dot */}
                 {isActive && (
