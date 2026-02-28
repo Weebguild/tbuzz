@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2, MessageSquare, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ConversationItem {
   conversation_id: string;
@@ -120,61 +121,107 @@ export default function Messages() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-24">
-      <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md mb-6">Messages</h1>
+    <div className="px-4 pt-6 pb-24 max-w-2xl mx-auto">
+      <motion.h1
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="text-4xl tracking-[0.2em] text-foreground uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] mb-8 font-display"
+      >
+        Inbox
+      </motion.h1>
 
-      {conversations.length === 0 ? (
-        <div className="py-20 text-center">
-          <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground font-medium">No conversations yet</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">
-            Follow someone and have them follow you back to start messaging
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {conversations.map((conv, i) => (
-            <motion.button
-              key={conv.conversation_id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => navigate(`/messages/${conv.conversation_id}`)}
-              className="flex items-center gap-3 w-full p-4 rounded-2xl glass-panel hover:bg-white/5 transition-colors text-left"
-            >
-              <div className="relative">
-                <Avatar className="h-12 w-12 ring-2 ring-white/10">
-                  {conv.other_user.avatar_url ? (
-                    <AvatarImage src={conv.other_user.avatar_url} />
-                  ) : (
-                    <AvatarFallback className="bg-muted text-sm font-bold text-foreground">
-                      {conv.other_user.display_name.charAt(0)}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                {conv.unread_count > 0 && (
-                  <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-white">{conv.unread_count}</span>
+      <AnimatePresence mode="popLayout">
+        {conversations.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="py-24 text-center rounded-3xl glass-panel relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full translate-y-1/2" />
+            <MessageSquare className="h-16 w-16 mx-auto text-primary/20 mb-6 animate-pulse" />
+            <p className="text-xl text-foreground font-bold tracking-tight">No transmissions yet</p>
+            <p className="text-sm text-muted-foreground mt-2 max-w-[240px] mx-auto leading-relaxed">
+              Connect with mutual followers to start dynamic messaging
+            </p>
+          </motion.div>
+        ) : (
+          <div className="space-y-4">
+            {conversations.map((conv, i) => (
+              <motion.button
+                key={conv.conversation_id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{
+                  delay: i * 0.08,
+                  type: "spring",
+                  stiffness: 100,
+                  damping: 15
+                }}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(`/messages/${conv.conversation_id}`)}
+                className="w-full text-left group"
+              >
+                <div className={cn(
+                  "glass-card-modern",
+                  conv.unread_count > 0 && "card-heat-medium"
+                )}>
+                  <div className="glass-card-inner !p-4 flex items-center gap-4">
+                    <div className="relative">
+                      <Avatar className="h-14 w-14 ring-2 ring-white/10 group-hover:ring-primary/50 transition-all duration-300">
+                        {conv.other_user.avatar_url ? (
+                          <AvatarImage src={conv.other_user.avatar_url} className="object-cover" />
+                        ) : (
+                          <AvatarFallback className="bg-white/5 text-lg font-bold text-foreground">
+                            {conv.other_user.display_name.charAt(0)}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      {conv.unread_count > 0 && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-[0_0_15px_rgba(124,58,237,0.8)]"
+                        >
+                          <span className="text-[10px] font-black text-white">{conv.unread_count}</span>
+                        </motion.div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-base font-black tracking-tight text-foreground group-hover:text-primary transition-colors">
+                          {conv.other_user.display_name}
+                        </p>
+                        {conv.last_message_at && (
+                          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold shrink-0">
+                            {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false })}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className={cn(
+                          "text-sm truncate",
+                          conv.unread_count > 0 ? "text-foreground font-semibold" : "text-muted-foreground font-medium"
+                        )}>
+                          {conv.last_message || "Start the conversation..."}
+                        </p>
+                        {conv.unread_count > 0 && (
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                      <ArrowRight className="h-4 w-4 text-primary" />
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-foreground truncate">{conv.other_user.display_name}</p>
-                  {conv.last_message_at && (
-                    <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                      {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: true })}
-                    </span>
-                  )}
                 </div>
-                {conv.last_message && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.last_message}</p>
-                )}
-              </div>
-            </motion.button>
-          ))}
-        </div>
-      )}
+              </motion.button>
+            ))}
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
