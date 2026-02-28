@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.resolve_username_to_email(TEXT) FROM anon;
