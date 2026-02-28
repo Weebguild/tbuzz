@@ -7,7 +7,10 @@ interface SelfDestructWrapperProps {
 }
 
 export function SelfDestructWrapper({ children, expiresAt }: SelfDestructWrapperProps) {
-  const [alive, setAlive] = useState(true);
+  const [alive, setAlive] = useState(() => {
+    if (!expiresAt) return true;
+    return new Date(expiresAt).getTime() > Date.now();
+  });
   const [isShattering, setIsShattering] = useState(false);
 
   useEffect(() => {

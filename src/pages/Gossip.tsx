@@ -122,6 +122,7 @@ export default function Gossip() {
       taggedProfiles = tp ?? [];
     }
 
+    const now = Date.now();
     let enriched = data.map((post) => {
       const upvoteCount = reactions?.filter((r) => r.gossip_post_id === post.id).length ?? 0;
       const extra = extraData?.find((e) => e.id === post.id);
@@ -141,6 +142,9 @@ export default function Gossip() {
             }) ?? [],
         is_own: ownPosts?.some((op) => op.id === post.id) ?? false,
       };
+    }).filter(post => {
+      if (!post.expires_at) return true;
+      return new Date(post.expires_at).getTime() > now;
     });
 
     if (filterMode === "trending") {
@@ -376,10 +380,10 @@ export default function Gossip() {
               key={mode}
               onClick={() => setFilterMode(mode)}
               className={`flex items-center px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap transition-all ${filterMode === mode
-                  ? mode === "trending"
-                    ? "bg-[#7C3AED] text-white shadow-[0_0_15px_rgba(124,58,237,0.4)]"
-                    : "bg-foreground text-background"
-                  : "bg-black/40 border border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white"
+                ? mode === "trending"
+                  ? "bg-[#7C3AED] text-white shadow-[0_0_15px_rgba(124,58,237,0.4)]"
+                  : "bg-foreground text-background"
+                : "bg-black/40 border border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white"
                 }`}
             >
               {getFilterIcon(mode)}
@@ -481,8 +485,8 @@ export default function Gossip() {
                   type="button"
                   onClick={() => setIsBurner(!isBurner)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isBurner
-                      ? "bg-red-500/10 backdrop-blur-md text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]"
-                      : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
+                    ? "bg-red-500/10 backdrop-blur-md text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                    : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
                     }`}
                 >
                   <Timer className="h-3.5 w-3.5" />
