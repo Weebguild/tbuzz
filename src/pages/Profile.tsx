@@ -354,21 +354,32 @@ export default function Profile() {
 
   const handleMessageClick = async () => {
     if (!user || !targetUserId) return;
+
     // Find existing conversation
-    const { data: myConvs } = await supabase
+    const { data: myConvs, error: myConvsError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
       .eq("user_id", user.id);
 
+    if (myConvsError) {
+      console.error("Error fetching conversations:", myConvsError);
+      toast.error("Failed to check for existing conversations");
+      return;
+    }
+
     if (myConvs && myConvs.length > 0) {
       const convIds = myConvs.map((c) => c.conversation_id);
-      const { data: sharedConv } = await supabase
+      const { data: sharedConv, error: sharedConvError } = await supabase
         .from("conversation_participants")
         .select("conversation_id")
         .eq("user_id", targetUserId)
         .in("conversation_id", convIds)
         .limit(1)
         .maybeSingle();
+
+      if (sharedConvError) {
+        console.error("Error finding shared conversation:", sharedConvError);
+      }
 
       if (sharedConv) {
         navigate(`/messages/${sharedConv.conversation_id}`);
@@ -377,16 +388,33 @@ export default function Profile() {
     }
 
     // Create new conversation
-    const { data: newConv } = await supabase
+    const { data: newConv, error: convError } = await supabase
       .from("conversations")
       .insert({})
       .select("id")
       .single();
 
+    if (convError) {
+      console.error("Error creating conversation:", convError);
+      toast.error("Failed to start new conversation");
+      return;
+    }
+
     if (newConv) {
-      // Insert both participants — self first (RLS allows), then other
-      await supabase.from("conversation_participants").insert({ conversation_id: newConv.id, user_id: user.id });
-      await supabase.from("conversation_participants").insert({ conversation_id: newConv.id, user_id: targetUserId });
+      // Insert both participants in one call
+      const { error: pError } = await supabase
+        .from("conversation_participants")
+        .insert([
+          { conversation_id: newConv.id, user_id: user.id },
+          { conversation_id: newConv.id, user_id: targetUserId }
+        ]);
+
+      if (pError) {
+        console.error("Error adding participants:", pError);
+        toast.error("Failed to add participants to conversation");
+        return;
+      }
+
       navigate(`/messages/${newConv.id}`);
     }
   };
@@ -800,8 +828,8 @@ export default function Profile() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.key
-                ? "bg-white/10 text-white shadow-md"
-                : "text-muted-foreground hover:text-white/70"
+              ? "bg-white/10 text-white shadow-md"
+              : "text-muted-foreground hover:text-white/70"
               }`}
           >
             {tab.icon} {tab.label}
