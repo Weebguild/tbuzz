@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { MoveLeft, Ghost } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * NotFound Page
- * A premium, interactive 404 state inspired by "Zero Gravity" and "Midnight Glass" aesthetics.
+ * A premium, interactive 404 state inspired by "Zero Gravity" and "Cyber-Glow" aesthetics.
  */
 const NotFound = () => {
   const location = useLocation();
@@ -26,10 +27,23 @@ const NotFound = () => {
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center bg-black overflow-hidden selection:bg-purple-500 selection:text-white">
-      {/* Background Particle Simulation */}
+      {/* 1. Cyber Grid Background */}
+      <div
+        className="absolute inset-0 z-0 opacity-20 pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, #1f1f23 1px, transparent 1px),
+            linear-gradient(to bottom, #1f1f23 1px, transparent 1px)
+          `,
+          backgroundSize: '2rem 2rem',
+          maskImage: 'radial-gradient(circle at center, black, transparent 80%)'
+        }}
+      />
+
+      {/* 2. Background Particle Simulation */}
       <AntiGravityCanvas />
 
-      {/* Foreground Content */}
+      {/* 3. Foreground Content */}
       <div className="relative z-10 w-full max-w-lg px-6">
         <Empty className="border-none bg-transparent p-0 md:p-0">
           <EmptyHeader>
@@ -52,15 +66,32 @@ const NotFound = () => {
           </EmptyHeader>
 
           <EmptyContent className="mt-10">
-            <Button
-              onClick={() => navigate("/")}
-              variant="outline"
-              className="group relative h-12 px-8 rounded-full border-white/10 bg-white/5 text-white hover:bg-white hover:text-black transition-all duration-300"
-            >
-              <MoveLeft className="mr-2 size-4 group-hover:-translate-x-1 transition-transform" />
-              Scan for Home
-              <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
-            </Button>
+            {/* ── CYBER GLOW BUTTON ── */}
+            <div className="group relative">
+              {/* Glow Layers */}
+              <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+
+              <Button
+                onClick={() => navigate("/")}
+                className={cn(
+                  "relative h-12 px-8 rounded-full border border-white/10 bg-black text-white overflow-hidden",
+                  "transition-all duration-500 active:scale-95 z-10"
+                )}
+              >
+                {/* Conic Gradient Spinner */}
+                <div
+                  className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0%,transparent_40%,#a855f7_50%,transparent_60%,transparent_100%)] animate-[spin_4s_linear_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                />
+
+                {/* Inner Mask */}
+                <div className="absolute inset-[1px] rounded-full bg-black z-[-1]" />
+
+                <span className="relative z-10 flex items-center gap-2 font-bold tracking-wide">
+                  <MoveLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
+                  Scan for Home
+                </span>
+              </Button>
+            </div>
           </EmptyContent>
         </Empty>
       </div>
