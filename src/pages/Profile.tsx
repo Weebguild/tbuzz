@@ -387,12 +387,11 @@ export default function Profile() {
       }
     }
 
-    // Create new conversation
-    const { data: newConv, error: convError } = await supabase
+    // Create new conversation (avoid SELECT-on-insert RLS by using a client-generated UUID)
+    const newConvId = crypto.randomUUID();
+    const { error: convError } = await supabase
       .from("conversations")
-      .insert({})
-      .select("id")
-      .single();
+      .insert({ id: newConvId });
 
     if (convError) {
       console.error("Error creating conversation:", convError);
@@ -400,23 +399,28 @@ export default function Profile() {
       return;
     }
 
-    if (newConv) {
-      // Insert both participants in one call
-      const { error: pError } = await supabase
-        .from("conversation_participants")
-        .insert([
-          { conversation_id: newConv.id, user_id: user.id },
-          { conversation_id: newConv.id, user_id: targetUserId }
-        ]);
+    // Insert participants in sequence so RLS can validate second insert
+    const { error: selfParticipantError } = await supabase
+      .from("conversation_participants")
+      .insert({ conversation_id: newConvId, user_id: user.id });
 
-      if (pError) {
-        console.error("Error adding participants:", pError);
-        toast.error("Failed to add participants to conversation");
-        return;
-      }
-
-      navigate(`/messages/${newConv.id}`);
+    if (selfParticipantError) {
+      console.error("Error adding self as participant:", selfParticipantError);
+      toast.error("Failed to start conversation");
+      return;
     }
+
+    const { error: targetParticipantError } = await supabase
+      .from("conversation_participants")
+      .insert({ conversation_id: newConvId, user_id: targetUserId });
+
+    if (targetParticipantError) {
+      console.error("Error adding recipient as participant:", targetParticipantError);
+      toast.error("Failed to add recipient to conversation");
+      return;
+    }
+
+    navigate(`/messages/${newConvId}`);
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
