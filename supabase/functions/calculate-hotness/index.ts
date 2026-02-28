@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     console.error("calculate-hotness failure:", err);
     return new Response(JSON.stringify({
       error: "Internal server error",
-      details: err.message
+      details: err instanceof Error ? err.message : String(err)
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
