@@ -14,6 +14,7 @@ import {
   Loader2,
   LogOut,
   MessageCircle,
+  Mail,
   UserPlus,
   UserCheck,
   AlertTriangle,
@@ -133,6 +134,7 @@ export default function Profile() {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isMutualFollow, setIsMutualFollow] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -175,13 +177,23 @@ export default function Profile() {
     setFollowingCount(following || 0);
 
     if (!isOwnProfile && user?.id) {
-      const { data: followData } = await supabase
-        .from("follows")
-        .select("id")
-        .eq("follower_user_id", user.id)
-        .eq("following_user_id", targetUserId)
-        .maybeSingle();
-      setIsFollowing(!!followData);
+      const [{ data: followData }, { data: reverseFollowData }] = await Promise.all([
+        supabase
+          .from("follows")
+          .select("id")
+          .eq("follower_user_id", user.id)
+          .eq("following_user_id", targetUserId)
+          .maybeSingle(),
+        supabase
+          .from("follows")
+          .select("id")
+          .eq("follower_user_id", targetUserId)
+          .eq("following_user_id", user.id)
+          .maybeSingle(),
+      ]);
+      const following = !!followData;
+      setIsFollowing(following);
+      setIsMutualFollow(following && !!reverseFollowData);
     }
 
     const { data: photoPosts } = await supabase
@@ -322,13 +334,61 @@ export default function Profile() {
     if (isFollowing) {
       await supabase.from("follows").delete().eq("follower_user_id", user.id).eq("following_user_id", targetUserId);
       setIsFollowing(false);
+      setIsMutualFollow(false);
       setFollowersCount((c) => Math.max(0, c - 1));
     } else {
       await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId });
       setIsFollowing(true);
+      // Check if they follow us back
+      const { data: reverseFollow } = await supabase
+        .from("follows")
+        .select("id")
+        .eq("follower_user_id", targetUserId)
+        .eq("following_user_id", user.id)
+        .maybeSingle();
+      setIsMutualFollow(!!reverseFollow);
       setFollowersCount((c) => c + 1);
     }
     setFollowLoading(false);
+  };
+
+  const handleMessageClick = async () => {
+    if (!user || !targetUserId) return;
+    // Find existing conversation
+    const { data: myConvs } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", user.id);
+
+    if (myConvs && myConvs.length > 0) {
+      const convIds = myConvs.map((c) => c.conversation_id);
+      const { data: sharedConv } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", targetUserId)
+        .in("conversation_id", convIds)
+        .limit(1)
+        .maybeSingle();
+
+      if (sharedConv) {
+        navigate(`/messages/${sharedConv.conversation_id}`);
+        return;
+      }
+    }
+
+    // Create new conversation
+    const { data: newConv } = await supabase
+      .from("conversations")
+      .insert({})
+      .select("id")
+      .single();
+
+    if (newConv) {
+      // Insert both participants — self first (RLS allows), then other
+      await supabase.from("conversation_participants").insert({ conversation_id: newConv.id, user_id: user.id });
+      await supabase.from("conversation_participants").insert({ conversation_id: newConv.id, user_id: targetUserId });
+      navigate(`/messages/${newConv.id}`);
+    }
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -671,24 +731,38 @@ export default function Profile() {
           </p>
 
           {!isOwnProfile && (
-            <button
-              onClick={toggleFollow}
-              disabled={followLoading}
-              className={`mt-4 flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all ${isFollowing
-                ? "border border-white/10 text-muted-foreground hover:bg-white/5 hover:border-destructive/50 hover:text-destructive"
-                : "bg-primary text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105"
-                }`}
-            >
-              {isFollowing ? (
-                <>
-                  <UserCheck className="h-4 w-4" /> Following
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4" /> Follow
-                </>
-              )}
-            </button>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                onClick={toggleFollow}
+                disabled={followLoading}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all ${isFollowing
+                  ? "border border-white/10 text-muted-foreground hover:bg-white/5 hover:border-destructive/50 hover:text-destructive"
+                  : "bg-primary text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105"
+                  }`}
+              >
+                {isFollowing ? (
+                  <>
+                    <UserCheck className="h-4 w-4" /> Following
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4" /> Follow
+                  </>
+                )}
+              </button>
+              {isMutualFollow ? (
+                <button
+                  onClick={handleMessageClick}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold border border-white/10 text-foreground hover:bg-white/5 transition-all"
+                >
+                  <Mail className="h-4 w-4" /> Message
+                </button>
+              ) : isFollowing ? (
+                <span className="text-[10px] text-muted-foreground/60 max-w-[120px] text-center leading-tight">
+                  Follow each other to message
+                </span>
+              ) : null}
+            </div>
           )}
 
           {/* ── FOLLOWER STATS ── */}

@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy } from "lucide-react";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
@@ -356,6 +356,12 @@ export default function Feed() {
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Feed</h1>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/leaderboard")}
+            className="flex h-10 w-10 items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <Trophy className="h-5 w-5" />
+          </button>
           <ActivityDrawer />
           <button
             onClick={() => setShowComposer(!showComposer)}
