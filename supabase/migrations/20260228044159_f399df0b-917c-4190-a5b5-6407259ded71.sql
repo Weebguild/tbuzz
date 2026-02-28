@@ -1,0 +1,1 @@
+DROP POLICY "Service role can update hotness" ON public.gossip_posts;
