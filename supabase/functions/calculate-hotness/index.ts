@@ -71,16 +71,16 @@ Deno.serve(async (req) => {
       hotness_score: Number(Math.min(s.score / maxScore, 1.0).toFixed(4)),
     }));
 
-    // 5. Batch Update via Upsert (much faster than individual updates)
-    // We only update the hotness_score field to avoid clobbering other data
-    // Note: upsert requires all non-nullable fields or a specific constraint
-    // Since we're in an edge function, we'll use a transaction-like batch if many records,
-    // or just parallelize a few updates if small, but upsert with onConflict is best.
+    // 5. Batch Update via individual updates (upsert requires all non-nullable fields)
+    const updatePromises = updates.map((u) =>
+      supabase
+        .from("gossip_posts")
+        .update({ hotness_score: u.hotness_score })
+        .eq("id", u.id)
+    );
 
-    const { error: updateError } = await supabase
-      .from("gossip_posts")
-      .upsert(updates, { onConflict: 'id' });
-
+    const results = await Promise.all(updatePromises);
+    const updateError = results.find((r) => r.error)?.error;
     if (updateError) throw updateError;
 
     return new Response(JSON.stringify({
