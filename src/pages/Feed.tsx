@@ -70,19 +70,11 @@ export default function Feed() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showSkeleton, setShowSkeleton] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!loading) {
-      setShowSkeleton(false);
-      return;
-    }
-    const t = setTimeout(() => setShowSkeleton(true), 300);
-    return () => clearTimeout(t);
-  }, [loading]);
+
   const [newPost, setNewPost] = useState("");
   const [showComposer, setShowComposer] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -459,198 +451,216 @@ export default function Feed() {
       </AnimatePresence>
 
       {/* Posts */}
-      {loading ? (
-        showSkeleton ? (
-          <div className="space-y-4">
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-4"
+          >
             <PostSkeleton />
             <PostSkeleton />
             <PostSkeleton />
-          </div>
-        ) : null
-      ) : posts.length === 0 ? (
-        <div className="py-20 text-center">
-          <p className="text-muted-foreground text-sm font-medium">No posts yet. Be the first!</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <motion.div
-              key={post.id}
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="rounded-3xl glass-panel overflow-hidden hover:border-primary/30 transition-colors duration-500">
-                {/* Post header */}
-                <div className="px-4 pt-4 pb-2 flex items-center gap-3">
-                  <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">
-                    <Avatar className="h-9 w-9 ring-1 ring-white/10">
-                      {post.profiles?.avatar_url ? (
-                        <AvatarImage src={post.profiles.avatar_url} />
-                      ) : (
-                        <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
-                          {post.profiles?.display_name?.charAt(0) ?? "?"}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <UserHoverCard userId={post.user_id}>
-                      <button
-                        onClick={() => navigate(`/profile/${post.user_id}`)}
-                        className="font-semibold text-sm text-foreground hover:text-primary transition-colors"
-                      >
-                        {post.profiles?.display_name ?? "Unknown"}
-                      </button>
-                    </UserHoverCard>
-                    <p className="text-xs text-muted-foreground/80">
-                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                    </p>
-                  </div>
-                  {post.user_id !== user?.id ? (
-                    <button
-                      onClick={() => toggleFollow(post.user_id)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${followingIds.has(post.user_id) ? "border border-white/10 text-muted-foreground hover:bg-white/5" : "bg-white/10 text-foreground hover:bg-white/20"}`}
-                    >
-                      {followingIds.has(post.user_id) ? "Following" : "Follow"}
+          </motion.div>
+        ) : posts.length === 0 ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="py-20 text-center"
+          >
+            <p className="text-muted-foreground text-sm font-medium">No posts yet. Be the first!</p>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-4"
+          >
+            {posts.map((post) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="rounded-3xl glass-panel overflow-hidden hover:border-primary/30 transition-colors duration-500">
+                  {/* Post header */}
+                  <div className="px-4 pt-4 pb-2 flex items-center gap-3">
+                    <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">
+                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                        {post.profiles?.avatar_url ? (
+                          <AvatarImage src={post.profiles.avatar_url} />
+                        ) : (
+                          <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                            {post.profiles?.display_name?.charAt(0) ?? "?"}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
                     </button>
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
-                          <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
-                        <DropdownMenuItem
-                          onClick={() => setDeletePostId(post.id)}
-                          className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                        >
-                          Delete Post
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-
-                {/* Post image */}
-                {post.image_url && (
-                  <NeonSparkOverlay
-                    className="w-full mt-2 cursor-pointer overflow-hidden"
-                    onDoubleTap={() => {
-                      if (!post.has_liked) toggleLike(post.id, false);
-                    }}
-                    onSingleTap={() => setExpandedImage(post)}
-                  >
-                    <img
-                      src={post.image_url}
-                      alt="Post"
-                      className="w-full max-h-80 object-cover pointer-events-none"
-                      loading="lazy"
-                    />
-                  </NeonSparkOverlay>
-                )}
-
-                {/* Post content */}
-                <div className="px-4 py-3">
-                  <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
-                </div>
-
-                {/* Action row */}
-                <div className="px-4 pb-3 flex items-center gap-4">
-                  <button
-                    onClick={() => toggleLike(post.id, post.has_liked)}
-                    className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
-                    {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
-                  </button>
-                  <button
-                    onClick={() => toggleComments(post.id)}
-                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
-                  </button>
-                  <motion.button
-                    onClick={() => toggleSave(post.id, post.has_saved)}
-                    whileTap={{ scale: 1.4 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    className={`ml-auto text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <Bookmark className={`h-4 w-4 ${post.has_saved ? "fill-current" : ""}`} />
-                  </motion.button>
-                </div>
-
-                {/* Comments */}
-                <AnimatePresence>
-                  {expandedComments.has(post.id) && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3 bg-black/20"
-                    >
-                      {(commentsMap[post.id] ?? []).map((c) => (
-                        <div key={c.id} className="flex gap-2.5">
-                          <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
-                            <Avatar className="h-6 w-6 ring-1 ring-white/10">
-                              {c.avatar_url ? (
-                                <AvatarImage src={c.avatar_url} />
-                              ) : (
-                                <AvatarFallback className="bg-black/40 text-[10px] font-bold text-foreground">
-                                  {c.display_name.charAt(0)}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                          </button>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <UserHoverCard userId={c.user_id}>
-                                <button
-                                  onClick={() => navigate(`/profile/${c.user_id}`)}
-                                  className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
-                                >
-                                  {c.display_name}
-                                </button>
-                              </UserHoverCard>
-                              <span className="text-[10px] text-muted-foreground/60">
-                                {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                              </span>
-                            </div>
-                            <p className="text-xs leading-relaxed text-foreground/80 mt-0.5">{c.content}</p>
-                          </div>
-                        </div>
-                      ))}
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          placeholder="Write a comment..."
-                          value={commentInputs[post.id] ?? ""}
-                          onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
-                          className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-4 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
-                        />
+                    <div className="flex-1 min-w-0">
+                      <UserHoverCard userId={post.user_id}>
                         <button
-                          onClick={() => submitComment(post.id)}
-                          disabled={!commentInputs[post.id]?.trim()}
-                          className="h-9 w-9 flex items-center justify-center rounded-full bg-primary text-white disabled:opacity-30 disabled:bg-white/10 shrink-0 transition-transform active:scale-95 shadow-[0_0_10px_rgba(124,58,237,0.3)] disabled:shadow-none"
+                          onClick={() => navigate(`/profile/${post.user_id}`)}
+                          className="font-semibold text-sm text-foreground hover:text-primary transition-colors"
                         >
-                          <Send className="h-3.5 w-3.5 ml-0.5" />
+                          {post.profiles?.display_name ?? "Unknown"}
                         </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          ))}
+                      </UserHoverCard>
+                      <p className="text-xs text-muted-foreground/80">
+                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                    {post.user_id !== user?.id ? (
+                      <button
+                        onClick={() => toggleFollow(post.user_id)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${followingIds.has(post.user_id) ? "border border-white/10 text-muted-foreground hover:bg-white/5" : "bg-white/10 text-foreground hover:bg-white/20"}`}
+                      >
+                        {followingIds.has(post.user_id) ? "Following" : "Follow"}
+                      </button>
+                    ) : (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
+                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
+                          <DropdownMenuItem
+                            onClick={() => setDeletePostId(post.id)}
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                          >
+                            Delete Post
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
 
-          {/* Infinite scroll sentinel */}
-          <div ref={sentinelRef} className="flex justify-center py-4">
-            {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-          </div>
-        </div>
-      )}
+                  {/* Post image */}
+                  {post.image_url && (
+                    <NeonSparkOverlay
+                      className="w-full mt-2 cursor-pointer overflow-hidden"
+                      onDoubleTap={() => {
+                        if (!post.has_liked) toggleLike(post.id, false);
+                      }}
+                      onSingleTap={() => setExpandedImage(post)}
+                    >
+                      <img
+                        src={post.image_url}
+                        alt="Post"
+                        className="w-full max-h-80 object-cover pointer-events-none"
+                        loading="lazy"
+                      />
+                    </NeonSparkOverlay>
+                  )}
+
+                  {/* Post content */}
+                  <div className="px-4 py-3">
+                    <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
+                  </div>
+
+                  {/* Action row */}
+                  <div className="px-4 pb-3 flex items-center gap-4">
+                    <button
+                      onClick={() => toggleLike(post.id, post.has_liked)}
+                      className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
+                      {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
+                    </button>
+                    <button
+                      onClick={() => toggleComments(post.id)}
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
+                    </button>
+                    <motion.button
+                      onClick={() => toggleSave(post.id, post.has_saved)}
+                      whileTap={{ scale: 1.4 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      className={`ml-auto text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      <Bookmark className={`h-4 w-4 ${post.has_saved ? "fill-current" : ""}`} />
+                    </motion.button>
+                  </div>
+
+                  {/* Comments */}
+                  <AnimatePresence>
+                    {expandedComments.has(post.id) && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3 bg-black/20"
+                      >
+                        {(commentsMap[post.id] ?? []).map((c) => (
+                          <div key={c.id} className="flex gap-2.5">
+                            <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
+                              <Avatar className="h-6 w-6 ring-1 ring-white/10">
+                                {c.avatar_url ? (
+                                  <AvatarImage src={c.avatar_url} />
+                                ) : (
+                                  <AvatarFallback className="bg-black/40 text-[10px] font-bold text-foreground">
+                                    {c.display_name.charAt(0)}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                            </button>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <UserHoverCard userId={c.user_id}>
+                                  <button
+                                    onClick={() => navigate(`/profile/${c.user_id}`)}
+                                    className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                                  >
+                                    {c.display_name}
+                                  </button>
+                                </UserHoverCard>
+                                <span className="text-[10px] text-muted-foreground/60">
+                                  {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                              <p className="text-xs leading-relaxed text-foreground/80 mt-0.5">{c.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="flex gap-2 mt-2">
+                          <Input
+                            placeholder="Write a comment..."
+                            value={commentInputs[post.id] ?? ""}
+                            onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
+                            className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-4 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                          />
+                          <button
+                            onClick={() => submitComment(post.id)}
+                            disabled={!commentInputs[post.id]?.trim()}
+                            className="h-9 w-9 flex items-center justify-center rounded-full bg-primary text-white disabled:opacity-30 disabled:bg-white/10 shrink-0 transition-transform active:scale-95 shadow-[0_0_10px_rgba(124,58,237,0.3)] disabled:shadow-none"
+                          >
+                            <Send className="h-3.5 w-3.5 ml-0.5" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            ))}
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="flex justify-center py-4">
+              {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       {/* Fullscreen image expander */}
       <AnimatePresence>

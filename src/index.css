@@ -27,7 +27,8 @@
     --muted: 0 0% 10%;
     --muted-foreground: 220 9% 60%;
 
-    --accent: 330 81% 60%; /* Neon Pink accent */
+    --accent: 330 81% 60%;
+    /* Neon Pink accent */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -74,9 +75,11 @@
   .safe-area-pb {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
   }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -84,7 +87,8 @@
 
   /* The core component of the Midnight Glass look */
   .glass-panel {
-    @apply bg-white/[0.02] backdrop-blur-[24px] border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
+    @apply bg-white/[0.02] backdrop-blur-[24px] border border-white/[0.05];
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -92,20 +96,40 @@
   0% {
     transform: translateX(-150%) skewX(-15deg);
   }
+
   100% {
     transform: translateX(150%) skewX(-15deg);
   }
 }
+
 .animate-shimmer {
-  animation: shimmer 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  animation: shimmer 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes skeleton-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-skeleton-pulse {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes urgent-pulse {
+
   0%,
   100% {
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.08);
     opacity: 0.7;
@@ -235,6 +259,7 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -244,6 +269,7 @@
   0% {
     transform: translate(-50%, -50%) rotate(0deg) scale(1);
   }
+
   100% {
     transform: translate(-40%, -60%) rotate(15deg) scale(1.1);
   }
@@ -256,30 +282,35 @@
       0 0 30px 6px rgba(239, 68, 68, 0.3),
       0 0 50px 10px rgba(255, 160, 50, 0.15);
   }
+
   20% {
     box-shadow:
       0 0 18px 4px rgba(239, 68, 68, 0.6),
       0 0 35px 8px rgba(255, 120, 30, 0.35),
       0 0 55px 12px rgba(255, 80, 20, 0.12);
   }
+
   40% {
     box-shadow:
       0 0 10px 2px rgba(255, 160, 50, 0.45),
       0 0 25px 5px rgba(239, 68, 68, 0.25),
       0 0 45px 8px rgba(255, 100, 20, 0.1);
   }
+
   60% {
     box-shadow:
       0 0 20px 5px rgba(255, 80, 20, 0.55),
       0 0 38px 9px rgba(239, 68, 68, 0.4),
       0 0 60px 14px rgba(255, 160, 50, 0.18);
   }
+
   80% {
     box-shadow:
       0 0 14px 3px rgba(239, 68, 68, 0.5),
       0 0 28px 6px rgba(255, 120, 30, 0.3),
       0 0 48px 10px rgba(255, 80, 20, 0.13);
   }
+
   100% {
     box-shadow:
       0 0 16px 4px rgba(255, 120, 30, 0.5),
@@ -287,11 +318,13 @@
       0 0 52px 11px rgba(255, 160, 50, 0.16);
   }
 }
+
 /* ── THE SHATTER SEQUENCE ── */
 .is-shattering .glass-floaters::before {
   animation: shatter-fly-1 0.6s forwards cubic-bezier(0.25, 1, 0.5, 1) !important;
   opacity: 1 !important;
-  background: rgba(239, 68, 68, 0.6) !important; /* Flash red on shatter */
+  background: rgba(239, 68, 68, 0.6) !important;
+  /* Flash red on shatter */
 }
 
 .is-shattering .glass-floaters::after {
@@ -304,6 +337,7 @@
   0% {
     transform: translate(-50%, -50%) rotate(0deg) scale(1);
   }
+
   100% {
     transform: translate(-400px, -600px) rotate(720deg) scale(0);
     opacity: 0;
@@ -315,6 +349,7 @@
   0% {
     transform: translate(0, 0) rotate(0deg) scale(1);
   }
+
   100% {
     transform: translate(400px, -300px) rotate(-720deg) scale(0);
     opacity: 0;

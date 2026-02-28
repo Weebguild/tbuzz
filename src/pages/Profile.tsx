@@ -132,13 +132,8 @@ export default function Profile() {
   const [followLoading, setFollowLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
-  const [showSkeleton, setShowSkeleton] = useState(false);
 
-  useEffect(() => {
-    if (!loading) { setShowSkeleton(false); return; }
-    const t = setTimeout(() => setShowSkeleton(true), 300);
-    return () => clearTimeout(t);
-  }, [loading]);
+
   const [activeTab, setActiveTab] = useState<ProfileTab>("posts");
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
 
@@ -451,13 +446,19 @@ export default function Profile() {
   };
 
   if (loading) {
-    if (!showSkeleton) return null;
     return (
-      <div className="px-4 pt-6 pb-24 space-y-4">
+      <motion.div
+        key="profile-skeleton"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="px-4 pt-6 pb-24 space-y-4"
+      >
+        <div className="rounded-3xl glass-panel p-6 mb-6 h-64 animate-skeleton-pulse bg-white/[0.03]" />
         <PostSkeleton />
         <PostSkeleton />
         <PostSkeleton />
-      </div>
+      </motion.div>
     );
   }
 
