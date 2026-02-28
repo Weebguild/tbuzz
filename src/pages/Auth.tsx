@@ -186,22 +186,22 @@ export default function Auth() {
                     {isLogin && !email.includes("@") && email.length > 0 ? (
                       <motion.div
                         key="user"
-                        initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
-                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, rotate: 10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 text-primary"
                       >
                         <User className="h-4 w-4" />
                       </motion.div>
                     ) : (
                       <motion.div
                         key="mail"
-                        initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
-                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, rotate: 10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 text-muted-foreground"
                       >
                         <Mail className="h-4 w-4" />
                       </motion.div>

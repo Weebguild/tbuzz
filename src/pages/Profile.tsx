@@ -496,12 +496,7 @@ export default function Profile() {
   const tabs: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
     { key: "posts", label: "Posts", icon: <LayoutList className="h-4 w-4" /> },
     { key: "gallery", label: "Gallery", icon: <Grid className="h-4 w-4" /> },
-    ...(isOwnProfile
-      ? [
-        { key: "saved" as ProfileTab, label: "Saved", icon: <Bookmark className="h-4 w-4" /> },
-        { key: "settings" as ProfileTab, label: "Settings", icon: <Settings className="h-4 w-4" /> },
-      ]
-      : []),
+    ...(isOwnProfile ? [{ key: "saved" as ProfileTab, label: "Saved", icon: <Bookmark className="h-4 w-4" /> }] : []),
   ];
 
   return (
@@ -511,90 +506,128 @@ export default function Profile() {
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Profile</h1>
         <div className="flex gap-2">
           {isOwnProfile && (
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <Dialog>
               <DialogTrigger asChild>
                 <button className="h-10 px-4 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-white gap-2 text-sm font-bold">
-                  <Edit3 className="h-4 w-4" />
-                  Edit Profile
+                  <Settings className="h-4 w-4" />
+                  Settings
                 </button>
               </DialogTrigger>
-              <DialogContent className="glass-panel border-white/10 bg-[#0A0A0A]/95 backdrop-blur-2xl text-foreground rounded-3xl sm:max-w-[425px]">
+              <DialogContent className="glass-panel border-white/10 bg-[#0A0A0A]/95 backdrop-blur-2xl text-foreground rounded-3xl sm:max-w-[400px]">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold tracking-tight">Edit Profile</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold tracking-tight">Settings</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-6 py-6">
-                  <div className="flex flex-col items-center gap-4 mb-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      Profile Picture
-                    </Label>
-                    <label className="relative cursor-pointer group">
-                      <Avatar className="h-24 w-24 ring-4 ring-white/10 group-hover:ring-primary transition-all shadow-[0_0_20px_rgba(124,58,237,0.2)]">
-                        {editAvatarPreview ? (
-                          <AvatarImage src={editAvatarPreview} className="object-cover" />
-                        ) : profile.avatar_url ? (
-                          <AvatarImage src={profile.avatar_url} className="object-cover" />
-                        ) : (
-                          <AvatarFallback className="bg-white/5 text-2xl font-bold uppercase">
-                            {editName.charAt(0)}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                        <Camera className="h-6 w-6 text-white" />
-                      </div>
-                      <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-                    </label>
-                  </div>
+                <div className="grid gap-4 py-6">
+                  <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogTrigger asChild>
+                      <button className="flex items-center justify-between w-full p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                            <Edit3 className="h-5 w-5" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-sm font-bold text-foreground">Edit Profile</p>
+                            <p className="text-xs text-muted-foreground">Change username, bio, and avatar</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="glass-panel border-white/10 bg-[#0A0A0A]/95 backdrop-blur-2xl text-foreground rounded-3xl sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold tracking-tight">Edit Profile</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-6 py-6 max-h-[70vh] overflow-y-auto no-scrollbar pr-1">
+                        <div className="flex flex-col items-center gap-4 mb-2">
+                          <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                            Profile Picture
+                          </Label>
+                          <label className="relative cursor-pointer group">
+                            <Avatar className="h-24 w-24 ring-4 ring-white/10 group-hover:ring-primary transition-all shadow-[0_0_20px_rgba(124,58,237,0.2)]">
+                              {editAvatarPreview ? (
+                                <AvatarImage src={editAvatarPreview} className="object-cover" />
+                              ) : profile.avatar_url ? (
+                                <AvatarImage src={profile.avatar_url} className="object-cover" />
+                              ) : (
+                                <AvatarFallback className="bg-white/5 text-2xl font-bold uppercase">
+                                  {editName.charAt(0)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                              <Camera className="h-6 w-6 text-white" />
+                            </div>
+                            <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                          </label>
+                        </div>
 
-                  <div className="grid gap-2">
-                    <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      Username
-                    </Label>
-                    <Input
-                      id="name"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value.toLowerCase().replace(/\s/g, ""))}
-                      placeholder="Choose a unique username"
-                      className="bg-white/5 border-white/10 rounded-xl focus:ring-primary focus:border-primary transition-all font-mono text-sm"
-                      maxLength={20}
-                    />
-                    <p className="text-[10px] text-muted-foreground italic">No spaces, lowercase only. This is your login ID.</p>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="bio" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                        Bio
-                      </Label>
-                      <span className={cn("text-[10px] font-bold", editBio.length > 150 ? "text-destructive" : "text-muted-foreground")}>
-                        {editBio.length}/160
-                      </span>
-                    </div>
-                    <Textarea
-                      id="bio"
-                      value={editBio}
-                      onChange={(e) => setEditBio(e.target.value)}
-                      placeholder="Tell us about yourself..."
-                      maxLength={160}
-                      className="bg-white/5 border-white/10 rounded-xl min-h-[100px] focus:ring-primary focus:border-primary transition-all resize-none text-sm leading-relaxed"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    onClick={handleSaveProfile}
-                    disabled={isSaving}
-                    className="w-full rounded-full bg-primary hover:bg-primary/90 text-white font-bold h-12 shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all active:scale-95"
+                        <div className="grid gap-2">
+                          <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                            Username
+                          </Label>
+                          <Input
+                            id="name"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                            placeholder="Choose a unique username"
+                            className="bg-white/5 border-white/10 rounded-xl focus:ring-primary focus:border-primary transition-all font-mono text-sm"
+                            maxLength={20}
+                          />
+                          <p className="text-[10px] text-muted-foreground italic">No spaces, lowercase only. This is your login ID.</p>
+                        </div>
+                        <div className="grid gap-2">
+                          <div className="flex justify-between items-center">
+                            <Label htmlFor="bio" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                              Bio
+                            </Label>
+                            <span className={cn("text-[10px] font-bold", editBio.length > 150 ? "text-destructive" : "text-muted-foreground")}>
+                              {editBio.length}/160
+                            </span>
+                          </div>
+                          <Textarea
+                            id="bio"
+                            value={editBio}
+                            onChange={(e) => setEditBio(e.target.value)}
+                            placeholder="Tell us about yourself..."
+                            maxLength={160}
+                            className="bg-white/5 border-white/10 rounded-xl min-h-[100px] focus:ring-primary focus:border-primary transition-all resize-none text-sm leading-relaxed"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          onClick={handleSaveProfile}
+                          disabled={isSaving}
+                          className="w-full rounded-full bg-primary hover:bg-primary/90 text-white font-bold h-12 shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all active:scale-95"
+                        >
+                          {isSaving ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <button
+                    onClick={() => setShowLogoutDialog(true)}
+                    className="flex items-center justify-between w-full p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group"
                   >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </Button>
-                </DialogFooter>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-destructive/10 text-destructive group-hover:bg-destructive group-hover:text-white transition-colors">
+                        <LogOut className="h-5 w-5" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-foreground">Sign Out</p>
+                        <p className="text-xs text-muted-foreground">Logout of your account</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
               </DialogContent>
             </Dialog>
           )}
@@ -683,7 +716,7 @@ export default function Profile() {
 
       {/* ── TABS ── */}
       <div
-        className={`flex gap-2 mb-6 p-1 glass-panel rounded-full mx-auto ${isOwnProfile ? "max-w-md" : "max-w-[200px]"
+        className={`flex gap-2 mb-6 p-1 glass-panel rounded-full mx-auto ${isOwnProfile ? "max-w-[300px]" : "max-w-[200px]"
           }`}
       >
         {tabs.map((tab) => (
@@ -691,8 +724,8 @@ export default function Profile() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.key
-              ? "bg-white/10 text-white shadow-md"
-              : "text-muted-foreground hover:text-white/70"
+                ? "bg-white/10 text-white shadow-md"
+                : "text-muted-foreground hover:text-white/70"
               }`}
           >
             {tab.icon} {tab.label}
@@ -930,59 +963,6 @@ export default function Profile() {
                 ))
               )
             )}
-          </motion.div>
-        )}
-
-        {/* SETTINGS TAB */}
-        {activeTab === "settings" && isOwnProfile && (
-          <motion.div
-            key="settings"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-4"
-          >
-            <div className="rounded-3xl glass-panel p-6 space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground px-1">
-                  Account Settings
-                </h3>
-                <div className="grid gap-2">
-                  <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                    <DialogTrigger asChild>
-                      <button className="flex items-center justify-between w-full p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                            <Edit3 className="h-5 w-5" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-sm font-bold text-foreground">Edit Profile</p>
-                            <p className="text-xs text-muted-foreground">Change username, bio, and avatar</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
-                      </button>
-                    </DialogTrigger>
-                    {/* DialogContent remains the same, I'll keep the existing one below */}
-                  </Dialog>
-
-                  <button
-                    onClick={() => setShowLogoutDialog(true)}
-                    className="flex items-center justify-between w-full p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-destructive/10 text-destructive group-hover:bg-destructive group-hover:text-white transition-colors">
-                        <LogOut className="h-5 w-5" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-foreground">Sign Out</p>
-                        <p className="text-xs text-muted-foreground">Logout of your account</p>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
