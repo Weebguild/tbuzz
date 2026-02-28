@@ -89,32 +89,28 @@ export default function Auth() {
         }
       }
       if (isLogin) {
-        let loginEmail = email;
 
-        // If it doesn't look like an email, try resolving it as a display_name (username)
+        // If it doesn't look like an email, use the secure edge function
         if (!email.includes("@")) {
-          const { data, error: profileError } = await supabase
-            .rpc("resolve_username_to_email" as any, { target_display_name: email });
+          const { data: fnData, error: fnError } = await supabase.functions.invoke(
+            "login-with-username",
+            { body: { username: email, password } }
+          );
 
-          if (profileError) {
-            console.error("Profile lookup error:", profileError);
-            toast.error("Error looking up username");
+          if (fnError || !fnData?.session) {
+            toast.error("Invalid username or password");
             setLoading(false);
             return;
           }
 
-          if (!data) {
-            toast.error("User not found with that username");
-            setLoading(false);
-            return;
-          }
-
-          loginEmail = data as string;
+          // Set the session returned by the edge function
+          await supabase.auth.setSession(fnData.session);
+          toast.success("Welcome back!");
+        } else {
+          const { error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          toast.success("Welcome back!");
         }
-
-        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
-        if (error) throw error;
-        toast.success("Welcome back!");
       } else {
         const { error } = await supabase.auth.signUp({
           email,
