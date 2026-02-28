@@ -12,17 +12,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-
-    if (!authHeader || (authHeader !== `Bearer ${serviceRoleKey}` && req.headers.get("apikey") !== serviceRoleKey)) {
-      console.error("Unauthorized attempt to access calculate-hotness");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
