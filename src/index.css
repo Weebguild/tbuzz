@@ -151,108 +151,109 @@
   border-radius: 2rem;
 }
 
-.glass-card-box {
+/* ── MODERN GLASS CARD SYSTEM ── */
+.glass-card-modern {
   position: relative;
+  border-radius: 1.5rem;
+  padding: 1px;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02));
   overflow: hidden;
-  border-radius: 2rem;
-}
-
-.glass-card-box::before,
-.glass-card-box::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  transform-origin: bottom right;
-  animation: glass-rotate 6s linear infinite;
-  pointer-events: none;
-}
-
-.glass-card-box::after {
-  animation-delay: -3s;
-}
-
-/* Heat-tier gradients for pseudo-elements */
-.card-heat-low .glass-card-box::before,
-.card-heat-low .glass-card-box::after {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.card-heat-medium .glass-card-box::before,
-.card-heat-medium .glass-card-box::after {
-  background: linear-gradient(315deg, #03a9f4, #ff0058);
-  opacity: 0.4;
-}
-
-.card-heat-high .glass-card-box::before,
-.card-heat-high .glass-card-box::after {
-  background: linear-gradient(315deg, #ffbc00, #ff0058);
-  opacity: 0.5;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .glass-card-inner {
   position: relative;
   z-index: 2;
-  padding: 1rem;
-  border-radius: 2rem;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  margin: 2px;
+  padding: 1.25rem;
+  border-radius: calc(1.5rem - 1px);
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-/* Floating glass squares — hidden by default */
-.glass-card-box .glass-floaters {
-  display: block;
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: hidden;
-  border-radius: 2rem;
+/* ── AURORA FLOW (Medium Heat) ── */
+@keyframes aurora-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-.glass-card-box .glass-floaters::before,
-.glass-card-box .glass-floaters::after {
-  content: "";
-  position: absolute;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 0.5rem;
-  opacity: 0;
-  pointer-events: none;
+.card-heat-medium {
+  background: linear-gradient(270deg,
+      rgba(124, 58, 237, 0.2),
+      rgba(236, 72, 153, 0.2),
+      rgba(124, 58, 237, 0.2));
+  background-size: 200% 200%;
+  animation: aurora-flow 6s ease infinite;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.1);
 }
 
-.glass-card-box .glass-floaters::before {
-  top: 50%;
-  left: 50%;
-  width: 60px;
-  height: 60px;
-  transform: translate(-50%, -50%);
+/* ── MOLTEN PULSE (High Heat) ── */
+@keyframes molten-pulse {
+
+  0%,
+  100% {
+    box-shadow:
+      0 0 15px rgba(255, 188, 0, 0.3),
+      0 0 30px rgba(255, 0, 88, 0.2);
+    border-color: rgba(255, 188, 0, 0.4);
+  }
+
+  50% {
+    box-shadow:
+      0 0 25px rgba(255, 188, 0, 0.5),
+      0 0 50px rgba(255, 0, 88, 0.4);
+    border-color: rgba(255, 188, 0, 0.6);
+  }
 }
 
-.glass-card-box .glass-floaters::after {
-  bottom: 8%;
-  right: 8%;
-  width: 40px;
-  height: 40px;
+@keyframes thermal-distort {
+
+  0%,
+  100% {
+    filter: contrast(1.1) brightness(1.1);
+  }
+
+  50% {
+    filter: contrast(1.2) brightness(1.2) saturate(1.2);
+  }
 }
 
-/* Glass squares only visible on medium+ heat */
-.card-heat-medium .glass-card-box .glass-floaters::before,
-.card-heat-medium .glass-card-box .glass-floaters::after {
-  opacity: 0.5;
-  animation: glass-float 4s ease-in-out infinite alternate;
+.card-heat-high {
+  background: linear-gradient(315deg,
+      #ffbc00,
+      #ff0058,
+      #ffbc00);
+  background-size: 200% 200%;
+  animation:
+    aurora-flow 3s linear infinite,
+    molten-pulse 2s ease-in-out infinite;
+  padding: 1.5px;
+  /* Thicker border for high heat */
 }
 
-.card-heat-high .glass-card-box .glass-floaters::before,
-.card-heat-high .glass-card-box .glass-floaters::after {
-  opacity: 0.6;
-  animation: glass-float 2s ease-in-out infinite alternate;
+.card-heat-high .glass-card-inner {
+  background: rgba(10, 10, 10, 0.7);
+  animation: thermal-distort 3s ease-in-out infinite;
+}
+
+.glass-card-modern:hover {
+  transform: translateY(-2px) scale(1.01);
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.05));
 }
 
 @keyframes glass-rotate {

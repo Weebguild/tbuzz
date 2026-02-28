@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, ArrowRight, Check } from "lucide-react";
+import { Loader2, Mail, Lock, ArrowRight, Check, User } from "lucide-react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -89,29 +89,32 @@ export default function Auth() {
         }
       }
       if (isLogin) {
-        
+        let loginEmail = email;
 
-        // If it doesn't look like an email, use the secure edge function
+        // If it doesn't look like an email, try resolving it as a display_name (username)
         if (!email.includes("@")) {
-          const res = await supabase.functions.invoke("login-with-username", {
-            body: { username: email, password },
-          });
+          const { data, error: profileError } = await supabase
+            .rpc("resolve_username_to_email" as any, { target_display_name: email });
 
-          if (res.error || !res.data?.session) {
-            toast.error("Invalid username or password");
+          if (profileError) {
+            console.error("Profile lookup error:", profileError);
+            toast.error("Error looking up username");
             setLoading(false);
             return;
           }
 
-          // Set the session from the edge function response
-          const { error: sessionError } = await supabase.auth.setSession(res.data.session);
-          if (sessionError) throw sessionError;
-          toast.success("Welcome back!");
-        } else {
-          const { error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) throw error;
-          toast.success("Welcome back!");
+          if (!data) {
+            toast.error("User not found with that username");
+            setLoading(false);
+            return;
+          }
+
+          loginEmail = data as string;
         }
+
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+        if (error) throw error;
+        toast.success("Welcome back!");
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -179,7 +182,31 @@ export default function Auth() {
                   {isLogin ? "Email or Username" : "University Email"}
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <AnimatePresence mode="wait" initial={false}>
+                    {isLogin && !email.includes("@") && email.length > 0 ? (
+                      <motion.div
+                        key="user"
+                        initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, rotate: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary"
+                      >
+                        <User className="h-4 w-4" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="mail"
+                        initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, rotate: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      >
+                        <Mail className="h-4 w-4" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <Input
                     id="email"
                     type={isLogin ? "text" : "email"}
@@ -187,7 +214,7 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground transition-all duration-300 focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>

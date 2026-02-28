@@ -113,8 +113,9 @@ export default function Onboarding() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Display Name</Label>
-              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="What should we call you?" required className="h-10 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground" />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Username</Label>
+              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Choose a unique username" required className="h-10 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground" />
+              <p className="text-[11px] text-muted-foreground">This is how students will find and mention you.</p>
             </div>
 
             <div className="space-y-2">

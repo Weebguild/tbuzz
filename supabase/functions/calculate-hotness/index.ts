@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,7 +7,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-Deno.serve(async (req) => {
+interface GossipPost {
+  id: string;
+  created_at: string;
+  expires_at: string;
+  hotness_score?: number;
+}
+
+interface Reaction {
+  gossip_post_id: string;
+}
+
+interface Comment {
+  gossip_post_id: string;
+}
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -41,7 +57,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const postIds = posts.map((p) => p.id);
+    const typedPosts = posts as GossipPost[];
+    const postIds = typedPosts.map((p) => p.id);
 
     // 3. Fetch collective metrics
     const [{ data: reactions }, { data: comments }] = await Promise.all([
@@ -49,12 +66,15 @@ Deno.serve(async (req) => {
       supabase.from("comments").select("gossip_post_id").in("gossip_post_id", postIds),
     ]);
 
+    const typedReactions = (reactions || []) as Reaction[];
+    const typedComments = (comments || []) as Comment[];
+
     const now = Date.now();
 
     // 4. Calculate Scores
-    const rawScores = posts.map((post) => {
-      const likes = reactions?.filter((r) => r.gossip_post_id === post.id).length ?? 0;
-      const commentCount = comments?.filter((c) => c.gossip_post_id === post.id).length ?? 0;
+    const rawScores = typedPosts.map((post) => {
+      const likes = typedReactions.filter((r) => r.gossip_post_id === post.id).length;
+      const commentCount = typedComments.filter((c) => c.gossip_post_id === post.id).length;
 
       // Prevent division by zero or negative skew
       const hoursOld = Math.max((now - new Date(post.created_at).getTime()) / (1000 * 60 * 60), 0.01);
