@@ -1,81 +1,118 @@
-# "T" — University Social Community App (Phase 1)
+
+
+# Real-Time Direct Messaging (DM) Feature
 
 ## Overview
-
-A bold, vibrant campus social platform where students connect, share content, and anonymously gossip — with a competitive leaderboard. Dark theme with electric purple and neon pink accents, mobile-first design.
-
-## Backend (Supabase)
-
-- **Authentication** with email domain whitelisting —  make the email domain whitelisting dynamic, not limited to .[ac.uk](http://ac.uk) domains. Any university email domain should be supported, with domains managed through the admin dashboard where I can add new universities and their email domains over time
-- **Database tables**: universities, profiles, posts, gossip_posts, reactions, leaderboard_scores, reports, user_roles, blocked_users
-- **Storage buckets** for profile photos and post images
-- **Row-Level Security** ensuring students only see content from their own campus
-- **Edge function** for profanity filtering on gossip submissions
+Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
 
 ---
 
-## Phase 1 Features
+## Phase 1: Database Schema & Security
 
-### 1. Auth & Onboarding
+### Migration: Create tables, functions, RLS, and realtime
 
-- Sign up / login restricted to whitelisted university email domains
-- During signup, user selects their university from a list (auto-detected from email domain)
-- Profile setup: display name, photo upload, bio, interests
+**New tables:**
+- `conversations` (id uuid PK, created_at, updated_at)
+- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
+- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
 
-### 2. User Profiles
+**Security definer functions:**
+- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
+- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
 
-- Public profile page showing photo, name, bio, university, interests
-- Follower/following counts
-- Current leaderboard rank and gossip score
-- Follow/unfollow buttons
+**RLS policies (all restrictive):**
+- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
+- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
+- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
+- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
 
-### 3. Campus Feed
+**Realtime:** Enable realtime for `messages` table.
 
-- Card-based feed of photo + text posts from same campus only
-- Bold typography, vivid gradient cards on dark background
-- Like, emoji reactions, and comments on posts
-- Create post with text and optional image upload
-- Bottom navigation bar: **Feed | Gossip | Leaderboard | Profile**
-
-### 4. Anonymous Gossip
-
-- Dedicated gossip tab — anonymous posts about campus members
-- Each gossip author gets a random fun alias + avatar (e.g. "MysteriousPanda42")
-- Tag another campus member in a gossip post
-- Upvotes and emoji reactions on gossip posts
-- Profanity auto-filter blocks offensive language before posting
-- Report/flag button on every gossip post
-
-### 5. Leaderboard
-
-- Weekly campus leaderboard ranking students by **Gossip Score**
-- Score based on: times tagged in gossip, upvotes on gossip about them, engagement on their own posts
-- Bold visual top-10 ranking with rank badges, avatars, names, scores
-- Resets every Monday at midnight (cron job)
-- Previous week's winner archived and highlighted
-
-### 6. Safety & Moderation
-
-- Report button on all gossip posts
-- Block/mute other users
-- Admin moderation dashboard to review and remove flagged content
-- Auto-filter for slurs and offensive language via edge function
+**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
 
 ---
 
-## Design Direction
+## Phase 2: Frontend -- New Files
 
-- **Dark base** with electric purple (#8B5CF6) and neon pink (#EC4899) accents
-- Large, bold typography — expressive and youthful
-- Gradient cards, glowing highlights, smooth transitions
-- Mobile-first responsive layout with bottom tab navigation
-- Inspired by TikTok/BeReal energy
+### `src/hooks/use-messages.ts`
+Custom hook that:
+- Fetches message history for a conversation ordered by created_at ASC
+- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
+- Returns messages array, sendMessage function, loading state
+
+### `src/pages/Messages.tsx` (Inbox)
+- Route: `/messages`
+- Lists all conversations for the current user
+- Shows other participant's avatar, name, last message snippet, timestamp
+- Clicking a conversation navigates to `/messages/:conversationId`
+- Sorted by `updated_at` descending
+
+### `src/pages/ChatRoom.tsx`
+- Route: `/messages/:conversationId`
+- Header: back button, recipient avatar + name
+- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
+- Auto-scroll to bottom on new messages
+- Input + Send button (paper plane icon) at bottom
+- Marks messages as read when viewing
 
 ---
 
-## Phase 2 (Future)
+## Phase 3: Profile Page Update
 
-- Events board with RSVP
-- Real-time direct messaging
-- Push notifications
-- Trending gossip / viral detection
+### `src/pages/Profile.tsx`
+- Add state: `isMutualFollow` (boolean)
+- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
+- Next to the Follow/Unfollow button, conditionally render a "Message" button:
+  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
+  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
+
+---
+
+## Phase 4: Routing & Navigation
+
+### `src/App.tsx`
+- Import Messages and ChatRoom pages
+- Add routes inside the ProtectedRoute + AppLayout group:
+  - `/messages` -> Messages
+  - `/messages/:conversationId` -> ChatRoom
+
+### `src/components/layout/BottomNav.tsx`
+- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
+- Add unread badge: query `messages` where `is_read = false` and sender is not current user
+- Real-time subscription for unread count updates
+
+### `src/pages/Feed.tsx`
+- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
+
+---
+
+## Technical Details
+
+```text
+conversations          conversation_participants         messages
++------------+        +------------------------+      +------------------+
+| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
+| created_at |        | user_id                |      | conversation_id  |
+| updated_at |        | id (PK)                |      | sender_id        |
++------------+        +------------------------+      | content          |
+                                                       | is_read          |
+                                                       | created_at       |
+                                                       +------------------+
+```
+
+### Find-or-create conversation logic (client-side):
+1. Query `conversation_participants` to find a conversation where both users participate
+2. If found, navigate to it
+3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
+
+### Files to create:
+- `src/hooks/use-messages.ts`
+- `src/pages/Messages.tsx`
+- `src/pages/ChatRoom.tsx`
+
+### Files to modify:
+- `src/pages/Profile.tsx` (add Message button)
+- `src/App.tsx` (add routes)
+- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
+- `src/pages/Feed.tsx` (add Leaderboard button to header)
+
