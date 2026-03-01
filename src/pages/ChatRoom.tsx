@@ -38,6 +38,8 @@ export default function ChatRoom() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [attachment, setAttachment] = useState<{ file: File; type: "image" | "video" | "audio"; preview: string } | null>(null);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -159,6 +161,28 @@ export default function ChatRoom() {
         preview: URL.createObjectURL(file),
       });
     }
+  };
+
+  const toggleAudioPlayback = (msgId: string, url: string) => {
+    const current = audioRefs.current[msgId];
+    if (playingAudioId === msgId && current) {
+      current.pause();
+      setPlayingAudioId(null);
+      return;
+    }
+    // Pause any other playing audio
+    if (playingAudioId && audioRefs.current[playingAudioId]) {
+      audioRefs.current[playingAudioId].pause();
+    }
+    if (!current) {
+      const audio = new Audio(url);
+      audio.onended = () => setPlayingAudioId(null);
+      audioRefs.current[msgId] = audio;
+      audio.play();
+    } else {
+      current.play();
+    }
+    setPlayingAudioId(msgId);
   };
 
   const parseMessageContent = (content: string) => {
@@ -315,14 +339,24 @@ export default function ChatRoom() {
                           </div>
                         ) : data.type === "audio" ? (
                           <div className="flex items-center gap-4 min-w-[220px]">
-                            <button className="h-10 w-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all shadow-lg active:scale-90">
-                              <Play className="h-4 w-4 fill-current ml-0.5" />
+                            <button
+                              onClick={() => toggleAudioPlayback(msg.id, data.url)}
+                              className="h-10 w-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all shadow-lg active:scale-90"
+                            >
+                              {playingAudioId === msg.id ? (
+                                <Pause className="h-4 w-4 fill-current" />
+                              ) : (
+                                <Play className="h-4 w-4 fill-current ml-0.5" />
+                              )}
                             </button>
                             <div className="flex-1 flex gap-1 items-center h-8">
                               {[...Array(15)].map((_, i) => (
                                 <motion.div
                                   key={i}
-                                  animate={{ height: [`${20 + Math.random() * 60}%`, `${20 + Math.random() * 60}%`] }}
+                                  animate={playingAudioId === msg.id
+                                    ? { height: [`${20 + Math.random() * 60}%`, `${20 + Math.random() * 60}%`] }
+                                    : { height: "30%" }
+                                  }
                                   transition={{ repeat: Infinity, duration: 0.5, repeatType: "mirror", delay: i * 0.05 }}
                                   className="w-1 bg-white/40 rounded-full"
                                 />
