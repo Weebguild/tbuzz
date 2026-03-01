@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,7 +7,7 @@ import { useMessages } from "@/hooks/use-messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { X, Send, Loader2, Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
@@ -15,10 +15,15 @@ export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { messages, loading, sendMessage, markAsRead } = useMessages(conversationId);
+  const { messages, loading, sendMessage, markAsRead, isTyping, handleInputChange } = useMessages(conversationId);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Gesture handling
+  const x = useMotionValue(0);
+  const opacity = useTransform(x, [-100, 0], [0, 1]);
+  const scale = useTransform(x, [-100, 0], [0.95, 1]);
 
   // Recipient info
   const [recipient, setRecipient] = useState<{
@@ -48,12 +53,10 @@ export default function ChatRoom() {
     fetchRecipient();
   }, [conversationId, user]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isTyping]);
 
-  // Mark messages as read
   useEffect(() => {
     if (messages.length > 0) {
       markAsRead();
@@ -75,97 +78,120 @@ export default function ChatRoom() {
     }
   };
 
+  const handleDragEnd = (_: any, info: any) => {
+    if (info.offset.x < -100) {
+      navigate("/messages");
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center bg-[#0A0A0A]">
+        <div className="relative">
+          <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full border-b-2 border-accent animate-spin-reverse" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] max-w-2xl mx-auto w-full">
-      {/* Header */}
+    <motion.div
+      style={{ x, opacity, scale }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      onDragEnd={handleDragEnd}
+      className="fixed inset-0 z-50 flex flex-col bg-[#0A0A0A] text-foreground"
+    >
+      {/* Premium Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 px-4 py-4 border-b border-white/5 glass-panel z-20"
+        className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0A0A0A]/50 backdrop-blur-2xl z-20"
       >
-        <button
-          onClick={() => navigate("/messages")}
-          className="p-2 rounded-full hover:bg-white/10 transition-colors text-muted-foreground hover:text-white"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        {recipient && (
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(`/profile/${recipient.user_id}`)}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
+            onClick={() => navigate("/messages")}
+            className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-muted-foreground hover:text-white border border-white/5"
           >
-            <div className="relative">
-              <Avatar className="h-10 w-10 ring-2 ring-white/10 group-hover:ring-primary/50 transition-all duration-300">
-                {recipient.avatar_url ? (
-                  <AvatarImage src={recipient.avatar_url} className="object-cover" />
-                ) : (
-                  <AvatarFallback className="bg-white/5 text-xs font-black text-foreground">
-                    {recipient.display_name.charAt(0)}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-[#0A0A0A]" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-black text-foreground tracking-tight">{recipient.display_name}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active now</p>
-            </div>
+            <X className="h-5 w-5" />
           </button>
-        )}
+          {recipient && (
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                  {recipient.avatar_url ? (
+                    <AvatarImage src={recipient.avatar_url} className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-xs font-black">
+                      {recipient.display_name.charAt(0)}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-[#0A0A0A]" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-black tracking-tight">{recipient.display_name}</span>
+                <span className="text-[10px] text-primary font-bold uppercase tracking-widest">
+                  {isTyping ? "Transmitting..." : "Synchronized"}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex -space-x-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+          ))}
+        </div>
       </motion.div>
 
-      {/* Messages */}
-      <div className="flex-1 relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/2 blur-[120px] pointer-events-none" />
-        <ScrollArea className="h-full px-4 py-6">
-          <div className="space-y-6">
+      {/* Messages Area */}
+      <div className="flex-1 relative overflow-hidden bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.05)_0%,transparent_100%)]">
+        <ScrollArea className="h-full px-4 py-8">
+          <div className="max-w-3xl mx-auto space-y-8">
             <AnimatePresence mode="popLayout">
-              {messages.length === 0 && !loading && (
+              {messages.length === 0 && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-20"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center py-20 text-center"
                 >
-                  <p className="text-xl font-black text-muted-foreground/20 uppercase tracking-widest">Beginning of transmissions</p>
-                  <p className="text-xs text-muted-foreground/40 mt-2">Say hello to start the flow 👋</p>
+                  <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center mb-6 border border-primary/10">
+                    <Send className="h-8 w-8 text-primary/40" />
+                  </div>
+                  <h3 className="text-lg font-black uppercase tracking-[0.2em] text-white/80">Establish Link</h3>
+                  <p className="text-xs text-muted-foreground mt-2 max-w-[200px] leading-relaxed">Encrypted end-to-end transmission authorized.</p>
                 </motion.div>
               )}
+
               {messages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user?.id;
                 const showAvatar = idx === 0 || messages[idx - 1].sender_id !== msg.sender_id;
+                const isLastInGroup = idx === messages.length - 1 || messages[idx + 1].sender_id !== msg.sender_id;
 
                 return (
                   <motion.div
                     key={msg.id}
                     layout
-                    initial={{ opacity: 0, x: isOwn ? 20 : -20, scale: 0.8 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20
-                    }}
+                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
                     className={cn(
-                      "flex items-end gap-2",
-                      isOwn ? "justify-end" : "justify-start"
+                      "flex items-end gap-3",
+                      isOwn ? "flex-row-reverse" : "flex-row"
                     )}
                   >
                     {!isOwn && (
-                      <div className="w-8 shrink-0">
+                      <div className="w-8 shrink-0 mb-1">
                         {showAvatar && recipient && (
-                          <Avatar className="h-8 w-8 ring-1 ring-white/5">
+                          <Avatar className="h-8 w-8 ring-1 ring-white/10 shadow-lg">
                             {recipient.avatar_url ? (
                               <AvatarImage src={recipient.avatar_url} />
                             ) : (
-                              <AvatarFallback className="text-[10px] font-bold">
+                              <AvatarFallback className="text-[10px] font-bold bg-white/5">
                                 {recipient.display_name.charAt(0)}
                               </AvatarFallback>
                             )}
@@ -175,68 +201,110 @@ export default function ChatRoom() {
                     )}
 
                     <div className={cn(
-                      "max-w-[80%] flex flex-col",
-                      isOwn ? "items-end" : "items-start"
+                      "flex flex-col gap-1",
+                      isOwn ? "items-end" : "items-start",
+                      "max-w-[75%]"
                     )}>
                       <div
                         className={cn(
-                          "px-4 py-3 rounded-2xl text-sm leading-relaxed relative group",
+                          "px-5 py-3.5 rounded-[22px] text-sm relative transition-all duration-300",
                           isOwn
-                            ? "bg-gradient-to-br from-primary to-accent text-white rounded-br-none shadow-[0_8px_20px_rgba(124,58,237,0.3)]"
-                            : "bg-white/5 border border-white/10 text-foreground rounded-bl-none backdrop-blur-md"
+                            ? "bg-gradient-to-br from-primary to-accent text-white shadow-[0_10px_30px_rgba(124,58,237,0.25)] border border-white/10"
+                            : "bg-white/5 border border-white/10 text-foreground backdrop-blur-xl shadow-xl",
+                          isOwn && isLastInGroup ? "rounded-br-none" : "",
+                          !isOwn && isLastInGroup ? "rounded-bl-none" : ""
                         )}
                       >
-                        <p className="font-medium whitespace-pre-wrap">{msg.content}</p>
+                        <p className="leading-relaxed font-medium selection:bg-white/30">{msg.content}</p>
                       </div>
-                      <span className={cn(
-                        "text-[9px] mt-1 font-bold uppercase tracking-widest",
-                        isOwn ? "text-primary/60" : "text-muted-foreground/60"
-                      )}>
-                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: false })}
-                      </span>
+
+                      {isLastInGroup && (
+                        <div className={cn(
+                          "flex items-center gap-1.5 px-1",
+                          isOwn ? "flex-row-reverse" : "flex-row"
+                        )}>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">
+                            {formatDistanceToNow(new Date(msg.created_at), { addSuffix: false })}
+                          </span>
+                          {isOwn && (
+                            <div className="flex items-center">
+                              {msg.is_read ? (
+                                <CheckCheck className="h-3 w-3 text-primary animate-in fade-in zoom-in duration-500" />
+                              ) : (
+                                <Check className="h-3 w-3 text-muted-foreground/30" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 );
               })}
+
+              {isTyping && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex items-center gap-3"
+                >
+                  <div className="w-8 shrink-0">
+                    <Avatar className="h-8 w-8 ring-1 ring-white/10 bg-white/5 opacity-50">
+                      <AvatarFallback className="text-[10px] font-bold">...</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="bg-white/5 border border-white/5 backdrop-blur-md px-4 py-3 rounded-full flex gap-1.5 items-center">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" />
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
-            <div ref={bottomRef} className="h-4" />
+            <div ref={bottomRef} className="h-12" />
           </div>
         </ScrollArea>
       </div>
 
-      {/* Input */}
+      {/* Input Area */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="px-4 py-6 border-t border-white/5 bg-[#0A0A0A]/80 backdrop-blur-xl"
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        className="p-6 pb-8 border-t border-white/5 bg-[#0A0A0A]/80 backdrop-blur-3xl"
       >
-        <div className="flex items-center gap-3">
+        <div className="max-w-3xl mx-auto flex items-center gap-4">
           <div className="flex-1 relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-primary to-accent rounded-2xl opacity-0 group-focus-within:opacity-20 transition duration-500 blur-sm" />
             <Input
-              placeholder="Type a transmission..."
+              placeholder="Start transmission..."
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                handleInputChange();
+              }}
               onKeyDown={handleKeyDown}
-              className="relative flex-1 bg-[#141414] border-white/5 rounded-2xl h-14 px-6 text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40 focus-visible:border-primary/40 transition-all duration-300"
+              className="relative flex-1 bg-[#121212] border-white/5 rounded-2xl h-14 px-6 text-sm text-foreground placeholder:text-muted-foreground/30 focus-visible:ring-primary/20 focus-visible:border-primary/20 transition-all duration-300 shadow-inner"
             />
           </div>
           <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="h-14 w-14 flex items-center justify-center rounded-2xl bg-primary text-white shadow-[0_8px_25px_rgba(124,58,237,0.4)] disabled:opacity-40 disabled:shadow-none transition-all active:shadow-inner overflow-hidden relative group"
+            className="h-14 w-14 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-primary to-accent text-white shadow-[0_10px_30px_rgba(124,58,237,0.3)] disabled:opacity-30 disabled:grayscale transition-all"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             {sending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <Send className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
+              <Send className="h-5 w-5" />
             )}
           </motion.button>
         </div>
       </motion.div>
-    </div>
+
+      {/* Side Hint for Drag */}
+      <div className="fixed left-0 top-1/2 -translate-y-1/2 w-1 h-32 bg-gradient-to-b from-transparent via-white/10 to-transparent rounded-r-full pointer-events-none opacity-50" />
+    </motion.div>
   );
 }

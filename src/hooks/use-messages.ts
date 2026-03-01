@@ -44,7 +44,27 @@ export function useMessages(conversationId: string | undefined) {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Realtime subscription
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Broadcast typing status
+  const setTyping = useCallback((typing: boolean) => {
+    if (!conversationId || !channelRef.current) return;
+    channelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { userId: user?.id, isTyping: typing },
+    });
+  }, [conversationId, user]);
+
+  const handleInputChange = useCallback(() => {
+    setTyping(true);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      setTyping(false);
+    }, 3000);
+  }, [setTyping]);
+
   useEffect(() => {
     if (!conversationId) return;
 
@@ -66,25 +86,47 @@ export function useMessages(conversationId: string | undefined) {
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updatedMsg = payload.new as Message;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
+          );
+        }
+      )
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if (payload.payload.userId !== user?.id) {
+          setIsTyping(payload.payload.isTyping);
+        }
+      })
       .subscribe();
 
     channelRef.current = channel;
     return () => {
       supabase.removeChannel(channel);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [conversationId]);
+  }, [conversationId, user]);
 
   const sendMessage = useCallback(
     async (content: string) => {
       if (!conversationId || !user || !content.trim()) return;
+      setTyping(false);
       await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
         content: content.trim(),
       });
     },
-    [conversationId, user]
+    [conversationId, user, setTyping]
   );
 
-  return { messages, loading, sendMessage, markAsRead };
+  return { messages, loading, sendMessage, markAsRead, isTyping, handleInputChange };
 }
