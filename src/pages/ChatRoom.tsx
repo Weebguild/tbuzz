@@ -432,7 +432,7 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
       {/* Input Area */}
       <motion.div
         layout
-        className="px-6 pb-10 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-3xl"
+        className={cn("px-6 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-3xl", desktop ? "pb-4" : "pb-10")}
       >
         <AnimatePresence>
           {attachment && (
