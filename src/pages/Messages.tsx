@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, MessageSquare, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { DesktopChatLayout } from "@/components/chat/DesktopChatLayout";
 
 interface ConversationItem {
   conversation_id: string;
@@ -26,6 +27,13 @@ export default function Messages() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -111,6 +119,10 @@ export default function Messages() {
 
     fetchConversations();
   }, [user]);
+
+  if (isDesktop) {
+    return <DesktopChatLayout />;
+  }
 
   if (loading) {
     return (

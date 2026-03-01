@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
-export default function ChatRoom() {
+export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -209,29 +209,37 @@ export default function ChatRoom() {
 
   return (
     <motion.div
-      style={{ x, opacity, scale }}
-      drag="x"
+      style={desktop ? {} : { x, opacity, scale }}
+      drag={desktop ? false : "x"}
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
-      className="fixed inset-0 z-50 flex flex-col bg-[#0A0A0A] text-foreground"
+      className={cn(
+        "flex flex-col bg-[#0A0A0A] text-foreground",
+        desktop ? "h-full w-full" : "fixed inset-0 z-50"
+      )}
     >
       {/* Premium Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0A0A0A]/50 backdrop-blur-2xl z-20"
+        className={cn(
+          "flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0A0A0A]/50 backdrop-blur-2xl z-20",
+          desktop && "py-6 px-10"
+        )}
       >
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/messages")}
-            className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-muted-foreground hover:text-white border border-white/5"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          {!desktop && (
+            <button
+              onClick={() => navigate("/messages")}
+              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-muted-foreground hover:text-white border border-white/5"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
           {recipient && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
               <div className="relative">
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                <Avatar className={cn("ring-2 ring-primary/20", desktop ? "h-14 w-14" : "h-10 w-10")}>
                   {recipient.avatar_url ? (
                     <AvatarImage src={recipient.avatar_url} className="object-cover" />
                   ) : (
@@ -240,13 +248,16 @@ export default function ChatRoom() {
                     </AvatarFallback>
                   )}
                 </Avatar>
-                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-[#0A0A0A]" />
+                <div className={cn("absolute bg-success rounded-full border-2 border-[#0A0A0A]", desktop ? "h-4 w-4 -bottom-1 -right-1" : "h-3 w-3 -bottom-0.5 -right-0.5")} />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-black tracking-tight">{recipient.display_name}</span>
-                <span className="text-[10px] text-primary font-bold uppercase tracking-widest">
-                  {isTyping ? "Transmitting..." : "Synchronized"}
-                </span>
+                <span className={cn("font-black tracking-tight", desktop ? "text-xl" : "text-sm")}>{recipient.display_name}</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                  <span className="text-[10px] text-primary font-bold uppercase tracking-widest">
+                    {isTyping ? "Transmitting..." : "Active Transmission"}
+                  </span>
+                </div>
               </div>
             </div>
           )}
