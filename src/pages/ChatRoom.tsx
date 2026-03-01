@@ -79,7 +79,7 @@ export default function ChatRoom() {
   };
 
   const handleDragEnd = (_: any, info: any) => {
-    if (info.offset.x < -100) {
+    if (Math.abs(info.offset.x) > 100) {
       navigate("/messages");
     }
   };
@@ -303,8 +303,9 @@ export default function ChatRoom() {
         </div>
       </motion.div>
 
-      {/* Side Hint for Drag */}
+      {/* Visual Hints for Drag */}
       <div className="fixed left-0 top-1/2 -translate-y-1/2 w-1 h-32 bg-gradient-to-b from-transparent via-white/10 to-transparent rounded-r-full pointer-events-none opacity-50" />
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 w-1 h-32 bg-gradient-to-b from-transparent via-white/10 to-transparent rounded-l-full pointer-events-none opacity-50" />
     </motion.div>
   );
 }
