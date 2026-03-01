@@ -121,7 +121,11 @@ export default function Messages() {
   }, [user]);
 
   if (isDesktop) {
-    return <DesktopChatLayout />;
+    return (
+      <div className="fixed inset-0 z-[100] bg-black">
+        <DesktopChatLayout />
+      </div>
+    );
   }
 
   if (loading) {
@@ -151,9 +155,9 @@ export default function Messages() {
           >
             <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full translate-y-1/2" />
             <MessageSquare className="h-16 w-16 mx-auto text-primary/20 mb-6 animate-pulse" />
-            <p className="text-xl text-foreground font-bold tracking-tight">No transmissions yet</p>
+            <p className="text-xl text-foreground font-bold tracking-tight">No messages yet</p>
             <p className="text-sm text-muted-foreground mt-2 max-w-[240px] mx-auto leading-relaxed">
-              Connect with mutual followers to start dynamic messaging
+              Connect with mutual followers to start chatting
             </p>
           </motion.div>
         ) : (

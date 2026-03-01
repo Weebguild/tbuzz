@@ -87,7 +87,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       setInput("");
       setAttachment(null);
     } catch (e) {
-      toast.error("Failed to send transmission");
+      toast.error("Failed to send message");
     } finally {
       setSending(false);
     }
@@ -255,7 +255,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
                   <span className="text-[10px] text-primary font-bold uppercase tracking-widest">
-                    {isTyping ? "Transmitting..." : "Active Transmission"}
+                    {isTyping ? "Typing..." : "Online"}
                   </span>
                 </div>
               </div>
@@ -284,8 +284,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   <div className="h-20 w-20 rounded-full bg-border flex items-center justify-center mb-6">
                     <Send className="h-8 w-8 text-muted-foreground/40" />
                   </div>
-                  <h3 className="text-lg font-black uppercase tracking-[0.2em] text-white/80">Establish Link</h3>
-                  <p className="text-xs text-muted-foreground mt-2 max-w-[200px] leading-relaxed">Encrypted end-to-end transmission authorized.</p>
+                  <h3 className="text-lg font-black uppercase tracking-[0.2em] text-white/80">Direct Message</h3>
+                  <p className="text-xs text-muted-foreground mt-2 max-w-[200px] leading-relaxed">End-to-end encrypted messaging active.</p>
                 </motion.div>
               )}
 
@@ -463,8 +463,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     <Volume2 className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Voice Note</span>
-                    <span className="text-[9px] text-muted-foreground font-mono">READY TO TRANSMIT</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Voice Message</span>
+                    <span className="text-[9px] text-muted-foreground font-mono">READY TO SEND</span>
                   </div>
                 </div>
               )}
@@ -506,7 +506,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Recording Source</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Voice Input</span>
                   <div className="flex gap-0.5">
                     {[1, 2, 3].map(i => (
                       <motion.div key={i} animate={{ height: [4, 12, 4] }} transition={{ repeat: Infinity, duration: 0.4, delay: i * 0.1 }} className="w-0.5 bg-primary/40 rounded-full" />
@@ -516,7 +516,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               </div>
             ) : (
               <Input
-                placeholder={attachment ? "Add a transmission note..." : "Establish neural link..."}
+                placeholder={attachment ? "Add accurate message..." : "Write a message..."}
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);

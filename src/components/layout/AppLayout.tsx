@@ -18,7 +18,7 @@ export function AppLayout() {
       </div>
 
       {/* ── THE CONTENT LAYER ── */}
-      <main className="relative z-10 mx-auto w-full max-w-lg lg:max-w-none pb-24 lg:pb-0 min-h-screen transition-all duration-500">
+      <main className="relative z-10 mx-auto max-w-lg pb-24 min-h-screen">
         <Outlet />
       </main>
 

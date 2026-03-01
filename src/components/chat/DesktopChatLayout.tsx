@@ -76,7 +76,7 @@ export function DesktopChatLayout() {
                         updated_at: conv.updated_at,
                         other_user: otherProfile,
                         last_message: lastMsg?.content ? (
-                            lastMsg.content.includes('"type":"') ? "Media Transmission" : lastMsg.content
+                            lastMsg.content.includes('"type":"') ? "Media Attachment" : lastMsg.content
                         ) : "Start the conversation..."
                     });
                 }
@@ -108,7 +108,7 @@ export function DesktopChatLayout() {
                         const data = JSON.parse(m.content);
                         if (data.type === "image") photos.push({ url: data.url, date: m.created_at });
                         if (data.type === "video") files.push({ url: data.url, type: "video", date: m.created_at, name: data.text || "Shared Video" });
-                        if (data.type === "audio") files.push({ url: data.url, type: "audio", date: m.created_at, name: "Voice Note" });
+                        if (data.type === "audio") files.push({ url: data.url, type: "audio", date: m.created_at, name: "Voice Message" });
                     }
                 } catch (e) { }
             });
@@ -121,10 +121,11 @@ export function DesktopChatLayout() {
         <div className="fixed inset-0 bg-[#0A0A0A] flex overflow-hidden font-sans">
             {/* COLUMN 1: ACTION BAR (Red/Yellow/White Circles in Image) */}
             <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-6 gap-8 bg-black/40">
-                {/* App Logo (Red Circle) */}
+                {/* App Logo */}
                 <Link to="/feed" className="group">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)] group-hover:scale-110 transition-transform cursor-pointer">
-                        <span className="text-xl font-black text-white italic">TB</span>
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)] group-hover:scale-110 transition-transform cursor-pointer relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                        <span className="text-3xl font-black text-white relative z-10" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>T</span>
                     </div>
                 </Link>
 
@@ -149,7 +150,7 @@ export function DesktopChatLayout() {
                                 <motion.div layoutId="sidebar-active" className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full" />
                             )}
                             <div className="absolute left-full ml-4 px-2 py-1 bg-white text-black text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 capitalize">
-                                {item.path.replace('/', '')}
+                                {item.path.split('/').pop() || 'feed'}
                             </div>
                         </Link>
                     ))}
@@ -172,10 +173,10 @@ export function DesktopChatLayout() {
                 )}
             </AnimatePresence>
 
-            {/* COLUMN 2: CONVERSATION LIST (Purple Area) */}
+            {/* COLUMN 2: CONVERSATION LIST */}
             <div className="w-[320px] border-r border-white/5 flex flex-col bg-black/20">
                 <div className="p-6">
-                    <h2 className="text-2xl font-black tracking-tighter text-white mb-6 uppercase">Transmissions</h2>
+                    <h2 className="text-2xl font-black tracking-tighter text-white mb-6 uppercase">Messages</h2>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <input
@@ -210,7 +211,9 @@ export function DesktopChatLayout() {
                                 </div>
                                 <div className="flex-1 text-left min-w-0">
                                     <p className="font-bold text-sm text-white truncate">{conv.other_user.display_name}</p>
-                                    <p className="text-xs text-muted-foreground truncate opacity-60">{conv.last_message}</p>
+                                    <p className="text-xs text-muted-foreground truncate opacity-60">
+                                        {conv.last_message || "No messages yet"}
+                                    </p>
                                 </div>
                                 <ChevronRight className={cn(
                                     "h-4 w-4 text-white/10 group-hover:text-primary transition-all",
@@ -233,24 +236,23 @@ export function DesktopChatLayout() {
                         <div className="h-32 w-32 rounded-full bg-primary/5 flex items-center justify-center mb-8 border border-white/5">
                             <Mail className="h-12 w-12 text-primary/20" />
                         </div>
-                        <h2 className="text-3xl font-black uppercase tracking-[0.3em] text-white/90">Select Link</h2>
-                        <p className="text-muted-foreground mt-4 max-w-sm leading-relaxed">Choose a conversation from the sidebar to establish a secure neural transmission thread.</p>
+                        <h2 className="text-3xl font-black uppercase tracking-[0.3em] text-white/90">Select a Chat</h2>
+                        <p className="text-muted-foreground mt-4 max-w-sm leading-relaxed">Choose a conversation from the sidebar to start messaging your friends.</p>
                     </div>
                 )}
             </div>
 
-            {/* COLUMN 4: MEDIA SIDEBAR */}
             <div className="w-[300px] border-l border-white/5 bg-black/40 flex flex-col">
                 <div className="p-8 border-b border-white/5">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">Conversation Assets</h3>
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">Shared Files</h3>
                     <div className="flex gap-4">
                         <div className="flex-1 p-4 rounded-3xl bg-white/5 text-center border border-white/5">
                             <p className="text-xl font-black text-white">{mediaAssets.files.length}</p>
-                            <p className="text-[10px] uppercase font-bold text-muted-foreground mt-1">Transmissions</p>
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground mt-1">Media</p>
                         </div>
                         <div className="flex-1 p-4 rounded-3xl bg-white/5 text-center border border-white/5">
                             <p className="text-xl font-black text-white">{mediaAssets.photos.length}</p>
-                            <p className="text-[10px] uppercase font-bold text-muted-foreground mt-1">Visuals</p>
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground mt-1">Photos</p>
                         </div>
                     </div>
                 </div>
@@ -276,7 +278,7 @@ export function DesktopChatLayout() {
                         {mediaAssets.files.length > 0 && (
                             <section>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Digital Assets</h4>
+                                    <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Shared Files</h4>
                                 </div>
                                 <div className="space-y-2">
                                     {mediaAssets.files.slice(0, 5).map((file, i) => (
@@ -305,8 +307,8 @@ export function DesktopChatLayout() {
                                     <div key={i} className="flex gap-4 items-start group cursor-pointer">
                                         <LinkIcon className="h-4 w-4 text-muted-foreground mt-1 group-hover:text-primary transition-colors" />
                                         <div>
-                                            <p className="text-xs font-bold text-white leading-snug group-hover:underline">https://research.university.edu/transm...</p>
-                                            <p className="text-[10px] text-muted-foreground mt-1">Internal Reference Source</p>
+                                            <p className="text-xs font-bold text-white leading-snug group-hover:underline">https://shared.link/reference/...</p>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Shared Resource</p>
                                         </div>
                                     </div>
                                 ))}

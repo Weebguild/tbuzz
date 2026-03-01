@@ -53,9 +53,8 @@ export function BottomNav() {
   }, [user]);
 
   const isChatRoom = location.pathname.startsWith("/messages/") && location.pathname.split("/").length > 2;
-  const isDesktop = window.innerWidth >= 1024;
 
-  if (hidden || isChatRoom || isDesktop) return null;
+  if (hidden || isChatRoom) return null;
 
   return (
     <>
