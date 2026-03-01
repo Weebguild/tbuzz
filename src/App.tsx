@@ -80,7 +80,7 @@ function AppRoutes() {
         <Route path="/gossip" element={<Gossip />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/messages" element={<Messages />} />
-        <Route path="/messages/:conversationId" element={<ChatRoom />} />
+        <Route path="/messages/:conversationId" element={<Messages />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:userId" element={<Profile />} />
       </Route>

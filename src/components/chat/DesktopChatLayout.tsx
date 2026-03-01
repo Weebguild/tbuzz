@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import ChatRoom from "@/pages/ChatRoom";
 import { UserSearch } from "@/components/UserSearch";
-import { AnimatePresence } from "framer-motion";
 
 export function DesktopChatLayout() {
     const { user } = useAuth();
