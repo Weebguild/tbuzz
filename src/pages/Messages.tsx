@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +8,7 @@ import { Loader2, MessageSquare, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { DesktopChatLayout } from "@/components/chat/DesktopChatLayout";
+import ChatRoom from "@/pages/ChatRoom";
 
 interface ConversationItem {
   conversation_id: string;
@@ -25,6 +26,7 @@ interface ConversationItem {
 export default function Messages() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { conversationId } = useParams();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
@@ -126,6 +128,11 @@ export default function Messages() {
         <DesktopChatLayout />
       </div>
     );
+  }
+
+  // Mobile: if a conversation is selected, show ChatRoom inline
+  if (!isDesktop && conversationId) {
+    return <ChatRoom />;
   }
 
   if (loading) {

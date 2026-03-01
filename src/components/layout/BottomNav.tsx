@@ -52,9 +52,9 @@ export function BottomNav() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const isChatRoom = location.pathname.startsWith("/messages/") && location.pathname.split("/").length > 2;
+  const isMessagesPage = location.pathname.startsWith("/messages");
 
-  if (hidden || isChatRoom) return null;
+  if (hidden || isMessagesPage) return null;
 
   return (
     <>
