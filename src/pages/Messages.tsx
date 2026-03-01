@@ -29,10 +29,10 @@ export default function Messages() {
   const { conversationId } = useParams();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+  const [isSplitLayout, setIsSplitLayout] = useState(window.innerWidth >= 768);
 
   useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    const handleResize = () => setIsSplitLayout(window.innerWidth >= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -122,21 +122,16 @@ export default function Messages() {
     fetchConversations();
   }, [user]);
 
-  if (isDesktop) {
+  if (isSplitLayout) {
     return (
-      <div className="fixed inset-0 z-[100] bg-black">
+      <div className="h-[100dvh] w-full">
         <DesktopChatLayout />
       </div>
     );
   }
 
-  // Mobile: if a conversation is selected, show ChatRoom inline
-  if (!isDesktop && conversationId) {
-    return (
-      <div className="fixed inset-0 z-50 bg-[#0A0A0A]">
-        <ChatRoom inline />
-      </div>
-    );
+  if (conversationId) {
+    return <ChatRoom inline />;
   }
 
   if (loading) {

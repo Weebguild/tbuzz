@@ -1,7 +1,11 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
+import { cn } from "@/lib/utils";
 
 export function AppLayout() {
+  const location = useLocation();
+  const isMessagesRoute = location.pathname.startsWith("/messages");
+
   return (
     <div className="min-h-screen bg-black relative selection:bg-primary/30">
       {/* ── THE AURORA BACKGROUND ── */}
@@ -18,7 +22,7 @@ export function AppLayout() {
       </div>
 
       {/* ── THE CONTENT LAYER ── */}
-      <main className="relative z-10 mx-auto max-w-lg pb-24 min-h-screen">
+      <main className={cn("relative z-10 mx-auto min-h-screen", isMessagesRoute ? "max-w-none pb-0" : "max-w-lg pb-24")}>
         <Outlet />
       </main>
 
