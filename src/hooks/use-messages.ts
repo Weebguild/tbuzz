@@ -116,13 +116,35 @@ export function useMessages(conversationId: string | undefined) {
   }, [conversationId, user]);
 
   const sendMessage = useCallback(
-    async (content: string) => {
-      if (!conversationId || !user || !content.trim()) return;
+    async (content: string, file?: File, type: "text" | "image" | "video" | "audio" = "text") => {
+      if (!conversationId || !user || (!content.trim() && !file)) return;
       setTyping(false);
+
+      let finalContent = content.trim();
+
+      if (file) {
+        const ext = file.name.split(".").pop();
+        const path = `${user.id}/${Date.now()}.${ext}`;
+        const bucket = "post-images"; // Using post-images for all media for now
+
+        const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file);
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          throw uploadError;
+        }
+
+        const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
+        finalContent = JSON.stringify({
+          type,
+          url: publicUrl.publicUrl,
+          text: content.trim() || undefined,
+        });
+      }
+
       await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: content.trim(),
+        content: finalContent,
       });
     },
     [conversationId, user, setTyping]
