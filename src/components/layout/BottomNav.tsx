@@ -111,7 +111,7 @@ export function BottomNav() {
                         ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
                         : "text-muted-foreground group-hover:text-white/70",
                     )}
-                    fill={isActive ? "currentColor" : "none"}
+                    fill="none"
                     strokeWidth={isActive ? 2.5 : 2}
                   />
                   {tab.path === "/messages" && unreadCount > 0 && (
