@@ -6,7 +6,6 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2, Users, UserCheck, GraduationCap, CalendarDays } from "lucide-react";
 import gsap from "gsap";
 import { cn } from "@/lib/utils";
-import { CardContainer, CardBody, CardItem } from "@/components/ui/3d-card";
 
 interface UserProfile {
     user_id: string;
@@ -242,164 +241,149 @@ export function UserHoverCard({ userId, children, className }: UserHoverCardProp
                             <Loader2 className="h-5 w-5 animate-spin text-primary" />
                         </div>
                     ) : profile ? (
-                        <CardContainer className="w-full inter-var" containerClassName="py-0 px-0">
-                            <CardBody className="relative group/card w-96 h-auto p-0 border-none bg-transparent">
-                                <div ref={containerRef} className="flex flex-col">
-                                    {/* ─── HEADER ─── */}
-                                    <div className="p-5 pb-0">
-                                        <div className="flex items-start gap-4">
-                                            {/* Avatar with neon ring */}
-                                            <CardItem translateZ="60" className="relative">
-                                                <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 blur-sm opacity-60" />
-                                                <Avatar className="relative h-16 w-16 border-2 border-[#1A1A1A] ring-2 ring-primary/30">
-                                                    <AvatarImage src={profile.avatar_url || ""} className="object-cover" />
-                                                    <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/20 text-white text-xl font-black">
-                                                        {profile.display_name?.charAt(0) || "?"}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                            </CardItem>
-
-                                            {/* Name + Pills */}
-                                            <div className="flex-1 min-w-0 pt-0.5">
-                                                <CardItem translateZ="50">
-                                                    <h4 className="text-[15px] font-extrabold text-white truncate tracking-tight">
-                                                        {profile.display_name}
-                                                    </h4>
-                                                </CardItem>
-
-                                                <CardItem translateZ="40" className="flex flex-wrap gap-1.5 mt-2">
-                                                    {profile.department && (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
-                                                            <GraduationCap className="h-2.5 w-2.5 text-primary/70" />
-                                                            {profile.department}
-                                                        </span>
-                                                    )}
-                                                    {profile.year && (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
-                                                            <CalendarDays className="h-2.5 w-2.5 text-accent/70" />
-                                                            {profile.year}
-                                                        </span>
-                                                    )}
-                                                </CardItem>
-                                            </div>
-                                        </div>
-
-                                        {/* Bio */}
-                                        {profile.bio && (
-                                            <CardItem translateZ="30">
-                                                <p className="text-[12px] text-zinc-400 line-clamp-2 mt-3 leading-[1.6]">
-                                                    {profile.bio}
-                                                </p>
-                                            </CardItem>
-                                        )}
-
-                                        {/* ─── STATS BAR ─── */}
-                                        <CardItem translateZ="25" className="w-full">
-                                            <div className="flex gap-5 mt-4 pb-4 border-b border-white/[0.05]">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Users className="h-3 w-3 text-primary/60" />
-                                                    <span className="text-sm font-black text-white">{stats.followers}</span>
-                                                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Followers</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <UserCheck className="h-3 w-3 text-accent/60" />
-                                                    <span className="text-sm font-black text-white">{stats.following}</span>
-                                                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Following</span>
-                                                </div>
-                                            </div>
-                                        </CardItem>
+                        <div ref={containerRef} className="flex flex-col">
+                            {/* ─── HEADER ─── */}
+                            <div className="p-5 pb-0">
+                                <div className="flex items-start gap-4">
+                                    {/* Avatar with neon ring */}
+                                    <div className="relative">
+                                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 blur-sm opacity-60" />
+                                        <Avatar className="relative h-16 w-16 border-2 border-[#1A1A1A] ring-2 ring-primary/30">
+                                            <AvatarImage src={profile.avatar_url || ""} className="object-cover" />
+                                            <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/20 text-white text-xl font-black">
+                                                {profile.display_name?.charAt(0) || "?"}
+                                            </AvatarFallback>
+                                        </Avatar>
                                     </div>
 
-                                    {/* ─── RECENT POSTS — SVG CLIP-PATH ANIMATION ─── */}
-                                    {recentPosts.length > 0 && (
-                                        <div className="p-4 pt-3" ref={postsRef}>
-                                            <CardItem translateZ="20">
-                                                <h5 className="text-[10px] font-bold text-zinc-500 mb-2.5 uppercase tracking-[0.15em]">
-                                                    Recent Posts
-                                                </h5>
-                                            </CardItem>
+                                    {/* Name + Pills */}
+                                    <div className="flex-1 min-w-0 pt-0.5">
+                                        <h4 className="text-[15px] font-extrabold text-white truncate tracking-tight">
+                                            {profile.display_name}
+                                        </h4>
 
-                                            {/* SVG Animation for image posts */}
-                                            {hasImagePosts && (
-                                                <CardItem translateZ="50" className="w-full">
-                                                    <div ref={svgContainerRef} className="relative mb-2.5">
-                                                        <div className="absolute -inset-2 bg-primary/[0.04] blur-2xl rounded-full" />
-                                                        <svg
-                                                            viewBox="0 0 360 200"
-                                                            className="w-full h-auto rounded-xl overflow-hidden relative z-10 drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
-                                                        >
-                                                            <defs>
-                                                                {/* Grid: 3x2 sharp squares */}
-                                                                <clipPath id={clipIds[0]}>
-                                                                    {Array.from({ length: 6 }).map((_, i) => (
-                                                                        <rect
-                                                                            key={i}
-                                                                            className="path"
-                                                                            x={(i % 3) * 120 + 4}
-                                                                            y={Math.floor(i / 3) * 100 + 4}
-                                                                            width="112"
-                                                                            height="92"
-                                                                            rx="6"
-                                                                        />
-                                                                    ))}
-                                                                </clipPath>
-
-                                                                {/* Bento: mixed-size rounded rects */}
-                                                                <clipPath id={clipIds[1]}>
-                                                                    <rect className="path" x="4" y="4" width="170" height="192" rx="10" />
-                                                                    <rect className="path" x="182" y="4" width="174" height="92" rx="10" />
-                                                                    <rect className="path" x="182" y="104" width="82" height="92" rx="10" />
-                                                                    <rect className="path" x="272" y="104" width="84" height="92" rx="10" />
-                                                                </clipPath>
-
-                                                                {/* Organic: pill + circular shapes */}
-                                                                <clipPath id={clipIds[2]}>
-                                                                    <rect className="path" x="4" y="4" width="352" height="24" rx="12" />
-                                                                    <rect className="path" x="4" y="36" width="170" height="130" rx="14" />
-                                                                    <rect className="path" x="182" y="36" width="174" height="60" rx="14" />
-                                                                    <rect className="path" x="182" y="104" width="174" height="62" rx="14" />
-                                                                    <rect className="path" x="4" y="174" width="352" height="22" rx="11" />
-                                                                </clipPath>
-                                                            </defs>
-
-                                                            <g ref={mainGroupRef} clipPath={`url(#${clipIds[0]})`}>
-                                                                <image
-                                                                    ref={imageRef}
-                                                                    href={imagePosts[0]?.image_url || ""}
-                                                                    width="360"
-                                                                    height="200"
-                                                                    preserveAspectRatio="xMidYMid slice"
-                                                                />
-                                                            </g>
-                                                        </svg>
-                                                    </div>
-                                                </CardItem>
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {profile.department && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
+                                                    <GraduationCap className="h-2.5 w-2.5 text-primary/70" />
+                                                    {profile.department}
+                                                </span>
                                             )}
+                                            {profile.year && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
+                                                    <CalendarDays className="h-2.5 w-2.5 text-accent/70" />
+                                                    {profile.year}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                            {/* Text-only posts */}
-                                            {textOnlyPosts.length > 0 && (
-                                                <div className="space-y-1.5">
-                                                    {textOnlyPosts.map((post) => (
-                                                        <CardItem translateZ="30" key={post.id} className="w-full">
-                                                            <div
-                                                                className="rhc-post-item bg-white/[0.03] border border-white/[0.05] p-2.5 rounded-xl hover:bg-white/[0.06] transition-colors cursor-default w-full"
-                                                            >
-                                                                <p className="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed">
-                                                                    {post.content}
-                                                                </p>
-                                                                <span className="text-[9px] text-zinc-600 mt-1 block font-medium">
-                                                                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                                                                </span>
-                                                            </div>
-                                                        </CardItem>
-                                                    ))}
+                                {/* Bio */}
+                                {profile.bio && (
+                                    <p className="text-[12px] text-zinc-400 line-clamp-2 mt-3 leading-[1.6]">
+                                        {profile.bio}
+                                    </p>
+                                )}
+
+                                {/* ─── STATS BAR ─── */}
+                                <div className="flex gap-5 mt-4 pb-4 border-b border-white/[0.05]">
+                                    <div className="flex items-center gap-1.5">
+                                        <Users className="h-3 w-3 text-primary/60" />
+                                        <span className="text-sm font-black text-white">{stats.followers}</span>
+                                        <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Followers</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <UserCheck className="h-3 w-3 text-accent/60" />
+                                        <span className="text-sm font-black text-white">{stats.following}</span>
+                                        <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Following</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ─── RECENT POSTS — SVG CLIP-PATH ANIMATION ─── */}
+                            {recentPosts.length > 0 && (
+                                <div className="p-4 pt-3" ref={postsRef}>
+                                    <h5 className="text-[10px] font-bold text-zinc-500 mb-2.5 uppercase tracking-[0.15em]">
+                                        Recent Posts
+                                    </h5>
+
+                                    {/* SVG Animation for image posts */}
+                                    {hasImagePosts && (
+                                        <div ref={svgContainerRef} className="relative mb-2.5">
+                                            <div className="absolute -inset-2 bg-primary/[0.04] blur-2xl rounded-full" />
+                                            <svg
+                                                viewBox="0 0 360 200"
+                                                className="w-full h-auto rounded-xl overflow-hidden relative z-10 drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
+                                            >
+                                                <defs>
+                                                    {/* Grid: 3x2 sharp squares */}
+                                                    <clipPath id={clipIds[0]}>
+                                                        {Array.from({ length: 6 }).map((_, i) => (
+                                                            <rect
+                                                                key={i}
+                                                                className="path"
+                                                                x={(i % 3) * 120 + 4}
+                                                                y={Math.floor(i / 3) * 100 + 4}
+                                                                width="112"
+                                                                height="92"
+                                                                rx="6"
+                                                            />
+                                                        ))}
+                                                    </clipPath>
+
+                                                    {/* Bento: mixed-size rounded rects */}
+                                                    <clipPath id={clipIds[1]}>
+                                                        <rect className="path" x="4" y="4" width="170" height="192" rx="10" />
+                                                        <rect className="path" x="182" y="4" width="174" height="92" rx="10" />
+                                                        <rect className="path" x="182" y="104" width="82" height="92" rx="10" />
+                                                        <rect className="path" x="272" y="104" width="84" height="92" rx="10" />
+                                                    </clipPath>
+
+                                                    {/* Organic: pill + circular shapes */}
+                                                    <clipPath id={clipIds[2]}>
+                                                        <rect className="path" x="4" y="4" width="352" height="24" rx="12" />
+                                                        <rect className="path" x="4" y="36" width="170" height="130" rx="14" />
+                                                        <rect className="path" x="182" y="36" width="174" height="60" rx="14" />
+                                                        <rect className="path" x="182" y="104" width="174" height="62" rx="14" />
+                                                        <rect className="path" x="4" y="174" width="352" height="22" rx="11" />
+                                                    </clipPath>
+                                                </defs>
+
+                                                <g ref={mainGroupRef} clipPath={`url(#${clipIds[0]})`}>
+                                                    <image
+                                                        ref={imageRef}
+                                                        href={imagePosts[0]?.image_url || ""}
+                                                        width="360"
+                                                        height="200"
+                                                        preserveAspectRatio="xMidYMid slice"
+                                                    />
+                                                </g>
+                                            </svg>
+                                        </div>
+                                    )}
+
+                                    {/* Text-only posts */}
+                                    {textOnlyPosts.length > 0 && (
+                                        <div className="space-y-1.5">
+                                            {textOnlyPosts.map((post) => (
+                                                <div
+                                                    key={post.id}
+                                                    className="rhc-post-item bg-white/[0.03] border border-white/[0.05] p-2.5 rounded-xl hover:bg-white/[0.06] transition-colors cursor-default"
+                                                >
+                                                    <p className="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed">
+                                                        {post.content}
+                                                    </p>
+                                                    <span className="text-[9px] text-zinc-600 mt-1 block font-medium">
+                                                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                                                    </span>
                                                 </div>
-                                            )}
+                                            ))}
                                         </div>
                                     )}
                                 </div>
-                            </CardBody>
-                        </CardContainer>
+                            )}
+                        </div>
                     ) : (
                         <div className="p-5 text-center text-sm text-zinc-500">
                             User not found
