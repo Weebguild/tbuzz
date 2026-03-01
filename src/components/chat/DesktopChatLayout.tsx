@@ -117,7 +117,7 @@ export function DesktopChatLayout() {
     }, [conversationId]);
 
     return (
-        <div className="h-[100dvh] w-full bg-[#0A0A0A] flex overflow-hidden font-sans">
+        <div className="h-full w-full bg-[#0A0A0A] flex overflow-hidden font-sans">
             {/* COLUMN 1: ACTION BAR (Red/Yellow/White Circles in Image) */}
             <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-6 gap-8 bg-black/40">
                 {/* App Logo */}
@@ -225,7 +225,7 @@ export function DesktopChatLayout() {
             </div>
 
             {/* COLUMN 3: MAIN CHAT AREA (Blue Box) */}
-            <div className="flex-1 flex flex-col relative bg-[#0A0A0A]">
+            <div className="flex-1 flex flex-col relative bg-[#0A0A0A] min-w-0 overflow-hidden">
                 {conversationId ? (
                     <div className="flex-1 flex flex-col">
                         <ChatRoom desktop={true} />

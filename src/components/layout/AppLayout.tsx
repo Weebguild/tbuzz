@@ -7,7 +7,7 @@ export function AppLayout() {
   const isMessagesRoute = location.pathname.startsWith("/messages");
 
   return (
-    <div className="min-h-screen bg-black relative selection:bg-primary/30">
+    <div className={cn("min-h-screen bg-black relative selection:bg-primary/30", isMessagesRoute && "h-[100dvh] overflow-hidden")}>
       {/* ── THE AURORA BACKGROUND ── */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         {/* Deep Purple Orb */}
@@ -22,7 +22,7 @@ export function AppLayout() {
       </div>
 
       {/* ── THE CONTENT LAYER ── */}
-      <main className={cn("relative z-10 mx-auto min-h-screen", isMessagesRoute ? "max-w-none pb-0" : "max-w-lg pb-24")}>
+      <main className={cn("relative z-10 mx-auto", isMessagesRoute ? "max-w-none pb-0 h-[100dvh] overflow-hidden" : "max-w-lg pb-24 min-h-screen")}>
         <Outlet />
       </main>
 

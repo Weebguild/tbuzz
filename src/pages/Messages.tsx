@@ -124,7 +124,7 @@ export default function Messages() {
 
   if (isSplitLayout) {
     return (
-      <div className="h-[100dvh] w-full">
+      <div className="h-full w-full">
         <DesktopChatLayout />
       </div>
     );
