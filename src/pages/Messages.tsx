@@ -132,7 +132,11 @@ export default function Messages() {
 
   // Mobile: if a conversation is selected, show ChatRoom inline
   if (!isDesktop && conversationId) {
-    return <ChatRoom />;
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0A0A0A]">
+        <ChatRoom inline />
+      </div>
+    );
   }
 
   if (loading) {

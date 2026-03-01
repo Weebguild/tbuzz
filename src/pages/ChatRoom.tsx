@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
-export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
+export default function ChatRoom({ desktop = false, inline = false }: { desktop?: boolean; inline?: boolean }) {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -209,13 +209,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <motion.div
-      style={desktop ? {} : { x, opacity, scale }}
-      drag={desktop ? false : "x"}
+      style={(desktop || inline) ? {} : { x, opacity, scale }}
+      drag={(desktop || inline) ? false : "x"}
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
       className={cn(
         "flex flex-col bg-[#0A0A0A] text-foreground",
-        desktop ? "h-full w-full" : "fixed inset-0 z-50"
+        desktop ? "h-full w-full" : inline ? "h-[100dvh] w-full" : "fixed inset-0 z-50"
       )}
     >
       {/* Premium Header */}
