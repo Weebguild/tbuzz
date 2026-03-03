@@ -223,7 +223,7 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0A0A0A]/50 backdrop-blur-2xl z-20",
+          "flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0A0A0A]/50 backdrop-blur-2xl z-20 shrink-0",
           desktop && "py-6 px-10"
         )}
       >
@@ -271,7 +271,7 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
       </motion.div>
 
       {/* Messages Area */}
-      <div className="flex-1 relative overflow-hidden bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.08)_0%,transparent_50%)]">
+      <div className="flex-1 relative min-h-0 overflow-hidden bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.08)_0%,transparent_50%)]">
         <ScrollArea className="h-full px-4 py-8">
           <div className="max-w-3xl mx-auto space-y-8">
             <AnimatePresence mode="popLayout">
@@ -432,7 +432,7 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
       {/* Input Area */}
       <motion.div
         layout
-        className={cn("px-6 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-3xl", desktop ? "pb-4" : "pb-10")}
+        className={cn("px-6 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-3xl shrink-0", desktop ? "pb-4" : "pb-10")}
       >
         <AnimatePresence>
           {attachment && (

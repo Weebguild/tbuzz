@@ -119,7 +119,7 @@ export function DesktopChatLayout() {
     return (
         <div className="h-full w-full bg-[#0A0A0A] flex overflow-hidden font-sans">
             {/* COLUMN 1: ACTION BAR (Red/Yellow/White Circles in Image) */}
-            <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-6 gap-8 bg-black/40">
+            <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-6 gap-8 bg-black/40 shrink-0">
                 {/* App Logo */}
                 <Link to="/feed" className="group">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)] group-hover:scale-110 transition-transform cursor-pointer relative overflow-hidden">
@@ -173,7 +173,7 @@ export function DesktopChatLayout() {
             </AnimatePresence>
 
             {/* COLUMN 2: CONVERSATION LIST */}
-            <div className="w-[320px] border-r border-white/5 flex flex-col bg-black/20">
+            <div className="w-[320px] border-r border-white/5 flex flex-col bg-black/20 shrink-0 min-h-0">
                 <div className="p-6">
                     <h2 className="text-2xl font-black tracking-tighter text-white mb-6 uppercase">Messages</h2>
                     <div className="relative">
@@ -225,7 +225,7 @@ export function DesktopChatLayout() {
             </div>
 
             {/* COLUMN 3: MAIN CHAT AREA (Blue Box) */}
-            <div className="flex-1 flex flex-col relative bg-[#0A0A0A] min-w-0 overflow-hidden">
+            <div className="flex-1 flex flex-col relative bg-[#0A0A0A] min-w-0 min-h-0 overflow-hidden">
                 {conversationId ? (
                     <div className="flex-1 flex flex-col">
                         <ChatRoom desktop={true} />
@@ -241,7 +241,7 @@ export function DesktopChatLayout() {
                 )}
             </div>
 
-            <div className="w-[300px] border-l border-white/5 bg-black/40 flex flex-col">
+            <div className="w-[300px] border-l border-white/5 bg-black/40 flex flex-col shrink-0 min-h-0">
                 <div className="p-8 border-b border-white/5">
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">Shared Files</h3>
                     <div className="flex gap-4">
