@@ -11,13 +11,21 @@ import {
   X, Send, Loader2, Check, CheckCheck, Plus, Mic,
   Play, Pause, Image as ImageIcon, Video as VideoIcon,
   Trash2, Volume2, ChevronLeft, Info, MoreVertical,
-  Smile, Reply, Share2, Copy, ExternalLink, Link as LinkIcon
+  Smile, Reply, Share2, Copy, ExternalLink, Link as LinkIcon,
+  Search, BellOff, Ban, Ghost
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
-export default function ChatRoom() {
+export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -27,11 +35,15 @@ export default function ChatRoom() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [replyingTo, setReplyingTo] = useState<any>(null);
+  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [reactions, setReactions] = useState<Record<string, string>>({});
 
   // Gesture handling for back navigation
   const x = useMotionValue(0);
   const opacity = useTransform(x, [0, 100], [1, 0]);
   const scale = useTransform(x, [0, 100], [1, 0.95]);
+
+  const dragControls = motion.useDragControls();
 
   // Recipient info
   const [recipient, setRecipient] = useState<{
@@ -256,12 +268,16 @@ export default function ChatRoom() {
 
   return (
     <motion.div
-      style={{ x, opacity, scale }}
-      drag="x"
+      style={desktop ? {} : { x, opacity, scale }}
+      drag={desktop ? false : "x"}
+      dragDirectionLock
       dragConstraints={{ left: 0, right: 100 }}
       dragElastic={0.05}
       onDragEnd={handleDragEnd}
-      className="fixed inset-0 z-50 flex flex-col bg-[#050505] text-white"
+      className={cn(
+        "z-50 flex flex-col bg-[#050505] text-white",
+        desktop ? "relative h-full w-full" : "fixed inset-0"
+      )}
     >
       {/* Background Gradients */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -307,9 +323,33 @@ export default function ChatRoom() {
           <button onClick={() => setShowInfo(true)} className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all">
             <Info className="h-5 w-5 opacity-60" />
           </button>
-          <button className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all">
-            <MoreVertical className="h-5 w-5 opacity-60" />
-          </button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all">
+                <MoreVertical className="h-5 w-5 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-[#0A0A0A] border-white/10 text-white rounded-2xl p-2 z-[100]">
+              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer">
+                <Search className="h-4 w-4 opacity-40" />
+                <span className="font-bold text-sm">Search Chat</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer">
+                <BellOff className="h-4 w-4 opacity-40" />
+                <span className="font-bold text-sm">Mute Notifications</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer text-red-400 focus:text-red-400">
+                <Ban className="h-4 w-4" />
+                <span className="font-bold text-sm">Block User</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer text-red-500 focus:text-red-500">
+                <Trash2 className="h-4 w-4" />
+                <span className="font-bold text-sm">Clear History</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -376,7 +416,10 @@ export default function ChatRoom() {
                           )}
 
                           {data.type === "image" ? (
-                            <div className="relative group cursor-pointer overflow-hidden rounded-[24px]">
+                            <div
+                              onClick={() => setSelectedMedia(data.url)}
+                              className="relative group cursor-pointer overflow-hidden rounded-[24px]"
+                            >
                               <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
                               {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
                             </div>
@@ -420,10 +463,25 @@ export default function ChatRoom() {
                           <button onClick={() => setReplyingTo(data)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
                             <Reply className="h-4 w-4" />
                           </button>
-                          <button className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                            <Smile className="h-4 w-4" />
-                          </button>
+                          {["🔥", "❤️", "😂", "😮"].map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => setReactions(prev => ({ ...prev, [msg.id]: emoji }))}
+                              className="p-1.5 text-sm hover:scale-125 transition-transform"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
                         </div>
+
+                        {reactions[msg.id] && (
+                          <div className={cn(
+                            "absolute -bottom-2 px-2 py-0.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md text-xs",
+                            isOwn ? "left-0" : "right-0"
+                          )}>
+                            {reactions[msg.id]}
+                          </div>
+                        )}
                       </div>
 
                       {isLastInGroup && (
@@ -460,7 +518,10 @@ export default function ChatRoom() {
       </div>
 
       {/* Flagship Input Experience */}
-      <footer className="relative z-40 px-6 pb-10 pt-4 bg-[#050505]/80 backdrop-blur-3xl border-t border-white/[0.03]">
+      <footer
+        onPointerDown={(e) => e.stopPropagation()}
+        className="relative z-40 px-6 pb-10 pt-4 bg-[#050505]/80 backdrop-blur-3xl border-t border-white/[0.03]"
+      >
         <AnimatePresence>
           {replyingTo && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-4 overflow-hidden">
@@ -628,6 +689,30 @@ export default function ChatRoom() {
                 </section>
               </div>
             </ScrollArea>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedMedia && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex flex-col pt-12"
+          >
+            <div className="px-6 flex justify-end">
+              <button
+                onClick={() => setSelectedMedia(null)}
+                className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="flex-1 flex items-center justify-center p-6">
+              <motion.img
+                layoutId={`media-${selectedMedia}`}
+                src={selectedMedia}
+                className="max-w-full max-h-full object-contain rounded-3xl shadow-2xl"
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
