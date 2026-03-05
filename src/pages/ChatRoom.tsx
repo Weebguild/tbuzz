@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,12 +7,17 @@ import { useMessages } from "@/hooks/use-messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { X, Send, Loader2, Check, CheckCheck, Plus, Mic, Play, Pause, Image as ImageIcon, Video as VideoIcon, Trash2, Volume2 } from "lucide-react";
+import {
+  X, Send, Loader2, Check, CheckCheck, Plus, Mic,
+  Play, Pause, Image as ImageIcon, Video as VideoIcon,
+  Trash2, Volume2, ChevronLeft, Info, MoreVertical,
+  Smile, Reply, Share2, Copy, ExternalLink, Link as LinkIcon
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
-export default function ChatRoom({ desktop = false, inline = false }: { desktop?: boolean; inline?: boolean }) {
+export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -20,11 +25,13 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<any>(null);
 
-  // Gesture handling
+  // Gesture handling for back navigation
   const x = useMotionValue(0);
-  const opacity = useTransform(x, [-100, 0], [0, 1]);
-  const scale = useTransform(x, [-100, 0], [0.95, 1]);
+  const opacity = useTransform(x, [0, 100], [1, 0]);
+  const scale = useTransform(x, [0, 100], [1, 0.95]);
 
   // Recipient info
   const [recipient, setRecipient] = useState<{
@@ -76,16 +83,21 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
   }, [messages, markAsRead]);
 
   const handleSend = async () => {
+    const messageContent = replyingTo
+      ? JSON.stringify({ type: "reply", content: input, replyTo: replyingTo })
+      : input;
+
     if ((!input.trim() && !attachment) || sending) return;
     setSending(true);
     try {
       if (attachment) {
         await sendMessage(input, attachment.file, attachment.type);
       } else {
-        await sendMessage(input);
+        await sendMessage(messageContent);
       }
       setInput("");
       setAttachment(null);
+      setReplyingTo(null);
     } catch (e) {
       toast.error("Failed to send message");
     } finally {
@@ -101,7 +113,7 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
   };
 
   const handleDragEnd = (_: any, info: any) => {
-    if (Math.abs(info.offset.x) > 100) {
+    if (info.offset.x > 80) {
       navigate("/messages");
     }
   };
@@ -111,7 +123,7 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
-      mediaRecorder?.stop(); // Ensure previous is stopped
+      mediaRecorder?.stop();
 
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
@@ -170,7 +182,6 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
       setPlayingAudioId(null);
       return;
     }
-    // Pause any other playing audio
     if (playingAudioId && audioRefs.current[playingAudioId]) {
       audioRefs.current[playingAudioId].pause();
     }
@@ -194,14 +205,50 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
     return { type: "text", content };
   };
 
+  const sharedMedia = useMemo(() => {
+    return messages.filter(m => {
+      const data = parseMessageContent(m.content);
+      return data.type === "image" || data.type === "video";
+    }).map(m => parseMessageContent(m.content));
+  }, [messages]);
+
+  const LinkPreview = ({ url }: { url: string }) => {
+    // Basic link preview component
+    // In a real app, you'd fetch metadata from a backend proxy
+    const domain = new URL(url).hostname;
+    return (
+      <motion.a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="mt-2 block rounded-2xl bg-black/30 border border-white/10 overflow-hidden hover:bg-black/40 transition-all group/link"
+      >
+        <div className="flex items-center gap-3 p-3">
+          <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+            <LinkIcon className="h-5 w-5 opacity-40 group-hover/link:opacity-100 transition-opacity" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5">{domain}</p>
+            <p className="text-sm font-bold truncate opacity-80">{url}</p>
+          </div>
+          <ExternalLink className="h-4 w-4 opacity-20" />
+        </div>
+      </motion.a>
+    );
+  };
+
+  const getUrlFromText = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.match(urlRegex);
+  };
+
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0A0A0A]">
+      <div className="flex h-screen items-center justify-center bg-[#050505]">
         <div className="relative">
-          <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full border-b-2 border-accent animate-spin-reverse" />
-          </div>
+          <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin shadow-2xl shadow-primary/40" />
         </div>
       </div>
     );
@@ -209,193 +256,186 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
 
   return (
     <motion.div
-      style={(desktop || inline) ? {} : { x, opacity, scale }}
-      drag={(desktop || inline) ? false : "x"}
-      dragConstraints={{ left: 0, right: 0 }}
+      style={{ x, opacity, scale }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 100 }}
+      dragElastic={0.05}
       onDragEnd={handleDragEnd}
-      className={cn(
-        "flex flex-col bg-[#0A0A0A] text-foreground",
-        desktop ? "h-full w-full" : inline ? "h-[100dvh] w-full" : "fixed inset-0 z-50"
-      )}
+      className="fixed inset-0 z-50 flex flex-col bg-[#050505] text-white"
     >
-      {/* Premium Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={cn(
-          "flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0A0A0A]/50 backdrop-blur-2xl z-20 shrink-0",
-          desktop && "py-6 px-10"
-        )}
-      >
-        <div className="flex items-center gap-4">
-          {!desktop && (
-            <button
-              onClick={() => navigate("/messages")}
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-muted-foreground hover:text-white border border-white/5"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
+      {/* Background Gradients */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-[-20%] w-[60%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 left-[-20%] w-[60%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
+      </div>
+
+      {/* Flagship Header */}
+      <header className="relative z-30 px-6 py-5 flex items-center justify-between bg-[#050505]/40 backdrop-blur-3xl border-b border-white/[0.03]">
+        <div className="flex items-center gap-5">
+          <button
+            onClick={() => navigate("/messages")}
+            className="p-2 rounded-2xl hover:bg-white/5 transition-colors group"
+          >
+            <ChevronLeft className="h-6 w-6 group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+
           {recipient && (
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 cursor-pointer" onClick={() => setShowInfo(true)}>
               <div className="relative">
-                <Avatar className={cn("ring-2 ring-primary/20", desktop ? "h-14 w-14" : "h-10 w-10")}>
-                  {recipient.avatar_url ? (
-                    <AvatarImage src={recipient.avatar_url} className="object-cover" />
-                  ) : (
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-xs font-black">
-                      {recipient.display_name.charAt(0)}
-                    </AvatarFallback>
-                  )}
+                <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-xl">
+                  <AvatarImage src={recipient.avatar_url || ""} />
+                  <AvatarFallback className="bg-[#111] text-xs font-black">
+                    {recipient.display_name.charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
-                <div className={cn("absolute bg-success rounded-full border-2 border-[#0A0A0A]", desktop ? "h-4 w-4 -bottom-1 -right-1" : "h-3 w-3 -bottom-0.5 -right-0.5")} />
+                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-[#050505]" />
               </div>
               <div className="flex flex-col">
-                <span className={cn("font-black tracking-tight", desktop ? "text-xl" : "text-sm")}>{recipient.display_name}</span>
-                <div className="flex items-center gap-2 mt-0.5">
+                <span className="font-black text-base tracking-tight leading-none mb-1">
+                  {recipient.display_name}
+                </span>
+                <div className="flex items-center gap-1.5">
                   <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                  <span className="text-[10px] text-primary font-bold uppercase tracking-widest">
-                    {isTyping ? "Typing..." : "Online"}
-                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary/80">Online</span>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex -space-x-1">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-1 w-1 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
-          ))}
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowInfo(true)} className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all">
+            <Info className="h-5 w-5 opacity-60" />
+          </button>
+          <button className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all">
+            <MoreVertical className="h-5 w-5 opacity-60" />
+          </button>
         </div>
-      </motion.div>
+      </header>
 
-      {/* Messages Area */}
-      <div className="flex-1 relative min-h-0 overflow-hidden bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.08)_0%,transparent_50%)]">
-        <ScrollArea className="h-full px-4 py-8">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <AnimatePresence mode="popLayout">
-              {messages.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center py-20 text-center"
-                >
-                  <div className="h-20 w-20 rounded-full bg-border flex items-center justify-center mb-6">
-                    <Send className="h-8 w-8 text-muted-foreground/40" />
-                  </div>
-                  <h3 className="text-lg font-black uppercase tracking-[0.2em] text-white/80">Direct Message</h3>
-                  <p className="text-xs text-muted-foreground mt-2 max-w-[200px] leading-relaxed">End-to-end encrypted messaging active.</p>
-                </motion.div>
-              )}
-
+      {/* Messages Scroll Area */}
+      <div className="flex-1 relative overflow-hidden">
+        <ScrollArea className="h-full px-6 py-8">
+          <div className="max-w-3xl mx-auto space-y-12">
+            <AnimatePresence mode="popLayout" initial={false}>
               {messages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user?.id;
-                const showAvatar = idx === 0 || messages[idx - 1].sender_id !== msg.sender_id;
-                const isLastInGroup = idx === messages.length - 1 || messages[idx + 1].sender_id !== msg.sender_id;
+                const nextMsg = messages[idx + 1];
+                const prevMsg = messages[idx - 1];
                 const data = parseMessageContent(msg.content);
+                const isGrouping = prevMsg?.sender_id === msg.sender_id;
+                const isLastInGroup = nextMsg?.sender_id !== msg.sender_id;
 
                 return (
                   <motion.div
                     key={msg.id}
                     layout
-                    initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     className={cn(
                       "flex items-end gap-3",
-                      isOwn ? "flex-row-reverse" : "flex-row"
+                      isOwn ? "flex-row-reverse" : "flex-row",
+                      isGrouping ? "mt-1" : "mt-8"
                     )}
                   >
                     {!isOwn && (
-                      <div className="w-8 shrink-0 mb-1">
-                        {showAvatar && recipient && (
+                      <div className="w-8 shrink-0">
+                        {isLastInGroup && recipient && (
                           <Avatar className="h-8 w-8 ring-1 ring-white/10 shadow-lg">
-                            {recipient.avatar_url ? (
-                              <AvatarImage src={recipient.avatar_url} />
-                            ) : (
-                              <AvatarFallback className="text-[10px] font-bold bg-white/5">
-                                {recipient.display_name.charAt(0)}
-                              </AvatarFallback>
-                            )}
+                            <AvatarImage src={recipient.avatar_url || ""} />
+                            <AvatarFallback className="text-[10px] font-bold bg-[#111]">
+                              {recipient.display_name.charAt(0)}
+                            </AvatarFallback>
                           </Avatar>
                         )}
                       </div>
                     )}
 
                     <div className={cn(
-                      "flex flex-col gap-1",
-                      isOwn ? "items-end" : "items-start",
-                      "max-w-[85%]"
+                      "flex flex-col gap-1 max-w-[80%]",
+                      isOwn ? "items-end" : "items-start"
                     )}>
-                      <div
-                        className={cn(
-                          "rounded-[22px] text-sm relative transition-all duration-300 overflow-hidden",
-                          isOwn
-                            ? "bg-gradient-to-br from-primary to-accent text-white shadow-[0_10px_30px_rgba(124,58,237,0.2)]"
-                            : "bg-white/5 border border-white/10 text-foreground backdrop-blur-xl shadow-xl",
-                          isOwn && isLastInGroup ? "rounded-br-none" : "",
-                          !isOwn && isLastInGroup ? "rounded-bl-none" : "",
-                          (data.type === "image" || data.type === "video") ? "p-1.5" : "px-5 py-3.5"
-                        )}
-                      >
-                        {data.type === "image" ? (
-                          <div className="relative group">
-                            <img src={data.url} alt="Shared" className="rounded-2xl max-w-full max-h-[350px] object-cover shadow-2xl" />
-                            {data.text && <p className="px-3 pt-2 pb-1 text-sm font-medium">{data.text}</p>}
-                          </div>
-                        ) : data.type === "video" ? (
-                          <div className="relative rounded-2xl overflow-hidden bg-black shadow-2xl">
-                            <video src={data.url} controls className="max-w-full max-h-[350px]" />
-                            {data.text && <p className="px-3 pt-2 pb-1 text-sm font-medium">{data.text}</p>}
-                          </div>
-                        ) : data.type === "audio" ? (
-                          <div className="flex items-center gap-4 min-w-[220px]">
-                            <button
-                              onClick={() => toggleAudioPlayback(msg.id, data.url)}
-                              className="h-10 w-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all shadow-lg active:scale-90"
-                            >
-                              {playingAudioId === msg.id ? (
-                                <Pause className="h-4 w-4 fill-current" />
-                              ) : (
-                                <Play className="h-4 w-4 fill-current ml-0.5" />
-                              )}
-                            </button>
-                            <div className="flex-1 flex gap-1 items-center h-8">
-                              {[...Array(15)].map((_, i) => (
-                                <motion.div
-                                  key={i}
-                                  animate={playingAudioId === msg.id
-                                    ? { height: [`${20 + Math.random() * 60}%`, `${20 + Math.random() * 60}%`] }
-                                    : { height: "30%" }
-                                  }
-                                  transition={{ repeat: Infinity, duration: 0.5, repeatType: "mirror", delay: i * 0.05 }}
-                                  className="w-1 bg-white/40 rounded-full"
-                                />
+                      {/* Swipe Context Action would go here */}
+                      <div className="relative group/bubble">
+                        <div
+                          className={cn(
+                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative",
+                            isOwn
+                              ? "bg-primary text-white shadow-2xl shadow-primary/10"
+                              : "bg-[#111] text-white/90 border border-white/[0.03]",
+                            isOwn && isLastInGroup ? "rounded-br-lg" : "",
+                            !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
+                            (data.type === "image" || data.type === "video") ? "p-1.5" : "px-6 py-4"
+                          )}
+                        >
+                          {data.type === "reply" && (
+                            <div className="mb-3 p-3 rounded-2xl bg-black/20 border-l-4 border-primary/40 text-sm overflow-hidden opacity-80">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1">Replying to</p>
+                              <p className="truncate italic">"{data.replyTo.content}"</p>
+                            </div>
+                          )}
+
+                          {data.type === "image" ? (
+                            <div className="relative group cursor-pointer overflow-hidden rounded-[24px]">
+                              <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
+                              {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
+                            </div>
+                          ) : data.type === "audio" ? (
+                            <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
+                              <button
+                                onClick={() => toggleAudioPlayback(msg.id, data.url)}
+                                className="h-12 w-12 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all active:scale-90"
+                              >
+                                {playingAudioId === msg.id ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-1" />}
+                              </button>
+                              <div className="flex-1 flex gap-1 items-center h-8">
+                                {[...Array(14)].map((_, i) => (
+                                  <motion.div
+                                    key={i}
+                                    animate={playingAudioId === msg.id
+                                      ? { height: [`${30 + Math.random() * 50}%`, `${30 + Math.random() * 50}%`] }
+                                      : { height: "20%" }
+                                    }
+                                    transition={{ repeat: Infinity, duration: 0.4, delay: i * 0.03 }}
+                                    className="w-1 bg-white/40 rounded-full"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="whitespace-pre-wrap">{data.content || data.text}</p>
+                              {data.content && getUrlFromText(data.content)?.map((url, i) => (
+                                <LinkPreview key={i} url={url} />
                               ))}
                             </div>
-                            <span className="text-[10px] font-black opacity-40">AUDIO</span>
-                          </div>
-                        ) : (
-                          <p className="leading-relaxed font-medium selection:bg-white/30 whitespace-pre-wrap">{data.content || data.text}</p>
-                        )}
+                          )}
+                        </div>
+
+                        {/* Quick Reactions Hidden by Default */}
+                        <div className={cn(
+                          "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 px-2",
+                          isOwn ? "right-full mr-2" : "left-full ml-2"
+                        )}>
+                          <button onClick={() => setReplyingTo(data)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                            <Reply className="h-4 w-4" />
+                          </button>
+                          <button className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                            <Smile className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
 
                       {isLastInGroup && (
                         <div className={cn(
-                          "flex items-center gap-1.5 px-1",
+                          "flex items-center gap-2 mt-1 px-2 opacity-30",
                           isOwn ? "flex-row-reverse" : "flex-row"
                         )}>
-                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">
-                            {formatDistanceToNow(new Date(msg.created_at), { addSuffix: false })}
+                          <span className="text-[9px] font-black uppercase tracking-widest">
+                            {formatDistanceToNow(new Date(msg.created_at))}
                           </span>
                           {isOwn && (
-                            <div className="flex items-center">
-                              {msg.is_read ? (
-                                <CheckCheck className="h-3 w-3 text-primary animate-in fade-in zoom-in duration-500" />
-                              ) : (
-                                <Check className="h-3 w-3 text-muted-foreground/30" />
-                              )}
-                            </div>
+                            msg.is_read ? <CheckCheck className="h-3 w-3 text-primary" /> : <Check className="h-3 w-3" />
                           )}
                         </div>
                       )}
@@ -405,21 +445,11 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
               })}
 
               {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="w-8 shrink-0">
-                    <Avatar className="h-8 w-8 ring-1 ring-white/10 bg-white/5 opacity-50">
-                      <AvatarFallback className="text-[10px] font-bold">...</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="bg-white/5 border border-white/5 backdrop-blur-md px-4 py-3 rounded-full flex gap-1.5 items-center">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.3s]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.15s]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" />
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mt-4">
+                  <div className="h-8 w-12 bg-[#111] rounded-full flex items-center justify-center gap-1.5 px-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" />
                   </div>
                 </motion.div>
               )}
@@ -429,154 +459,178 @@ export default function ChatRoom({ desktop = false, inline = false }: { desktop?
         </ScrollArea>
       </div>
 
-      {/* Input Area */}
-      <motion.div
-        layout
-        className={cn("px-6 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-3xl shrink-0", desktop ? "pb-4" : "pb-10")}
-      >
+      {/* Flagship Input Experience */}
+      <footer className="relative z-40 px-6 pb-10 pt-4 bg-[#050505]/80 backdrop-blur-3xl border-t border-white/[0.03]">
         <AnimatePresence>
-          {attachment && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="mt-4 mb-2 relative inline-block group"
-            >
-              <div className="absolute -top-2 -right-2 z-10">
-                <button
-                  onClick={() => setAttachment(null)}
-                  className="p-1.5 rounded-full bg-red-500 text-white shadow-lg hover:scale-110 transition-transform border border-white/20"
-                >
-                  <X className="h-3 w-3" />
+          {replyingTo && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-4 overflow-hidden">
+              <div className="p-4 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Reply className="h-4 w-4 text-primary shrink-0" />
+                  <p className="text-sm truncate opacity-60">Replying to: {replyingTo.content}</p>
+                </div>
+                <button onClick={() => setReplyingTo(null)} className="p-2 rounded-full hover:bg-white/10">
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              {attachment.type === "image" ? (
-                <img src={attachment.preview} alt="Preview" className="h-32 rounded-2xl border border-white/10 object-cover shadow-2xl" />
-              ) : attachment.type === "video" ? (
-                <div className="relative h-32 w-32 rounded-2xl border border-white/10 overflow-hidden bg-black flex items-center justify-center">
-                  <VideoIcon className="h-8 w-8 text-white/20" />
-                  <div className="absolute inset-0 bg-primary/10" />
-                </div>
-              ) : (
-                <div className="h-16 w-56 flex items-center px-4 gap-4 bg-white/5 border border-white/10 rounded-2xl shadow-xl">
-                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Volume2 className="h-5 w-5 text-primary" />
+            </motion.div>
+          )}
+
+          {attachment && (
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="mb-4">
+              <div className="relative inline-block group">
+                {attachment.type === "image" ? (
+                  <img src={attachment.preview} className="h-32 w-32 rounded-3xl object-cover border-4 border-white/5" />
+                ) : (
+                  <div className="h-20 w-48 rounded-3xl bg-primary text-white flex items-center px-4 gap-3">
+                    <Volume2 className="h-6 w-6" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Voice Protocol Ready</span>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Voice Message</span>
-                    <span className="text-[9px] text-muted-foreground font-mono">READY TO SEND</span>
-                  </div>
-                </div>
-              )}
+                )}
+                <button onClick={() => setAttachment(null)} className="absolute -top-2 -right-2 p-2 rounded-full bg-red-500 text-white shadow-xl">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="max-w-3xl mx-auto flex items-end gap-3 pt-4">
-          <div className="flex gap-2 mb-1.5">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 transition-all text-muted-foreground hover:text-white border border-white/5"
-            >
-              <Plus className="h-5 w-5" />
+        <div className="flex items-end gap-3 max-w-4xl mx-auto">
+          <div className="flex gap-2 mb-1">
+            <button onClick={() => fileInputRef.current?.click()} className="p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all text-white/40 hover:text-white border border-white/5">
+              <Plus className="h-6 w-6" />
             </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              accept="image/*,video/*"
-              className="hidden"
-            />
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,video/*" />
           </div>
 
           <div className="flex-1 relative group">
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-primary to-accent rounded-2xl opacity-0 group-focus-within:opacity-20 transition duration-500 blur-sm" />
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-primary to-accent rounded-[32px] opacity-0 group-focus-within:opacity-20 transition duration-500 blur-md" />
 
             {isRecording ? (
-              <div className="flex-1 bg-[#121212] border border-primary/20 rounded-2xl h-14 px-6 flex items-center justify-between shadow-2xl">
+              <div className="bg-[#111] rounded-[32px] h-16 px-6 flex items-center justify-between border border-primary/20">
                 <div className="flex items-center gap-3">
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }}
-                    transition={{ repeat: Infinity, duration: 1 }}
-                    className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
-                  />
+                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="h-3 w-3 rounded-full bg-red-500 shadow-xl shadow-red-500/40" />
                   <span className="text-sm font-mono font-bold text-red-500 tracking-tighter">
-                    {Math.floor(recordingTime / 60).toString().padStart(2, '0')}:
-                    {(recordingTime % 60).toString().padStart(2, '0')}
+                    {Math.floor(recordingTime / 60).toString().padStart(2, '0')}:{(recordingTime % 60).toString().padStart(2, '0')}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Voice Input</span>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3].map(i => (
-                      <motion.div key={i} animate={{ height: [4, 12, 4] }} transition={{ repeat: Infinity, duration: 0.4, delay: i * 0.1 }} className="w-0.5 bg-primary/40 rounded-full" />
-                    ))}
-                  </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <motion.div key={i} animate={{ height: [4, 16, 4] }} transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.1 }} className="w-0.5 bg-primary/40 rounded-full" />
+                  ))}
                 </div>
               </div>
             ) : (
               <Input
-                placeholder={attachment ? "Add accurate message..." : "Write a message..."}
+                placeholder="Type a secure message..."
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
                   handleInputChange();
                 }}
                 onKeyDown={handleKeyDown}
-                className="relative flex-1 bg-[#121212] border-white/5 rounded-2xl h-14 px-6 text-sm text-foreground placeholder:text-muted-foreground/20 focus-visible:ring-primary/20 focus-visible:border-primary/20 transition-all duration-300 shadow-inner"
+                className="bg-[#111] border-white/5 rounded-[32px] h-16 px-6 text-base placeholder:text-white/20 focus-visible:ring-primary/20 transition-all duration-300"
               />
             )}
           </div>
 
-          <div className="flex gap-2 mb-1.5">
-            {!input.trim() && !attachment && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.9 }}
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-                onMouseLeave={stopRecording}
-                onTouchStart={startRecording}
-                onTouchEnd={stopRecording}
-                className={cn(
-                  "h-14 w-14 flex items-center justify-center rounded-2xl transition-all shadow-xl border",
-                  isRecording
-                    ? "bg-red-500 text-white border-red-400 scale-110 shadow-red-500/30"
-                    : "bg-white/5 text-muted-foreground border-white/5 hover:border-white/10"
-                )}
-              >
-                <Mic className={cn("h-5 w-5", isRecording && "animate-pulse")} />
-              </motion.button>
-            )}
-
-            {(input.trim() || attachment) && (
-              <motion.button
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleSend}
-                disabled={sending}
-                className="h-14 w-14 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-primary to-accent text-white shadow-[0_10px_30px_rgba(124,58,237,0.3)] disabled:opacity-30 transition-all"
-              >
-                {sending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </motion.button>
-            )}
+          <div className="mb-1">
+            <AnimatePresence mode="wait">
+              {!input.trim() && !attachment ? (
+                <motion.button
+                  key="mic"
+                  initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
+                  whileTap={{ scale: 0.9, backgroundColor: "rgba(239, 68, 68, 0.2)" }}
+                  onMouseDown={startRecording} onMouseUp={stopRecording}
+                  className={cn(
+                    "h-16 w-16 rounded-full flex items-center justify-center transition-all border",
+                    isRecording ? "bg-red-500 text-white border-red-400 scale-125 shadow-2xl shadow-red-500/50" : "bg-white/5 text-white/40 border-white/5"
+                  )}
+                >
+                  <Mic className="h-6 w-6" />
+                </motion.button>
+              ) : (
+                <motion.button
+                  key="send"
+                  initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 45 }}
+                  onClick={handleSend} disabled={sending}
+                  className="h-16 w-16 rounded-full bg-primary text-white shadow-2xl shadow-primary/30 flex items-center justify-center disabled:opacity-50"
+                >
+                  {sending ? <Loader2 className="h-6 w-6 animate-spin" /> : <Send className="h-6 w-6 ml-0.5" />}
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
         </div>
-      </motion.div>
+      </footer>
 
-      {/* Visual Hints for Drag */}
-      {!desktop && !inline && (
-        <>
-          <div className="fixed left-0 top-1/2 -translate-y-1/2 w-1 h-32 bg-gradient-to-b from-transparent via-white/10 to-transparent rounded-r-full pointer-events-none opacity-50" />
-          <div className="fixed right-0 top-1/2 -translate-y-1/2 w-1 h-32 bg-gradient-to-b from-transparent via-white/10 to-transparent rounded-l-full pointer-events-none opacity-50" />
-        </>
-      )}
+      {/* Side Panels - Info Panel */}
+      <AnimatePresence>
+        {showInfo && recipient && (
+          <motion.div
+            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+            className="fixed inset-0 z-[100] bg-[#050505] flex flex-col pt-12"
+          >
+            <div className="px-6 flex items-center justify-between mb-8">
+              <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl bg-white/5">
+                <X className="h-6 w-6" />
+              </button>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Details</h2>
+              <div className="w-12" />
+            </div>
+
+            <ScrollArea className="flex-1 px-8">
+              <div className="flex flex-col items-center mb-12">
+                <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-2xl mb-6">
+                  <AvatarImage src={recipient.avatar_url || ""} />
+                  <AvatarFallback className="text-4xl font-black bg-[#111]">
+                    {recipient.display_name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-3xl font-black tracking-tighter mb-2">{recipient.display_name}</h3>
+                <p className="text-xs text-primary font-black uppercase tracking-widest bg-primary/10 px-4 py-1.5 rounded-full">Mutual Connection</p>
+              </div>
+
+              <div className="space-y-10">
+                <section>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-6">Shared Media</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {sharedMedia.slice(0, 9).map((media, i) => (
+                      <div key={i} className="aspect-square rounded-2xl bg-[#111] overflow-hidden group">
+                        <img src={media.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                    ))}
+                    {sharedMedia.length === 0 && <p className="col-span-3 text-center py-8 text-white/20 text-xs italic">No shared media yet</p>}
+                  </div>
+                </section>
+
+                <section className="space-y-4">
+                  <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold">
+                    <div className="flex items-center gap-4 text-white/60">
+                      <Share2 className="h-5 w-5" />
+                      <span>Share Profile</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                  </button>
+                  <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold">
+                    <div className="flex items-center gap-4 text-white/60">
+                      <Copy className="h-5 w-5" />
+                      <span>Copy Client ID</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                  </button>
+                  <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-red-500/10 hover:bg-red-500/20 transition-all font-bold text-red-500">
+                    <div className="flex items-center gap-4">
+                      <Trash2 className="h-5 w-5" />
+                      <span>Clear Protocol History</span>
+                    </div>
+                  </button>
+                </section>
+              </div>
+            </ScrollArea>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
