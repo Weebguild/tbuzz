@@ -43,7 +43,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const opacity = useTransform(x, [0, 100], [1, 0]);
   const scale = useTransform(x, [0, 100], [1, 0.95]);
 
-  const dragControls = motion.useDragControls();
+  const dragControls = useDragControls();
 
   // Recipient info
   const [recipient, setRecipient] = useState<{
