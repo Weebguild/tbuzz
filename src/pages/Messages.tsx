@@ -149,7 +149,7 @@ export default function Messages() {
       const isBlocked = blockedUsers.includes(c.other_user.user_id);
       if (isBlocked) return false;
 
-      return c.other_user.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      return (c.other_user.display_name ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.last_message?.toLowerCase().includes(searchQuery.toLowerCase()));
     });
   }, [conversations, searchQuery]);
