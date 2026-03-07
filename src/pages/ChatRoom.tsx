@@ -111,7 +111,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     if (!chatSearchQuery.trim()) return messages;
     return messages.filter(msg => {
       const data = parseMessageContent(msg.content);
-      return (data.content ?? "").toLowerCase().includes(chatSearchQuery.toLowerCase());
+      const searchTarget = (data.content || data.text || "").toLowerCase();
+      return searchTarget.includes(chatSearchQuery.toLowerCase());
     });
   }, [messages, chatSearchQuery]);
 
@@ -124,7 +125,10 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     setSending(true);
     try {
       if (attachment) {
-        await sendMessage(input, attachment.file, attachment.type);
+        const payload = replyingTo
+          ? JSON.stringify({ type: "reply", content: input, replyTo: replyingTo, hasAttachment: true })
+          : input;
+        await sendMessage(payload, attachment.file, attachment.type);
       } else {
         await sendMessage(messageContent);
       }
@@ -732,13 +736,14 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             ) : (
               <input
                 type="text"
+                autoComplete="off"
                 placeholder="Type a message..."
                 value={input}
+                onPointerDown={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   setInput(e.target.value);
                   handleInputChange();
                 }}
-                onKeyDown={handleKeyDown}
                 className="bg-[#111] border border-white/5 rounded-[32px] h-16 px-6 text-base placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
               />
             )}

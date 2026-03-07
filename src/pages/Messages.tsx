@@ -295,7 +295,10 @@ export default function Messages() {
               <Search className="h-4 w-4 text-muted-foreground mr-3" />
               <input
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                }}
                 placeholder="Search..."
                 className="flex-1 bg-transparent border-none text-sm placeholder:text-muted-foreground/30 focus:ring-0 outline-none font-medium"
               />

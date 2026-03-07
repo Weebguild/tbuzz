@@ -141,11 +141,16 @@ export function useMessages(conversationId: string | undefined) {
         });
       }
 
-      await supabase.from("messages").insert({
+      const { error } = await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
         content: finalContent,
       });
+
+      if (error) {
+        console.error("Failed to send message:", error);
+        throw error;
+      }
     },
     [conversationId, user, setTyping]
   );
