@@ -294,13 +294,16 @@ export default function Messages() {
             <div className="relative flex items-center bg-[#111] border border-white/5 rounded-2xl h-14 px-5 overflow-hidden">
               <Search className="h-4 w-4 text-muted-foreground mr-3" />
               <input
+                type="text"
+                autoComplete="off"
                 value={searchQuery}
                 onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                 }}
                 placeholder="Search..."
-                className="flex-1 bg-transparent border-none text-sm placeholder:text-muted-foreground/30 focus:ring-0 outline-none font-medium"
+                className="flex-1 bg-transparent border-none text-sm text-white placeholder:text-muted-foreground/30 focus:ring-0 outline-none font-medium caret-primary"
               />
             </div>
           </div>

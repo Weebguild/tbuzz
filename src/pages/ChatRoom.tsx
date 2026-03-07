@@ -408,11 +408,14 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               <Search className="h-5 w-5 opacity-40" />
               <input
                 autoFocus
+                type="text"
+                autoComplete="off"
                 value={chatSearchQuery}
                 onChange={(e) => setChatSearchQuery(e.target.value)}
                 onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 placeholder="Search messages..."
-                className="bg-transparent border-none focus:ring-0 outline-none flex-1 text-sm font-bold placeholder:text-white/20"
+                className="bg-transparent border-none focus:ring-0 outline-none flex-1 text-sm font-bold placeholder:text-white/20 text-white caret-primary"
               />
               <button
                 onClick={() => {
@@ -740,11 +743,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 placeholder="Type a message..."
                 value={input}
                 onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   setInput(e.target.value);
                   handleInputChange();
                 }}
-                className="bg-[#111] border border-white/5 rounded-[32px] h-16 px-6 text-base placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
+                onKeyDown={handleKeyDown}
+                className="bg-[#111] border border-white/5 rounded-[32px] h-16 px-6 text-base text-white caret-primary placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
               />
             )}
           </div>
@@ -757,7 +762,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   type="button"
                   initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                   whileTap={{ scale: 0.9, backgroundColor: "rgba(239, 68, 68, 0.2)" }}
-                  onMouseDown={startRecording} onMouseUp={stopRecording}
+                  onMouseDown={startRecording}
+                  onMouseUp={stopRecording}
+                  onMouseLeave={stopRecording}
                   className={cn(
                     "h-16 w-16 rounded-full flex items-center justify-center transition-all border",
                     isRecording ? "bg-red-500 text-white border-red-400 scale-125 shadow-2xl shadow-red-500/50" : "bg-white/5 text-white/40 border-white/5"
