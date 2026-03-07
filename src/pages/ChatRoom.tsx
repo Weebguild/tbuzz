@@ -37,6 +37,10 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const [replyingTo, setReplyingTo] = useState<any>(null);
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [reactions, setReactions] = useState<Record<string, string>>({});
+  const [showChatSearch, setShowChatSearch] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Gesture handling for back navigation
   const x = useMotionValue(0);
@@ -88,11 +92,28 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, attachment, isRecording]);
 
+  const parseMessageContent = (content: string) => {
+    try {
+      if (content.startsWith("{") && content.endsWith("}")) {
+        return JSON.parse(content);
+      }
+    } catch (e) { }
+    return { type: "text", content };
+  };
+
   useEffect(() => {
     if (messages.length > 0) {
       markAsRead();
     }
   }, [messages, markAsRead]);
+
+  const filteredMessages = useMemo(() => {
+    if (!chatSearchQuery.trim()) return messages;
+    return messages.filter(msg => {
+      const data = parseMessageContent(msg.content);
+      return data.content.toLowerCase().includes(chatSearchQuery.toLowerCase());
+    });
+  }, [messages, chatSearchQuery]);
 
   const handleSend = async () => {
     const messageContent = replyingTo
@@ -171,6 +192,68 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     }
   };
 
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    if (conversationId) {
+      const muted = localStorage.getItem(`muted_${conversationId}`);
+      setIsMuted(!!muted);
+    }
+  }, [conversationId]);
+
+  const handleMute = () => {
+    const newState = !isMuted;
+    setIsMuted(newState);
+    if (newState) {
+      localStorage.setItem(`muted_${conversationId}`, "true");
+      toast.success("Notifications muted");
+    } else {
+      localStorage.removeItem(`muted_${conversationId}`);
+      toast.success("Notifications enabled");
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!recipient || !conversationId) return;
+    const confirm = window.confirm(`Are you sure you want to block ${recipient.display_name}? You will no longer receive messages from them.`);
+    if (!confirm) return;
+
+    toast.promise(
+      new Promise(async (resolve) => {
+        const blockedUsers = JSON.parse(localStorage.getItem("blocked_users") || "[]");
+        if (!blockedUsers.includes(recipient.user_id)) {
+          localStorage.setItem("blocked_users", JSON.stringify([...blockedUsers, recipient.user_id]));
+        }
+        setTimeout(resolve, 800);
+      }),
+      {
+        loading: 'Blocking user...',
+        success: () => {
+          navigate('/messages');
+          return `${recipient.display_name} has been blocked`;
+        },
+        error: 'Failed to block user',
+      }
+    );
+  };
+
+  const handleClearHistory = async () => {
+    if (!conversationId) return;
+    const confirm = window.confirm("Are you sure you want to clear all messages? This action cannot be reversed.");
+    if (!confirm) return;
+
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("conversation_id", conversationId);
+
+    if (error) {
+      toast.error("Failed to clear history");
+    } else {
+      toast.success("Chat history cleared");
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -186,7 +269,6 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       });
     }
   };
-
   const toggleAudioPlayback = (msgId: string, url: string) => {
     const current = audioRefs.current[msgId];
     if (playingAudioId === msgId && current) {
@@ -208,14 +290,6 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     setPlayingAudioId(msgId);
   };
 
-  const parseMessageContent = (content: string) => {
-    try {
-      if (content.startsWith("{") && content.endsWith("}")) {
-        return JSON.parse(content);
-      }
-    } catch (e) { }
-    return { type: "text", content };
-  };
 
   const sharedMedia = useMemo(() => {
     return messages.filter(m => {
@@ -270,6 +344,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     <motion.div
       style={desktop ? {} : { x, opacity, scale }}
       drag={desktop ? false : "x"}
+      dragControls={dragControls}
+      dragListener={false}
       dragDirectionLock
       dragConstraints={{ left: 0, right: 100 }}
       dragElastic={0.05}
@@ -286,43 +362,73 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       </div>
 
       {/* Flagship Header */}
-      <header className="relative z-30 px-6 py-5 flex items-center justify-between bg-[#050505]/40 backdrop-blur-3xl border-b border-white/[0.03]">
-        <div className="flex items-center gap-5">
-          <button
-            onClick={() => navigate("/messages")}
-            className="p-2 rounded-2xl hover:bg-white/5 transition-colors group"
-          >
-            <ChevronLeft className="h-6 w-6 group-hover:-translate-x-0.5 transition-transform" />
-          </button>
+      <header
+        onPointerDown={(e) => !showChatSearch && dragControls.start(e)}
+        className="relative z-30 px-6 py-5 flex items-center justify-between bg-[#050505]/40 backdrop-blur-3xl border-b border-white/[0.03]"
+      >
+        <div className="flex items-center gap-5 flex-1 mr-4">
+          {!showChatSearch ? (
+            <>
+              <button
+                onClick={() => navigate("/messages")}
+                className="p-2 rounded-2xl hover:bg-white/5 transition-colors group"
+              >
+                <ChevronLeft className="h-6 w-6 group-hover:-translate-x-0.5 transition-transform" />
+              </button>
 
-          {recipient && (
-            <div className="flex items-center gap-4 cursor-pointer" onClick={() => setShowInfo(true)}>
-              <div className="relative">
-                <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-xl">
-                  <AvatarImage src={recipient.avatar_url || ""} />
-                  <AvatarFallback className="bg-[#111] text-xs font-black">
-                    {recipient.display_name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-[#050505]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-black text-base tracking-tight leading-none mb-1">
-                  {recipient.display_name}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary/80">Online</span>
+              {recipient && (
+                <div className="flex items-center gap-4 cursor-pointer" onClick={() => setShowInfo(true)}>
+                  <div className="relative">
+                    <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-xl">
+                      <AvatarImage src={recipient.avatar_url || ""} />
+                      <AvatarFallback className="bg-[#111] text-xs font-black">
+                        {recipient.display_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-[#050505]" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-black text-base tracking-tight leading-none mb-1">
+                      {recipient.display_name}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary/80">Online</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center gap-3 w-full animate-in slide-in-from-left-4 duration-300">
+              <Search className="h-5 w-5 opacity-40" />
+              <input
+                autoFocus
+                value={chatSearchQuery}
+                onChange={(e) => setChatSearchQuery(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
+                placeholder="Search messages..."
+                className="bg-transparent border-none focus:ring-0 outline-none flex-1 text-sm font-bold placeholder:text-white/20"
+              />
+              <button
+                onClick={() => {
+                  setShowChatSearch(false);
+                  setChatSearchQuery("");
+                }}
+                className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/70"
+              >
+                Cancel
+              </button>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowInfo(true)} className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all">
-            <Info className="h-5 w-5 opacity-60" />
-          </button>
+          {!showChatSearch && (
+            <button onClick={() => setShowInfo(true)} className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all">
+              <Info className="h-5 w-5 opacity-60" />
+            </button>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -331,20 +437,32 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-[#0A0A0A] border-white/10 text-white rounded-2xl p-2 z-[100]">
-              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer">
+              <DropdownMenuItem
+                onSelect={() => setShowChatSearch(true)}
+                className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer"
+              >
                 <Search className="h-4 w-4 opacity-40" />
                 <span className="font-bold text-sm">Search Chat</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer">
-                <BellOff className="h-4 w-4 opacity-40" />
-                <span className="font-bold text-sm">Mute Notifications</span>
+              <DropdownMenuItem
+                onSelect={handleMute}
+                className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer"
+              >
+                {isMuted ? <Volume2 className="h-4 w-4 opacity-40" /> : <BellOff className="h-4 w-4 opacity-40" />}
+                <span className="font-bold text-sm">{isMuted ? "Unmute Notifications" : "Mute Notifications"}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5" />
-              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer text-red-400 focus:text-red-400">
+              <DropdownMenuItem
+                onSelect={handleBlock}
+                className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer text-red-400 focus:text-red-400"
+              >
                 <Ban className="h-4 w-4" />
                 <span className="font-bold text-sm">Block User</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer text-red-500 focus:text-red-500">
+              <DropdownMenuItem
+                onSelect={handleClearHistory}
+                className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer text-red-500 focus:text-red-500"
+              >
                 <Trash2 className="h-4 w-4" />
                 <span className="font-bold text-sm">Clear History</span>
               </DropdownMenuItem>
@@ -355,13 +473,20 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
       {/* Messages Scroll Area */}
       <div className="flex-1 relative overflow-hidden">
-        <ScrollArea className="h-full px-6 py-8">
+        <ScrollArea
+          className="h-full px-6 py-8"
+          onScroll={(e) => {
+            const target = e.currentTarget;
+            const isBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
+            setShowScrollButton(!isBottom);
+          }}
+        >
           <div className="max-w-3xl mx-auto space-y-12">
             <AnimatePresence mode="popLayout" initial={false}>
-              {messages.map((msg, idx) => {
+              {filteredMessages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user?.id;
-                const nextMsg = messages[idx + 1];
-                const prevMsg = messages[idx - 1];
+                const nextMsg = filteredMessages[idx + 1];
+                const prevMsg = filteredMessages[idx - 1];
                 const data = parseMessageContent(msg.content);
                 const isGrouping = prevMsg?.sender_id === msg.sender_id;
                 const isLastInGroup = nextMsg?.sender_id !== msg.sender_id;
@@ -401,7 +526,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                           className={cn(
                             "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative",
                             isOwn
-                              ? "bg-primary text-white shadow-2xl shadow-primary/10"
+                              ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
                               : "bg-[#111] text-white/90 border border-white/[0.03]",
                             isOwn && isLastInGroup ? "rounded-br-lg" : "",
                             !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
@@ -515,6 +640,19 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             <div ref={bottomRef} className="h-12" />
           </div>
         </ScrollArea>
+        <AnimatePresence>
+          {showScrollButton && (
+            <motion.button
+              initial={{ opacity: 0, y: 10, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.8 }}
+              onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
+              className="absolute bottom-32 right-8 h-12 w-12 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all"
+            >
+              <ChevronLeft className="h-6 w-6 rotate-[-90deg]" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Flagship Input Experience */}
@@ -545,7 +683,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 ) : (
                   <div className="h-20 w-48 rounded-3xl bg-primary text-white flex items-center px-4 gap-3">
                     <Volume2 className="h-6 w-6" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Voice Protocol Ready</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Voice message ready</span>
                   </div>
                 )}
                 <button onClick={() => setAttachment(null)} className="absolute -top-2 -right-2 p-2 rounded-full bg-red-500 text-white shadow-xl">
@@ -583,8 +721,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               </div>
             ) : (
               <Input
-                placeholder="Type a secure message..."
+                placeholder="Type a message..."
                 value={input}
+                onPointerDown={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   setInput(e.target.value);
                   handleInputChange();
@@ -683,7 +822,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-red-500/10 hover:bg-red-500/20 transition-all font-bold text-red-500">
                     <div className="flex items-center gap-4">
                       <Trash2 className="h-5 w-5" />
-                      <span>Clear Protocol History</span>
+                      <span>Clear Chat History</span>
                     </div>
                   </button>
                 </section>

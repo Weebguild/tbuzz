@@ -144,10 +144,14 @@ export default function Messages() {
   }, [user]);
 
   const filteredConversations = useMemo(() => {
-    return conversations.filter(c =>
-      c.other_user.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.last_message?.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const blockedUsers = JSON.parse(localStorage.getItem("blocked_users") || "[]");
+    return conversations.filter(c => {
+      const isBlocked = blockedUsers.includes(c.other_user.user_id);
+      if (isBlocked) return false;
+
+      return c.other_user.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.last_message?.toLowerCase().includes(searchQuery.toLowerCase()));
+    });
   }, [conversations, searchQuery]);
 
   const pinnedConversations = useMemo(() =>
@@ -164,10 +168,43 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[#0A0A0A]">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-full border-t-2 border-primary animate-spin" />
+      <div className="flex h-[100dvh] bg-[#050505] text-white flex-row overflow-hidden">
+        {!isMobile && (
+          <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 animate-pulse">
+            <div className="h-12 w-12 rounded-full bg-white/5" />
+            <div className="flex flex-col gap-6 mt-8">
+              {[1, 2, 3, 4].map(i => <div key={i} className="h-6 w-6 rounded-lg bg-white/5" />)}
+            </div>
+          </div>
+        )}
+        <div className={cn(
+          "flex flex-col bg-black/20 shrink-0 min-h-0",
+          isMobile ? "w-full" : "w-[360px] border-r border-white/5"
+        )}>
+          <div className="px-6 pt-12 pb-6 space-y-10">
+            <div className="space-y-3">
+              <div className="h-12 w-48 bg-white/5 rounded-2xl animate-pulse" />
+              <div className="h-3 w-32 bg-white/5 rounded-full animate-pulse opacity-50" />
+            </div>
+            <div className="h-14 w-full bg-white/5 rounded-2xl animate-pulse" />
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="flex gap-4 p-4">
+                  <div className="h-12 w-12 rounded-full bg-white/5 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 bg-white/5 rounded animate-pulse" />
+                    <div className="h-3 w-full bg-white/5 rounded animate-pulse opacity-50" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+        {!isMobile && (
+          <div className="flex-1 flex items-center justify-center opacity-10">
+            <Mail className="h-24 w-24 stroke-[0.5px] animate-pulse" />
+          </div>
+        )}
       </div>
     );
   }
@@ -237,7 +274,7 @@ export default function Messages() {
                 animate={{ opacity: 0.4 }}
                 className="text-[10px] font-bold tracking-[0.4em] uppercase mt-2 ml-1"
               >
-                Secure Communication
+                Chat & Connect
               </motion.p>
             </div>
             {isMobile && (
@@ -328,7 +365,10 @@ export default function Messages() {
                         <AvatarImage src={conv.other_user.avatar_url || ""} />
                         <AvatarFallback className="bg-[#111] text-base font-bold">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-[#0F0F0F]" />
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-[#0F0F0F] relative">
+                        <div className="absolute inset-0 bg-success rounded-full animate-ping opacity-25" />
+                        <div className="absolute inset-0 bg-success rounded-full" />
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
@@ -337,9 +377,17 @@ export default function Messages() {
                           {conv.last_message_at ? formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false }) : ''}
                         </span>
                       </div>
-                      <p className={cn("text-xs truncate", conv.unread_count > 0 ? "text-primary font-black" : "text-white/40")}>
-                        {conv.last_message || "Protocol initialized..."}
-                      </p>
+                      <div className="flex items-center justify-between gap-4">
+                        <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-white/40")}>
+                          {conv.last_message || "New message..."}
+                        </p>
+                        <button
+                          onClick={(e) => togglePin(e, conv.conversation_id)}
+                          className="p-2 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-all text-white/20 hover:text-white"
+                        >
+                          <Pin className={cn("h-3.5 w-3.5", pinnedIds.includes(conv.conversation_id) && "fill-current text-primary")} />
+                        </button>
+                      </div>
                     </div>
                   </motion.button>
                 ))}
@@ -368,8 +416,8 @@ export default function Messages() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-20">
               <Mail className="h-20 w-20 mb-6 stroke-[0.5px]" />
-              <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Select Protocol</h2>
-              <p className="text-xs uppercase tracking-widest mt-4">Encrypted channel required to proceed</p>
+              <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Select a Chat</h2>
+              <p className="text-xs uppercase tracking-widest mt-4">Pick a conversation to start messaging</p>
             </div>
           )}
         </div>
