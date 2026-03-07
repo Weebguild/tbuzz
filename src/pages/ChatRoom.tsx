@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMessages } from "@/hooks/use-messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
+
 import {
   X, Send, Loader2, Check, CheckCheck, Plus, Mic,
   Play, Pause, Image as ImageIcon, Video as VideoIcon,
