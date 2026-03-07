@@ -720,7 +720,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </div>
 
           <div className="flex-1 relative group">
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-primary to-accent rounded-[32px] opacity-0 group-focus-within:opacity-20 transition duration-500 blur-md" />
+            <div className="pointer-events-none absolute -inset-[1px] bg-gradient-to-r from-primary to-accent rounded-[32px] opacity-0 group-focus-within:opacity-20 transition duration-500 blur-md" />
 
             {isRecording ? (
               <div className="bg-[#111] rounded-[32px] h-16 px-6 flex items-center justify-between border border-primary/20">
