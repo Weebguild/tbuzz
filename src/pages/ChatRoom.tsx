@@ -111,7 +111,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     if (!chatSearchQuery.trim()) return messages;
     return messages.filter(msg => {
       const data = parseMessageContent(msg.content);
-      return data.content.toLowerCase().includes(chatSearchQuery.toLowerCase());
+      return (data.content ?? "").toLowerCase().includes(chatSearchQuery.toLowerCase());
     });
   }, [messages, chatSearchQuery]);
 
