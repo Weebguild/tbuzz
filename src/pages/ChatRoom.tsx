@@ -694,9 +694,19 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           )}
         </AnimatePresence>
 
-        <div className="flex items-end gap-3 max-w-4xl mx-auto">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSend();
+          }}
+          className="flex items-end gap-3 max-w-4xl mx-auto"
+        >
           <div className="flex gap-2 mb-1">
-            <button onClick={() => fileInputRef.current?.click()} className="p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all text-white/40 hover:text-white border border-white/5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all text-white/40 hover:text-white border border-white/5"
+            >
               <Plus className="h-6 w-6" />
             </button>
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,video/*" />
@@ -720,16 +730,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 </div>
               </div>
             ) : (
-              <Input
+              <input
+                type="text"
                 placeholder="Type a message..."
                 value={input}
-                onPointerDown={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   setInput(e.target.value);
                   handleInputChange();
                 }}
                 onKeyDown={handleKeyDown}
-                className="bg-[#111] border-white/5 rounded-[32px] h-16 px-6 text-base placeholder:text-white/20 focus-visible:ring-primary/20 transition-all duration-300"
+                className="bg-[#111] border border-white/5 rounded-[32px] h-16 px-6 text-base placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
               />
             )}
           </div>
@@ -739,6 +749,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               {!input.trim() && !attachment ? (
                 <motion.button
                   key="mic"
+                  type="button"
                   initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                   whileTap={{ scale: 0.9, backgroundColor: "rgba(239, 68, 68, 0.2)" }}
                   onMouseDown={startRecording} onMouseUp={stopRecording}
@@ -752,8 +763,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               ) : (
                 <motion.button
                   key="send"
+                  type="submit"
                   initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 45 }}
-                  onClick={handleSend} disabled={sending}
+                  disabled={sending}
                   className="h-16 w-16 rounded-full bg-primary text-white shadow-2xl shadow-primary/30 flex items-center justify-center disabled:opacity-50"
                 >
                   {sending ? <Loader2 className="h-6 w-6 animate-spin" /> : <Send className="h-6 w-6 ml-0.5" />}
@@ -761,7 +773,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               )}
             </AnimatePresence>
           </div>
-        </div>
+        </form>
       </footer>
 
       {/* Side Panels - Info Panel */}
