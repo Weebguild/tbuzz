@@ -540,7 +540,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                             </div>
                           )}
 
-                          {data.type === "image" ? (
+                          {data.type === "image" && data.url ? (
                             <div
                               onClick={() => setSelectedMedia(data.url)}
                               className="relative group cursor-pointer overflow-hidden rounded-[24px]"
@@ -548,7 +548,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
                               {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
                             </div>
-                          ) : data.type === "audio" ? (
+                          ) : data.type === "audio" && data.url ? (
                             <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
                               <button
                                 onClick={() => toggleAudioPlayback(msg.id, data.url)}

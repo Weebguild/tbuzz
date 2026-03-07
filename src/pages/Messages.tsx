@@ -121,7 +121,7 @@ export default function Messages() {
           other_user: otherProfile,
           last_message: lastMsg?.content ? (
             lastMsg.content.startsWith("{") ? "Media Message" : lastMsg.content
-          ) : null,
+          ) : "No messages yet",
           last_message_at: lastMsg?.created_at ?? null,
           unread_count: unreadCount ?? 0,
         });
@@ -150,7 +150,7 @@ export default function Messages() {
       if (isBlocked) return false;
 
       return (c.other_user.display_name ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.last_message?.toLowerCase().includes(searchQuery.toLowerCase()));
+        (c.last_message ?? "").toLowerCase().includes(searchQuery.toLowerCase());
     });
   }, [conversations, searchQuery]);
 
@@ -379,7 +379,7 @@ export default function Messages() {
                       </div>
                       <div className="flex items-center justify-between gap-4">
                         <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-white/40")}>
-                          {conv.last_message || "New message..."}
+                          {conv.last_message || "No messages yet"}
                         </p>
                         <button
                           onClick={(e) => togglePin(e, conv.conversation_id)}
