@@ -868,7 +868,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             >
               <Plus className="h-6 w-6" />
             </button>
-            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,video/*" />
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,video/*,.pdf,application/pdf" />
           </div>
 
           <div className="flex-1 relative group">
