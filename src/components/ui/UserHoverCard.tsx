@@ -28,6 +28,24 @@ interface RecentPost {
     created_at: string;
 }
 
+interface CachedUserData {
+    profile: UserProfile;
+    stats: UserStats;
+    recentPosts: RecentPost[];
+    fetchedAt: number;
+}
+
+// Module-level cache shared across all UserHoverCard instances — 5 min TTL
+const userDataCache = new Map<string, CachedUserData>();
+const CACHE_TTL = 5 * 60 * 1000;
+
+function getCachedData(userId: string): CachedUserData | null {
+    const cached = userDataCache.get(userId);
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached;
+    if (cached) userDataCache.delete(userId);
+    return null;
+}
+
 interface UserHoverCardProps {
     userId: string;
     children: React.ReactNode;
