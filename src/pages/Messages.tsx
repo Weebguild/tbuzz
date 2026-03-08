@@ -168,15 +168,7 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <div className={cn("flex bg-[#050505] text-white", isMobile ? "flex-col min-h-full" : "h-[100dvh] flex-row overflow-hidden")}>
-        {!isMobile && (
-          <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 animate-pulse">
-            <div className="h-12 w-12 rounded-full bg-white/5" />
-            <div className="flex flex-col gap-6 mt-8">
-              {[1, 2, 3, 4].map(i => <div key={i} className="h-6 w-6 rounded-lg bg-white/5" />)}
-            </div>
-          </div>
-        )}
+      <div className={cn("flex bg-[#050505] text-white", isMobile ? "flex-col min-h-full" : "h-full flex-row overflow-hidden")}>
         <div className={cn(
           "flex flex-col bg-black/20 shrink-0 min-h-0",
           isMobile ? "w-full" : "w-[360px] border-r border-white/5"
