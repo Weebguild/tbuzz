@@ -682,15 +682,15 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     )}
 
                     <div className={cn(
-                      "flex flex-col gap-1 max-w-[80%] min-w-0",
+                      "flex flex-col gap-1 max-w-[80%] min-w-0 overflow-hidden",
                       isOwn ? "items-end" : "items-start"
                     )}>
-                       <div className="relative group/bubble max-w-full">
+                       <div className="relative group/bubble max-w-full overflow-hidden">
                         <div
                           className={cn(
                             "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden max-w-full",
                             isOwn
-                              ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
+                              ? "bg-primary text-white shadow-[0_4px_16px_-4px_rgba(124,58,237,0.3)] border border-primary/20"
                               : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
                             isOwn && isLastInGroup ? "rounded-br-lg" : "",
                             !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
