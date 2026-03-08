@@ -1,118 +1,58 @@
 
 
-# Real-Time Direct Messaging (DM) Feature
+## Performance Optimization Plan — Round 3
 
-## Overview
-Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
+### Issues Found
 
----
+**1. HIGH: Profile page has unfiltered realtime listener on entire `reactions` table (Profile.tsx line 510)**
 
-## Phase 1: Database Schema & Security
+`event: "*"` on `public.reactions` with no filter. Every like/unlike by any user on any post triggers state updates. This is the same broad listener pattern we already fixed in Feed and Gossip.
 
-### Migration: Create tables, functions, RLS, and realtime
+**Fix:** Remove this realtime listener entirely. The optimistic `toggleLike` on line 538 already handles immediate UI updates. When revisiting the profile, `fetchProfileData` loads fresh counts.
 
-**New tables:**
-- `conversations` (id uuid PK, created_at, updated_at)
-- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
-- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
+**2. HIGH: Profile `fetchProfileData` makes 2 sequential queries for posts instead of 1 (Profile.tsx lines 200-212)**
 
-**Security definer functions:**
-- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
-- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
+Two separate queries: one for photo posts (`image_url IS NOT NULL`) and one for text posts (`image_url IS NULL`). These could be a single query fetching all posts, then split client-side.
 
-**RLS policies (all restrictive):**
-- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
-- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
-- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
-- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
+**Fix:** Fetch all posts in one query, then partition into photos and text posts client-side.
 
-**Realtime:** Enable realtime for `messages` table.
+**3. MEDIUM: Gossip realtime channel tears down and rebuilds on every `fetchGossip` recreation (Gossip.tsx line 242)**
 
-**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
+`fetchGossip` is in the dependency array of the realtime useEffect. Since `fetchGossip` is recreated whenever `timeRange`, `filterMode`, or `enrichGossipData` changes, the channel is destroyed and resubscribed on every filter change. This causes a brief disconnect.
 
----
+**Fix:** Remove `fetchGossip` from the realtime useEffect deps. Use a ref to always call the latest `fetchGossip` without re-subscribing the channel.
 
-## Phase 2: Frontend -- New Files
+**4. MEDIUM: Feed realtime channel same issue (Feed.tsx line 250)**
 
-### `src/hooks/use-messages.ts`
-Custom hook that:
-- Fetches message history for a conversation ordered by created_at ASC
-- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
-- Returns messages array, sendMessage function, loading state
+`fetchPosts` in the dependency array causes channel teardown/rebuild when `enrichPosts` changes.
 
-### `src/pages/Messages.tsx` (Inbox)
-- Route: `/messages`
-- Lists all conversations for the current user
-- Shows other participant's avatar, name, last message snippet, timestamp
-- Clicking a conversation navigates to `/messages/:conversationId`
-- Sorted by `updated_at` descending
+**Fix:** Same ref pattern — use a ref to hold the latest `fetchPosts` and keep channel subscription stable.
 
-### `src/pages/ChatRoom.tsx`
-- Route: `/messages/:conversationId`
-- Header: back button, recipient avatar + name
-- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
-- Auto-scroll to bottom on new messages
-- Input + Send button (paper plane icon) at bottom
-- Marks messages as read when viewing
+**5. MEDIUM: BottomNav unread query uses `select("*")` when only count is needed (BottomNav.tsx line 40-44)**
 
----
+The query fetches all columns with `head: true` which is fine, but the realtime listener on line 51 has no filter — it fires for ALL message inserts globally, not just ones for the current user.
 
-## Phase 3: Profile Page Update
+**Fix:** The listener can't easily be filtered by recipient (no `recipient_id` column), but we can debounce it like we did in Messages.tsx to prevent rapid re-fetches.
 
-### `src/pages/Profile.tsx`
-- Add state: `isMutualFollow` (boolean)
-- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
-- Next to the Follow/Unfollow button, conditionally render a "Message" button:
-  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
-  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
+**6. LOW: `SplashScreen` exit animation uses `filter: "blur(10px)"` (SplashScreen.tsx line 36)**
 
----
+The exit applies blur to the entire splash screen div (including the WebGL canvas). This is a one-time cost but on low-end devices it can cause a frame drop during the transition.
 
-## Phase 4: Routing & Navigation
+**Fix:** Remove `filter: "blur(10px)"` from the exit animation. Keep `opacity: 0` and `scale: 1.05` which provide sufficient visual feedback.
 
-### `src/App.tsx`
-- Import Messages and ChatRoom pages
-- Add routes inside the ProtectedRoute + AppLayout group:
-  - `/messages` -> Messages
-  - `/messages/:conversationId` -> ChatRoom
+### Files Changed
 
-### `src/components/layout/BottomNav.tsx`
-- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
-- Add unread badge: query `messages` where `is_read = false` and sender is not current user
-- Real-time subscription for unread count updates
+| File | Changes |
+|---|---|
+| `src/pages/Profile.tsx` | Remove unfiltered reactions realtime listener; merge 2 post queries into 1 |
+| `src/pages/Gossip.tsx` | Stabilize realtime channel with ref pattern |
+| `src/pages/Feed.tsx` | Stabilize realtime channel with ref pattern |
+| `src/components/layout/BottomNav.tsx` | Add 500ms debounce to unread message listener |
+| `src/components/SplashScreen.tsx` | Remove blur from exit animation |
 
-### `src/pages/Feed.tsx`
-- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
-
----
-
-## Technical Details
-
-```text
-conversations          conversation_participants         messages
-+------------+        +------------------------+      +------------------+
-| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
-| created_at |        | user_id                |      | conversation_id  |
-| updated_at |        | id (PK)                |      | sender_id        |
-+------------+        +------------------------+      | content          |
-                                                       | is_read          |
-                                                       | created_at       |
-                                                       +------------------+
-```
-
-### Find-or-create conversation logic (client-side):
-1. Query `conversation_participants` to find a conversation where both users participate
-2. If found, navigate to it
-3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
-
-### Files to create:
-- `src/hooks/use-messages.ts`
-- `src/pages/Messages.tsx`
-- `src/pages/ChatRoom.tsx`
-
-### Files to modify:
-- `src/pages/Profile.tsx` (add Message button)
-- `src/App.tsx` (add routes)
-- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
-- `src/pages/Feed.tsx` (add Leaderboard button to header)
+### What is NOT changed
+- All existing functionality (likes, comments, saves, follows, deep-links, notifications, messaging, profile editing)
+- Visual design and layout
+- Database schema and RLS policies
+- Component structure and routing
 
