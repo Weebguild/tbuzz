@@ -168,7 +168,7 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <div className="flex h-[100dvh] bg-[#050505] text-white flex-row overflow-hidden">
+      <div className={cn("flex bg-[#050505] text-white", isMobile ? "flex-col min-h-full" : "h-[100dvh] flex-row overflow-hidden")}>
         {!isMobile && (
           <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 animate-pulse">
             <div className="h-12 w-12 rounded-full bg-white/5" />
