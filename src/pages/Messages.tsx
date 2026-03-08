@@ -214,7 +214,7 @@ export default function Messages() {
       {/* Conversation List Column */}
       <div className={cn(
         "flex flex-col shrink-0 min-h-0 relative z-10",
-        isMobile ? "w-full h-full" : "w-[360px] border-r border-border/30"
+        isMobile ? "w-full h-full" : "w-[360px] border-r border-white/[0.08]"
       )}>
 
         <div className={cn("px-4 pt-6", isMobile ? "" : "pb-4")}>
