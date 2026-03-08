@@ -237,7 +237,7 @@ export default function Leaderboard() {
                       {entry.avatar_url ? (
                         <AvatarImage src={entry.avatar_url} />
                       ) : (
-                        <AvatarFallback className="bg-[#1A1A1A] font-bold text-sm text-foreground">
+                        <AvatarFallback className="bg-white/[0.04] font-bold text-sm text-foreground">
                           {entry.display_name.charAt(0)}
                         </AvatarFallback>
                       )}
