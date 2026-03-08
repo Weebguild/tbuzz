@@ -360,7 +360,7 @@ export default function Gossip() {
       toast.error(sanitizeError(error));
     } else {
       toast.success("Gossip deleted");
-      fetchGossip();
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
     }
     setDeletePostId(null);
   };

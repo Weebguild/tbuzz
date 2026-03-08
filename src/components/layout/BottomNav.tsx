@@ -48,7 +48,7 @@ export function BottomNav() {
 
     const channel = supabase
       .channel("unread-messages-nav")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => fetchUnread())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => fetchUnread())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user]);

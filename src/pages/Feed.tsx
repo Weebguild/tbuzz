@@ -341,7 +341,7 @@ export default function Feed() {
       toast.error(sanitizeError(error));
     } else {
       toast.success("Post deleted");
-      fetchPosts();
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
     }
     setDeletePostId(null);
   };

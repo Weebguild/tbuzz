@@ -187,6 +187,7 @@ export default function Messages() {
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
       typingChannels.forEach(ch => supabase.removeChannel(ch));
     };
