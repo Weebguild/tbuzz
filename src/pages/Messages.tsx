@@ -328,8 +328,8 @@ export default function Messages() {
                         <AvatarFallback className="bg-muted text-base font-bold">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background relative">
-                        <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-25" />
-                        <div className="absolute inset-0 bg-green-500 rounded-full" />
+                        <div className="absolute inset-0 bg-success rounded-full animate-ping opacity-25" />
+                        <div className="absolute inset-0 bg-success rounded-full" />
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
