@@ -155,9 +155,9 @@ export function ActivityDrawer() {
 
       <SheetContent
         side="right"
-        className="w-full sm:w-[400px] bg-[#0D0D0D] border-l border-[#2D2D2D] p-0 flex flex-col"
+        className="w-full sm:w-[400px] bg-[#0A0A0A]/95 backdrop-blur-2xl border-l border-white/[0.05] p-0 flex flex-col"
       >
-        <SheetHeader className="px-6 py-4 border-b border-[#2D2D2D]">
+        <SheetHeader className="px-6 py-4 border-b border-white/[0.05]">
           <SheetTitle className="text-foreground text-left text-xl font-extrabold">Activity</SheetTitle>
         </SheetHeader>
 
