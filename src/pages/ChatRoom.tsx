@@ -647,7 +647,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                       <div className="relative group/bubble">
                         <div
                           className={cn(
-                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative",
+                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden",
                             isOwn
                               ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
                               : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
