@@ -221,7 +221,7 @@ export default function Leaderboard() {
                 {/* ── ROW IS NOW A BUTTON THAT OPENS GOSSIP ── */}
                 <div
                   onClick={() => openGossipSheet(entry)}
-                  className="w-full flex items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left hover:border-primary/30 transition-colors cursor-pointer group"
+                  className="w-full flex items-center gap-4 rounded-2xl glass-panel p-4 text-left hover:border-primary/30 transition-colors cursor-pointer group"
                 >
                   <span className="text-xl font-extrabold text-foreground w-8 text-center shrink-0">{entry.rank}</span>
 
@@ -237,7 +237,7 @@ export default function Leaderboard() {
                       {entry.avatar_url ? (
                         <AvatarImage src={entry.avatar_url} />
                       ) : (
-                        <AvatarFallback className="bg-[#1A1A1A] font-bold text-sm text-foreground">
+                        <AvatarFallback className="bg-white/[0.04] font-bold text-sm text-foreground">
                           {entry.display_name.charAt(0)}
                         </AvatarFallback>
                       )}
@@ -273,9 +273,9 @@ export default function Leaderboard() {
       <Sheet open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
         <SheetContent
           side="bottom"
-          className="h-[85vh] bg-[#0D0D0D] border-t border-[#2D2D2D] rounded-t-3xl px-0 pt-0 flex flex-col"
+          className="h-[85vh] bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-white/[0.05] rounded-t-3xl px-0 pt-0 flex flex-col"
         >
-          <SheetHeader className="px-6 pt-6 pb-4 border-b border-[#2D2D2D] shrink-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/[0.05] shrink-0">
             <div className="flex items-center justify-between">
               <SheetTitle className="text-foreground text-left flex items-center gap-2">
                 <Flame className="h-5 w-5 text-primary" />
@@ -283,7 +283,7 @@ export default function Leaderboard() {
               </SheetTitle>
               <button
                 onClick={() => navigate(`/profile/${selectedUser?.user_id}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-bold text-foreground hover:bg-[#242424] transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] text-xs font-bold text-foreground hover:bg-white/[0.1] transition-colors"
               >
                 <UserIcon className="h-3.5 w-3.5" />
                 Profile
@@ -308,7 +308,7 @@ export default function Leaderboard() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="rounded-2xl border border-[#2D2D2D] bg-[#1A1A1A] p-4"
+                  className="rounded-2xl glass-panel p-4"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Avatar className="h-6 w-6">

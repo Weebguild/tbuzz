@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,6 +123,10 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       : input;
 
     if ((!input.trim() && !attachment) || sending) return;
+    
+    // Haptic feedback on mobile
+    navigator.vibrate?.(10);
+    
     setSending(true);
     try {
       if (attachment) {
@@ -303,15 +308,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   }, [messages]);
 
   const LinkPreview = ({ url }: { url: string }) => {
+    const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
     let domain: string;
     try {
-      domain = new URL(url).hostname;
+      domain = new URL(normalizedUrl).hostname;
     } catch {
       domain = url;
     }
     return (
       <motion.a
-        href={url}
+        href={normalizedUrl}
         target="_blank"
         rel="noopener noreferrer"
         initial={{ opacity: 0, scale: 0.95 }}
@@ -333,15 +339,33 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   };
 
   const getUrlFromText = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urlRegex = /(https?:\/\/[^\s]+|(?:[\w-]+\.)+(?:com|org|net|io|dev|in|co|app|me|info|biz|edu|gov|xyz|ai|us|uk|de|fr|jp|ru|br|ca|au|it|es|nl|se|no|fi|dk|pl|cz|kr|tw|hk|sg|my|id|th|ph|vn|pk|bd|lk|np|ng|za|ke|eg|ar|cl|mx|co\.in|co\.uk|co\.jp|co\.kr)(?:\/[^\s]*)?)/gi;
     return text.match(urlRegex);
+  };
+
+  // Date separator helper
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return "Today";
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "MMM d, yyyy");
   };
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-transparent">
-        <div className="relative">
-          <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin shadow-2xl shadow-primary/40" />
+        <div className="max-w-3xl mx-auto w-full px-6 space-y-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className={cn("flex items-end gap-3", i % 2 === 0 ? "flex-row" : "flex-row-reverse")}>
+              {i % 2 === 0 && <div className="h-8 w-8 rounded-full bg-white/[0.04] animate-skeleton-pulse" />}
+              <div className={cn("space-y-1", i % 2 === 0 ? "items-start" : "items-end", "flex flex-col")}>
+                <div className={cn(
+                  "rounded-[28px] animate-skeleton-pulse",
+                  i % 2 === 0 ? "bg-white/[0.04]" : "bg-primary/20",
+                  i % 3 === 0 ? "h-12 w-48" : i % 3 === 1 ? "h-10 w-32" : "h-16 w-56"
+                )} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -488,6 +512,21 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           }}
         >
           <div className="max-w-3xl mx-auto space-y-12">
+            {/* Empty state */}
+            {filteredMessages.length === 0 && !loading && recipient && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="relative mb-6">
+                  <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 blur-lg opacity-40" />
+                  <Avatar className="relative h-20 w-20 ring-2 ring-primary/20">
+                    <AvatarImage src={recipient.avatar_url || ""} />
+                    <AvatarFallback className="bg-white/5 text-2xl font-black">{recipient.display_name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </div>
+                <p className="text-lg font-extrabold text-white/80 mb-1">Say hi to {recipient.display_name} 👋</p>
+                <p className="text-xs text-muted-foreground/50">Send a message to start the conversation</p>
+              </div>
+            )}
+
             <AnimatePresence mode="popLayout" initial={false}>
               {filteredMessages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user?.id;
@@ -497,9 +536,20 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 const isGrouping = prevMsg?.sender_id === msg.sender_id;
                 const isLastInGroup = nextMsg?.sender_id !== msg.sender_id;
 
+                // Date separator
+                const msgDate = new Date(msg.created_at);
+                const showDateSeparator = !prevMsg || !isSameDay(msgDate, new Date(prevMsg.created_at));
+
                 return (
+                  <div key={msg.id}>
+                    {showDateSeparator && (
+                      <div className="flex items-center justify-center my-6">
+                        <div className="px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.05] backdrop-blur-sm">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">{getDateLabel(msgDate)}</span>
+                        </div>
+                      </div>
+                    )}
                   <motion.div
-                    key={msg.id}
                     layout
                     initial={{ opacity: 0, scale: 0.9, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -630,6 +680,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                       )}
                     </div>
                   </motion.div>
+                  </div>
                 );
               })}
 

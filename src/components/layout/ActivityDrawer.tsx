@@ -155,9 +155,9 @@ export function ActivityDrawer() {
 
       <SheetContent
         side="right"
-        className="w-full sm:w-[400px] bg-[#0D0D0D] border-l border-[#2D2D2D] p-0 flex flex-col"
+        className="w-full sm:w-[400px] bg-[#0A0A0A]/95 backdrop-blur-2xl border-l border-white/[0.05] p-0 flex flex-col"
       >
-        <SheetHeader className="px-6 py-4 border-b border-[#2D2D2D]">
+        <SheetHeader className="px-6 py-4 border-b border-white/[0.05]">
           <SheetTitle className="text-foreground text-left text-xl font-extrabold">Activity</SheetTitle>
         </SheetHeader>
 
@@ -181,9 +181,9 @@ export function ActivityDrawer() {
                     action();
                     setIsOpen(false);
                   }}
-                  className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${notif.is_read ? "hover:bg-[#1A1A1A]" : "bg-primary/10 border border-primary/20 hover:bg-primary/20"}`}
+                  className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${notif.is_read ? "hover:bg-white/[0.04]" : "glass-panel border-primary/20 hover:bg-primary/10"}`}
                 >
-                  <div className="mt-1 shrink-0 bg-[#1A1A1A] p-2 rounded-full border border-[#2D2D2D]">{icon}</div>
+                  <div className="mt-1 shrink-0 bg-white/[0.04] p-2 rounded-full border border-white/[0.05]">{icon}</div>
                   <div className="flex-1 min-w-0 pt-1">
                     <p className="text-sm text-muted-foreground leading-tight">{text}</p>
                     <p className="text-[10px] text-muted-foreground/60 mt-1 font-medium tracking-wide uppercase">
