@@ -141,6 +141,7 @@ export default function Profile() {
 
 
   const [activeTab, setActiveTab] = useState<ProfileTab>("posts");
+  const [tabDirection, setTabDirection] = useState(0);
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
 
   // Saved tab state
