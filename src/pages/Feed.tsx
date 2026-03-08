@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy } from "lucide-react";
+import { HeartBurst } from "@/components/feed/HeartBurst";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
