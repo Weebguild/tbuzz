@@ -69,11 +69,13 @@ const PAGE_SIZE = 20;
 export default function Feed() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
 
 
   const [newPost, setNewPost] = useState("");
