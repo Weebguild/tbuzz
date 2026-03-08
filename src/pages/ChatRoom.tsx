@@ -745,7 +745,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   handleInputChange();
                 }}
                 onKeyDown={handleKeyDown}
-                className="bg-[#111] border border-white/5 rounded-[32px] h-16 px-6 text-base text-white caret-primary placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
+                className="bg-white/[0.04] backdrop-blur-sm border border-white/5 rounded-[32px] h-16 px-6 text-base text-white caret-primary placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
               />
             )}
           </div>
