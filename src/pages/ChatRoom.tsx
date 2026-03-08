@@ -385,7 +385,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                         {recipient.display_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-[#050505]" />
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-background" />
                   </div>
                   <div className="flex flex-col">
                     <span className="font-black text-base tracking-tight leading-none mb-1">
