@@ -37,14 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const fetchingRef = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
+    if (fetchingRef.current === userId) return;
+    fetchingRef.current = userId;
     const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", userId)
       .maybeSingle();
     setProfile(data);
+    fetchingRef.current = null;
   };
 
   useEffect(() => {
