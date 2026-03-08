@@ -225,7 +225,7 @@ export function DesktopChatLayout() {
             </div>
 
             {/* COLUMN 3: MAIN CHAT AREA (Blue Box) */}
-            <div className="flex-1 flex flex-col relative bg-[#0A0A0A] min-w-0 min-h-0 overflow-hidden">
+            <div className="flex-1 flex flex-col relative bg-transparent min-w-0 min-h-0 overflow-hidden">
                 {conversationId ? (
                     <div className="flex-1 flex flex-col">
                         <ChatRoom desktop={true} />
