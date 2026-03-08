@@ -839,6 +839,11 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               <div className="relative inline-block group">
                 {attachment.type === "image" ? (
                   <img src={attachment.preview} className="h-32 w-32 rounded-3xl object-cover border-4 border-white/5" />
+                ) : attachment.type === "file" ? (
+                  <div className="h-20 w-56 rounded-3xl bg-white/[0.06] border border-white/10 text-white flex items-center px-4 gap-3">
+                    <FileText className="h-6 w-6 text-red-400 shrink-0" />
+                    <span className="text-xs font-bold truncate">{attachment.preview}</span>
+                  </div>
                 ) : (
                   <div className="h-20 w-48 rounded-3xl bg-primary text-white flex items-center px-4 gap-3">
                     <Volume2 className="h-6 w-6" />
