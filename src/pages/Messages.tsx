@@ -134,26 +134,37 @@ export default function Messages() {
 
     fetchConversations();
 
+    // Fetch conversation IDs for typing subscriptions
+    const setupTypingChannels = async () => {
+      const { data: parts } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      const channels = (parts ?? []).map(p =>
+        supabase
+          .channel(`typing-inbox:${p.conversation_id}`)
+          .on("broadcast", { event: "typing" }, (payload) => {
+            if (payload.payload.userId !== user.id) {
+              setConversations(prev => prev.map(c =>
+                c.conversation_id === p.conversation_id
+                  ? { ...c, isTyping: payload.payload.isTyping }
+                  : c
+              ));
+            }
+          })
+          .subscribe()
+      );
+      return channels;
+    };
+
+    let typingChannels: ReturnType<typeof supabase.channel>[] = [];
+    setupTypingChannels().then(ch => { typingChannels = ch; });
+
     const channel = supabase
       .channel('messages-inbox')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchConversations)
       .subscribe();
-
-    // Subscribe to typing broadcasts for each conversation
-    const typingChannels = participations?.map(p => {
-      return supabase
-        .channel(`messages:${p.conversation_id}`)
-        .on("broadcast", { event: "typing" }, (payload) => {
-          if (payload.payload.userId !== user.id) {
-            setConversations(prev => prev.map(c =>
-              c.conversation_id === p.conversation_id
-                ? { ...c, isTyping: payload.payload.isTyping }
-                : c
-            ));
-          }
-        })
-        .subscribe();
-    }) ?? [];
 
     return () => {
       supabase.removeChannel(channel);
