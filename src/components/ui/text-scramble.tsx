@@ -136,12 +136,12 @@ export function TextScramble({
   }, [revealed, text, scrambleTo]);
 
   const handleClick = () => {
-    if (revealOnClick && !revealed) {
-      if (scrambleIntervalRef.current != null) {
-        clearInterval(scrambleIntervalRef.current);
-        scrambleIntervalRef.current = null;
-      }
+    if (!revealOnClick) return;
+    if (!revealed) {
       setRevealed(true);
+    } else {
+      // Re-scramble back to static state
+      setRevealed(false);
     }
   };
 
@@ -150,7 +150,7 @@ export function TextScramble({
       ref={containerRef}
       onClick={handleClick}
       className={cn(
-        revealOnClick && !revealed && "cursor-pointer",
+        revealOnClick && "cursor-pointer",
         className
       )}
       style={{ minHeight: "1em", lineHeight: 1.15, willChange: "contents" }}
