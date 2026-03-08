@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,11 +61,13 @@ const PAGE_SIZE = 20;
 
 export default function Gossip() {
   const { user, profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<GossipPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [highlightedGossipId, setHighlightedGossipId] = useState<string | null>(null);
 
 
   const [showComposer, setShowComposer] = useState(false);
@@ -77,6 +80,25 @@ export default function Gossip() {
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [selectedTags, setSelectedTags] = useState<TagSuggestion[]>([]);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
+
+  // Deep-link: scroll to gossip from notification
+  useEffect(() => {
+    if (loading || posts.length === 0) return;
+    const targetGossipId = searchParams.get("gossipId");
+    if (!targetGossipId) return;
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`gossip-${targetGossipId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightedGossipId(targetGossipId);
+      }
+      setSearchParams({}, { replace: true });
+      setTimeout(() => setHighlightedGossipId(null), 2500);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [loading, posts.length]);
   const [isBurner, setIsBurner] = useState(false);
 
   const getTimeRangeDate = (range: TimeRange): Date => {
@@ -552,6 +574,7 @@ export default function Gossip() {
             {posts.map((post) => (
               <motion.div
                 key={post.id}
+                id={`gossip-${post.id}`}
                 initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                 whileHover={{ scale: 1.01, translateY: -2 }}
@@ -567,7 +590,7 @@ export default function Gossip() {
                       : post.hotness_score >= 0.3
                         ? "card-heat-medium"
                         : ""
-                      }`}
+                      } ${highlightedGossipId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : ""}`}
                   >
                     <div className="glass-card-inner">
                       <div className="flex gap-3">

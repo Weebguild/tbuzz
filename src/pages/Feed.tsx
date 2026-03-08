@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,11 +69,13 @@ const PAGE_SIZE = 20;
 export default function Feed() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
 
 
   const [newPost, setNewPost] = useState("");
@@ -88,6 +90,31 @@ export default function Feed() {
   const [trendingGossip, setTrendingGossip] = useState<TrendingGossip[]>([]);
   const [expandedImage, setExpandedImage] = useState<Post | null>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
+
+  // Deep-link: scroll to post from notification
+  useEffect(() => {
+    if (loading || posts.length === 0) return;
+    const targetPostId = searchParams.get("postId");
+    if (!targetPostId) return;
+
+    const showComments = searchParams.get("showComments") === "true";
+
+    // Small delay to let DOM render
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`post-${targetPostId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightedPostId(targetPostId);
+        if (showComments) {
+          setExpandedComments((prev) => new Set(prev).add(targetPostId));
+        }
+      }
+      setSearchParams({}, { replace: true });
+      setTimeout(() => setHighlightedPostId(null), 2500);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [loading, posts.length]);
 
   const fetchFollowing = async () => {
     if (!user) return;
@@ -515,11 +542,12 @@ export default function Feed() {
             {posts.map((post, i) => (
               <motion.div
                 key={post.id}
+                id={`post-${post.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
               >
-                <div className="rounded-3xl glass-panel overflow-hidden hover:border-primary/30 transition-colors duration-500">
+                <div className={`rounded-3xl glass-panel overflow-hidden transition-all duration-500 ${highlightedPostId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : "hover:border-primary/30"}`}>
                   {/* Post header */}
                   <div className="px-4 pt-4 pb-2 flex items-center gap-3">
                     <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">

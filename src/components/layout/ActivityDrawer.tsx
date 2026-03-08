@@ -13,6 +13,7 @@ interface Notification {
   is_read: boolean;
   created_at: string;
   actor_id: string | null;
+  entity_id: string | null;
   actor_profile?: { display_name: string; avatar_url: string | null };
 }
 
@@ -103,7 +104,7 @@ export function ActivityDrawer() {
               You were tagged in <span className="font-bold text-[#EC4899]">Anonymous Gossip!</span>
             </>
           ),
-          action: () => navigate("/leaderboard"), // Route to leaderboard/gossip context
+          action: () => navigate(notif.entity_id ? `/gossip?gossipId=${notif.entity_id}` : "/gossip"),
         };
       case "gossip_upvote":
         return {
@@ -113,7 +114,7 @@ export function ActivityDrawer() {
               Someone upvoted <span className="font-bold text-success">Gossip</span> about you 👀
             </>
           ),
-          action: () => navigate("/leaderboard"),
+          action: () => navigate(notif.entity_id ? `/gossip?gossipId=${notif.entity_id}` : "/gossip"),
         };
       case "post_like":
         return {
@@ -124,7 +125,7 @@ export function ActivityDrawer() {
               your post
             </>
           ),
-          action: () => navigate("/profile"),
+          action: () => navigate(notif.entity_id ? `/feed?postId=${notif.entity_id}` : "/feed"),
         };
       case "post_comment":
         return {
@@ -135,7 +136,7 @@ export function ActivityDrawer() {
               commented on your post
             </>
           ),
-          action: () => navigate("/profile"),
+          action: () => navigate(notif.entity_id ? `/feed?postId=${notif.entity_id}&showComments=true` : "/feed"),
         };
       default:
         return { icon: <Bell className="h-4 w-4" />, text: "New notification", action: () => {} };
