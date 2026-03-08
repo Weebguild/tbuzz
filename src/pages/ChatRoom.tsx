@@ -978,8 +978,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 <div className="flex justify-center gap-8 py-4 border-y border-white/[0.05] mb-6">
                   <div className="flex items-center gap-1.5">
                     <Users className="h-3 w-3 text-primary/60" />
-                    <span className="text-sm font-black text-white">—</span>
-                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Followers</span>
+                    <span className="text-sm font-black text-white">{recipientStats.followers}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <UserCheck className="h-3 w-3 text-accent/60" />
