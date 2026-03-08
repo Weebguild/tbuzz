@@ -12,7 +12,7 @@ import {
   X, Send, Loader2, Check, CheckCheck, Plus, Mic,
   Play, Pause, Image as ImageIcon, Video as VideoIcon,
   Trash2, Volume2, ChevronLeft, Info, MoreVertical,
-  Smile, Reply, Share2, Copy, ExternalLink, Link as LinkIcon,
+  Smile, Reply, Share2, Copy, ExternalLink,
   Search, BellOff, Ban, Ghost, Users, UserCheck, GraduationCap, CalendarDays
 } from "lucide-react";
 import {
