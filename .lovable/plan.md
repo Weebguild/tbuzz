@@ -1,33 +1,118 @@
-## Fix Link Preview & Improve Desktop Chat Dashboard Visibility
 
-### Problem Analysis
 
-1. **Link preview** — The `LinkPreview` component in `ChatRoom.tsx` wraps URLs in `new URL(url)` without a try-catch. Malformed URLs (missing protocol, partial matches from the regex) will crash the component. Also, the styling is too subtle (`bg-white/[0.03]`) to be visible.
-2. **Desktop dashboard sections not visible** — The `DesktopChatLayout` component (which has the 4-column layout with sidebar, conversation list, chat, and shared files panel) exists but is **never imported or used** anywhere. The app uses `Messages.tsx` for desktop, which only renders 2 columns (conversation list + chat area) with no right panel. The grid partitions between columns use `border-border/30` which is nearly invisible.
-3. The profile info page will also be redesigned in the same design language and the terminolgy like "copy client id" , etc will be changes to be more like instagram
+# Real-Time Direct Messaging (DM) Feature
 
-### Plan
+## Overview
+Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
 
-#### 1. Fix LinkPreview crash & improve visibility (`src/pages/ChatRoom.tsx`)
+---
 
-- Wrap `new URL(url)` in a try-catch, fallback to showing the raw URL string as domain
-- Increase link preview contrast: change `bg-white/[0.03]` to `glass-panel` class for consistent frosted look
-- Add a left accent border (`border-l-2 border-primary/30`) so link previews stand out in the chat
+## Phase 1: Database Schema & Security
 
-#### 2. Improve desktop column dividers (`src/pages/Messages.tsx`)
+### Migration: Create tables, functions, RLS, and realtime
 
-- Change column border from `border-border/30` to `border-white/[0.08]` so section dividers are subtly visible against the aurora background
-- Add a faint inner glow using `shadow-[inset_1px_0_0_rgba(255,255,255,0.03)]` on the chat column for depth
+**New tables:**
+- `conversations` (id uuid PK, created_at, updated_at)
+- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
+- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
 
-#### 3. Add shared files right panel on desktop (`src/pages/Messages.tsx`)
+**Security definer functions:**
+- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
+- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
 
-- When a conversation is selected on desktop, render a right sidebar (w-[280px]) showing shared media from that conversation — reusing the same logic from `DesktopChatLayout` (fetching media from messages table)
-- Panel sections: recipient profile summary, shared photos grid, shared files list
-- Style with `glass-panel` and `border-l border-white/[0.08]` to match column dividers
-- When no conversation is selected, hide the right panel
+**RLS policies (all restrictive):**
+- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
+- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
+- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
+- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
 
-#### 4. Improve section label visibility (`src/pages/Messages.tsx`)
+**Realtime:** Enable realtime for `messages` table.
 
-- Add a faint horizontal line after section labels (`Pinned`, `Recent Messages`) using `border-b border-white/[0.05]` to visually separate sections
+**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
 
-All changes confined to `src/pages/ChatRoom.tsx` and `src/pages/Messages.tsx`. No logic changes beyond adding the media fetch for the right panel.
+---
+
+## Phase 2: Frontend -- New Files
+
+### `src/hooks/use-messages.ts`
+Custom hook that:
+- Fetches message history for a conversation ordered by created_at ASC
+- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
+- Returns messages array, sendMessage function, loading state
+
+### `src/pages/Messages.tsx` (Inbox)
+- Route: `/messages`
+- Lists all conversations for the current user
+- Shows other participant's avatar, name, last message snippet, timestamp
+- Clicking a conversation navigates to `/messages/:conversationId`
+- Sorted by `updated_at` descending
+
+### `src/pages/ChatRoom.tsx`
+- Route: `/messages/:conversationId`
+- Header: back button, recipient avatar + name
+- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
+- Auto-scroll to bottom on new messages
+- Input + Send button (paper plane icon) at bottom
+- Marks messages as read when viewing
+
+---
+
+## Phase 3: Profile Page Update
+
+### `src/pages/Profile.tsx`
+- Add state: `isMutualFollow` (boolean)
+- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
+- Next to the Follow/Unfollow button, conditionally render a "Message" button:
+  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
+  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
+
+---
+
+## Phase 4: Routing & Navigation
+
+### `src/App.tsx`
+- Import Messages and ChatRoom pages
+- Add routes inside the ProtectedRoute + AppLayout group:
+  - `/messages` -> Messages
+  - `/messages/:conversationId` -> ChatRoom
+
+### `src/components/layout/BottomNav.tsx`
+- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
+- Add unread badge: query `messages` where `is_read = false` and sender is not current user
+- Real-time subscription for unread count updates
+
+### `src/pages/Feed.tsx`
+- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
+
+---
+
+## Technical Details
+
+```text
+conversations          conversation_participants         messages
++------------+        +------------------------+      +------------------+
+| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
+| created_at |        | user_id                |      | conversation_id  |
+| updated_at |        | id (PK)                |      | sender_id        |
++------------+        +------------------------+      | content          |
+                                                       | is_read          |
+                                                       | created_at       |
+                                                       +------------------+
+```
+
+### Find-or-create conversation logic (client-side):
+1. Query `conversation_participants` to find a conversation where both users participate
+2. If found, navigate to it
+3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
+
+### Files to create:
+- `src/hooks/use-messages.ts`
+- `src/pages/Messages.tsx`
+- `src/pages/ChatRoom.tsx`
+
+### Files to modify:
+- `src/pages/Profile.tsx` (add Message button)
+- `src/App.tsx` (add routes)
+- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
+- `src/pages/Feed.tsx` (add Leaderboard button to header)
+

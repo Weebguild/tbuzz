@@ -303,9 +303,12 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   }, [messages]);
 
   const LinkPreview = ({ url }: { url: string }) => {
-    // Basic link preview component
-    // In a real app, you'd fetch metadata from a backend proxy
-    const domain = new URL(url).hostname;
+    let domain: string;
+    try {
+      domain = new URL(url).hostname;
+    } catch {
+      domain = url;
+    }
     return (
       <motion.a
         href={url}
@@ -313,7 +316,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         rel="noopener noreferrer"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="mt-2 block rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/10 overflow-hidden hover:bg-white/[0.06] transition-all group/link"
+        className="mt-2 block rounded-2xl glass-panel border-l-2 border-primary/30 overflow-hidden hover:bg-white/[0.06] transition-all group/link"
       >
         <div className="flex items-center gap-3 p-3">
           <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
@@ -832,10 +835,18 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     </div>
                     <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
                   </button>
-                  <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold">
+                  <button
+                    onClick={() => {
+                      if (recipient) {
+                        navigator.clipboard.writeText(recipient.user_id);
+                        toast.success("Username copied");
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold"
+                  >
                     <div className="flex items-center gap-4 text-white/60">
                       <Copy className="h-5 w-5" />
-                      <span>Copy Client ID</span>
+                      <span>Copy Username</span>
                     </div>
                     <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
                   </button>
