@@ -150,7 +150,7 @@ export function TextScramble({
       ref={containerRef}
       onClick={handleClick}
       className={cn(
-        revealOnClick && !revealed && "cursor-pointer",
+        revealOnClick && "cursor-pointer",
         className
       )}
       style={{ minHeight: "1em", lineHeight: 1.15, willChange: "contents" }}
