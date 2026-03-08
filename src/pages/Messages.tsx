@@ -31,6 +31,79 @@ interface ConversationItem {
   unread_count: number;
 }
 
+function DesktopSharedPanel({ conversationId, conversations }: { conversationId: string; conversations: ConversationItem[] }) {
+  const [sharedMedia, setSharedMedia] = useState<{ type: string; url: string }[]>([]);
+  const conv = conversations.find(c => c.conversation_id === conversationId);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    const fetchMedia = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("content")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false });
+
+      const media: { type: string; url: string }[] = [];
+      for (const msg of data || []) {
+        try {
+          if (msg.content.startsWith("{")) {
+            const parsed = JSON.parse(msg.content);
+            if ((parsed.type === "image" || parsed.type === "video") && parsed.url) {
+              media.push({ type: parsed.type, url: parsed.url });
+            }
+          }
+        } catch {}
+      }
+      setSharedMedia(media);
+    };
+    fetchMedia();
+  }, [conversationId]);
+
+  return (
+    <div className="w-[280px] shrink-0 border-l border-white/[0.08] bg-white/[0.02] backdrop-blur-sm flex flex-col">
+      <ScrollArea className="flex-1 p-5">
+        {conv && (
+          <div className="flex flex-col items-center mb-8 pt-4">
+            <Avatar className="h-20 w-20 ring-2 ring-primary/20 shadow-xl mb-4">
+              <AvatarImage src={conv.other_user.avatar_url || ""} />
+              <AvatarFallback className="bg-white/5 text-xl font-black">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <h3 className="text-base font-black tracking-tight mb-1">{conv.other_user.display_name}</h3>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-primary/60">Mutual Connection</span>
+          </div>
+        )}
+
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/[0.05]">
+            <ImageIcon className="h-3 w-3 text-primary" />
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Shared Photos</h4>
+          </div>
+          {sharedMedia.length > 0 ? (
+            <div className="grid grid-cols-3 gap-1.5">
+              {sharedMedia.slice(0, 9).map((m, i) => (
+                <div key={i} className="aspect-square rounded-xl glass-panel overflow-hidden">
+                  <img src={m.url} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-6 text-muted-foreground/40 text-xs italic">No shared media yet</p>
+          )}
+        </section>
+
+        <section>
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/[0.05]">
+            <FileText className="h-3 w-3 text-primary" />
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Shared Files</h4>
+          </div>
+          <p className="text-center py-6 text-muted-foreground/40 text-xs italic">No shared files yet</p>
+        </section>
+      </ScrollArea>
+    </div>
+  );
+}
+
 export default function Messages() {
   const { user } = useAuth();
   const navigate = useNavigate();
