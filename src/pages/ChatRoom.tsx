@@ -858,9 +858,14 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 {attachment.type === "image" ? (
                   <img src={attachment.preview} className="h-32 w-32 rounded-3xl object-cover border-4 border-white/5" />
                 ) : attachment.type === "file" ? (
-                  <div className="h-20 w-56 rounded-3xl bg-white/[0.06] border border-white/10 text-white flex items-center px-4 gap-3">
-                    <FileText className="h-6 w-6 text-red-400 shrink-0" />
-                    <span className="text-xs font-bold truncate">{attachment.preview}</span>
+                  <div className="h-20 w-60 rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] text-foreground flex items-center px-4 gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-white/[0.06] flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-semibold truncate block">{attachment.preview}</span>
+                      <span className="text-[10px] text-muted-foreground/60 mt-0.5 block">Ready to send</span>
+                    </div>
                   </div>
                 ) : (
                   <div className="h-20 w-48 rounded-3xl bg-primary text-white flex items-center px-4 gap-3">
