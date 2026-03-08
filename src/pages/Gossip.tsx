@@ -82,23 +82,22 @@ export default function Gossip() {
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
   // Deep-link: scroll to gossip from notification
+  const deepLinkGossipId = searchParams.get("gossipId");
   useEffect(() => {
-    if (loading || posts.length === 0) return;
-    const targetGossipId = searchParams.get("gossipId");
-    if (!targetGossipId) return;
+    if (loading || posts.length === 0 || !deepLinkGossipId) return;
 
     const timer = setTimeout(() => {
-      const el = document.getElementById(`gossip-${targetGossipId}`);
+      const el = document.getElementById(`gossip-${deepLinkGossipId}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setHighlightedGossipId(targetGossipId);
+        setHighlightedGossipId(deepLinkGossipId);
+        setSearchParams({}, { replace: true });
+        setTimeout(() => setHighlightedGossipId(null), 2500);
       }
-      setSearchParams({}, { replace: true });
-      setTimeout(() => setHighlightedGossipId(null), 2500);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [loading, posts.length]);
+  }, [loading, posts.length, deepLinkGossipId]);
   const [isBurner, setIsBurner] = useState(false);
 
   const getTimeRangeDate = (range: TimeRange): Date => {
