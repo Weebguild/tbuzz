@@ -367,7 +367,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Flagship Header */}
       <header
         onPointerDown={(e) => !showChatSearch && dragControls.start(e)}
-        className="relative z-30 px-6 py-5 flex items-center justify-between bg-transparent backdrop-blur-xl shadow-[0_1px_20px_rgba(0,0,0,0.3)]"
+        className="relative z-30 px-6 py-5 flex items-center justify-between bg-transparent backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.15)]"
       >
         <div className="flex items-center gap-5 flex-1 mr-4">
           {!showChatSearch ? (
@@ -647,7 +647,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </div>
         </ScrollArea>
         {/* Gradient fade into input */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none bg-gradient-to-t from-background/80 to-transparent z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-t from-background/40 to-transparent z-10" />
         <AnimatePresence>
           {showScrollButton && (
             <motion.button
@@ -794,97 +794,105 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         {showInfo && recipient && (
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-2xl flex flex-col pt-12"
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-3xl flex flex-col pt-12"
           >
             <div className="px-6 flex items-center justify-between mb-8">
-              <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl glass-panel">
+              <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.05] hover:bg-white/[0.08] transition-colors">
                 <X className="h-6 w-6" />
               </button>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Details</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Details</h2>
               <div className="w-12" />
             </div>
 
             <ScrollArea className="flex-1 px-8">
-              <div className="glass-panel rounded-3xl p-8 flex flex-col items-center mb-10">
-                <Avatar className="h-28 w-28 ring-4 ring-primary/20 shadow-2xl mb-5">
-                  <AvatarImage src={recipient.avatar_url || ""} />
-                  <AvatarFallback className="text-4xl font-black bg-white/5">
-                    {recipient.display_name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <h3 className="text-2xl font-black tracking-tighter mb-2">{recipient.display_name}</h3>
-                <p className="text-[9px] text-primary font-black uppercase tracking-[0.3em] bg-primary/10 px-4 py-1.5 rounded-full">Mutual Connection</p>
+              <div className="glass-card-modern mb-10">
+                <div className="glass-card-inner flex flex-col items-center p-8">
+                  <Avatar className="h-28 w-28 ring-4 ring-primary/20 shadow-2xl mb-5">
+                    <AvatarImage src={recipient.avatar_url || ""} />
+                    <AvatarFallback className="text-4xl font-black bg-white/5">
+                      {recipient.display_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h3 className="text-2xl font-black tracking-tighter mb-2">{recipient.display_name}</h3>
+                  <p className="text-[9px] text-primary font-black uppercase tracking-[0.3em] bg-primary/10 px-4 py-1.5 rounded-full">Mutual Connection</p>
+                </div>
               </div>
 
               <div className="space-y-6">
-                <section className="glass-panel rounded-3xl p-6">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-5">Shared Media</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {sharedMedia.slice(0, 9).map((media, i) => (
-                      <div key={i} className="aspect-square rounded-2xl bg-white/5 overflow-hidden group cursor-pointer" onClick={() => setSelectedMedia(media.url)}>
-                        <img src={media.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                      </div>
-                    ))}
-                    {sharedMedia.length === 0 && <p className="col-span-3 text-center py-6 text-muted-foreground/40 text-xs italic">No shared media yet</p>}
+                <div className="glass-card-modern">
+                  <div className="glass-card-inner p-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 mb-5">Shared Media</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {sharedMedia.slice(0, 9).map((media, i) => (
+                        <div key={i} className="aspect-square rounded-2xl bg-white/5 overflow-hidden group cursor-pointer" onClick={() => setSelectedMedia(media.url)}>
+                          <img src={media.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                      ))}
+                      {sharedMedia.length === 0 && <p className="col-span-3 text-center py-6 text-muted-foreground/40 text-xs italic">No shared media yet</p>}
+                    </div>
                   </div>
-                </section>
+                </div>
 
-                <section className="glass-panel rounded-3xl overflow-hidden divide-y divide-white/[0.05]">
-                  <button className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold">
-                    <div className="flex items-center gap-4 text-foreground/60">
-                      <Share2 className="h-5 w-5" />
-                      <span>Share Profile</span>
-                    </div>
-                    <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (recipient) {
-                        const link = `${window.location.origin}/profile/${recipient.user_id}`;
-                        navigator.clipboard.writeText(link);
-                        toast.success("Profile link copied");
-                      }
-                    }}
-                    className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
-                  >
-                    <div className="flex items-center gap-4 text-foreground/60">
-                      <Copy className="h-5 w-5" />
-                      <span>Copy Profile Link</span>
-                    </div>
-                    <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
-                  </button>
-                  <button
-                    onClick={handleMute}
-                    className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
-                  >
-                    <div className="flex items-center gap-4 text-foreground/60">
-                      {isMuted ? <Volume2 className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-                      <span>{isMuted ? "Unmute Notifications" : "Mute Notifications"}</span>
-                    </div>
-                    <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
-                  </button>
-                </section>
+                <div className="glass-card-modern">
+                  <div className="glass-card-inner p-0 divide-y divide-white/[0.03]">
+                    <button className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold">
+                      <div className="flex items-center gap-4 text-foreground/60">
+                        <Share2 className="h-5 w-5" />
+                        <span>Share Profile</span>
+                      </div>
+                      <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (recipient) {
+                          const link = `${window.location.origin}/profile/${recipient.user_id}`;
+                          navigator.clipboard.writeText(link);
+                          toast.success("Profile link copied");
+                        }
+                      }}
+                      className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
+                    >
+                      <div className="flex items-center gap-4 text-foreground/60">
+                        <Copy className="h-5 w-5" />
+                        <span>Copy Profile Link</span>
+                      </div>
+                      <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                    </button>
+                    <button
+                      onClick={handleMute}
+                      className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
+                    >
+                      <div className="flex items-center gap-4 text-foreground/60">
+                        {isMuted ? <Volume2 className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+                        <span>{isMuted ? "Unmute Notifications" : "Mute Notifications"}</span>
+                      </div>
+                      <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                    </button>
+                  </div>
+                </div>
 
-                <section className="glass-panel rounded-3xl overflow-hidden divide-y divide-white/[0.05]">
-                  <button
-                    onClick={handleBlock}
-                    className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Ban className="h-5 w-5" />
-                      <span>Block User</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={handleClearHistory}
-                    className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Trash2 className="h-5 w-5" />
-                      <span>Delete Conversation</span>
-                    </div>
-                  </button>
-                </section>
+                <div className="glass-card-modern">
+                  <div className="glass-card-inner p-0 divide-y divide-white/[0.03]">
+                    <button
+                      onClick={handleBlock}
+                      className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Ban className="h-5 w-5" />
+                        <span>Block User</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={handleClearHistory}
+                      className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Trash2 className="h-5 w-5" />
+                        <span>Delete Conversation</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
             </ScrollArea>
           </motion.div>
