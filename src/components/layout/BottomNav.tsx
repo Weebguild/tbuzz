@@ -53,9 +53,12 @@ export function BottomNav() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  const isMobile = useIsMobile();
   const isMessagesPage = location.pathname.startsWith("/messages");
+  const isInChatRoom = isMessagesPage && location.pathname.split("/").filter(Boolean).length > 1;
 
-  if (hidden || isMessagesPage) return null;
+  // Hide when: expander open, OR desktop messages (has its own sidebar), OR mobile chat room (full screen chat)
+  if (hidden || (!isMobile && isMessagesPage) || (isMobile && isInChatRoom)) return null;
 
   return (
     <>
