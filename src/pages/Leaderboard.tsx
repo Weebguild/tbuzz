@@ -283,7 +283,7 @@ export default function Leaderboard() {
               </SheetTitle>
               <button
                 onClick={() => navigate(`/profile/${selectedUser?.user_id}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-bold text-foreground hover:bg-[#242424] transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] text-xs font-bold text-foreground hover:bg-white/[0.1] transition-colors"
               >
                 <UserIcon className="h-3.5 w-3.5" />
                 Profile
