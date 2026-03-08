@@ -57,6 +57,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     avatar_url: string | null;
   } | null>(null);
 
+  // Online presence tracking
+  const [isRecipientOnline, setIsRecipientOnline] = useState(false);
+
   // Media state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
