@@ -237,7 +237,7 @@ export default function Feed() {
   useEffect(() => {
     fetchPosts();
     fetchTrendingGossip();
-  }, [profile, followingIds]);
+  }, [profile]);
 
   // ── REALTIME ──
   useEffect(() => {
