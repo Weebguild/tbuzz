@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls 
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { useMessages } from "@/hooks/use-messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";

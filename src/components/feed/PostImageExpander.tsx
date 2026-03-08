@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-mo
 import { X, Heart, MessageCircle, Send, Loader2, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";

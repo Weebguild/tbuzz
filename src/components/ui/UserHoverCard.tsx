@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2, Users, UserCheck, GraduationCap, CalendarDays } from "lucide-react";
 import gsap from "gsap";
 import { cn } from "@/lib/utils";
+import { useHalo } from "@/hooks/useHalo";
 
 interface UserProfile {
     user_id: string;
