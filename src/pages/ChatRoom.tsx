@@ -22,6 +22,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { Dock, DockItem, DockIcon, DockLabel } from "@/components/ui/dock";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -42,6 +48,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [recipientStats, setRecipientStats] = useState<{ followers: number; following: number }>({ followers: 0, following: 0 });
+  const [emojiDrawerMsgId, setEmojiDrawerMsgId] = useState<string | null>(null);
 
   // Gesture handling for back navigation
   const x = useMotionValue(0);
@@ -86,7 +94,15 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           .select("user_id, display_name, avatar_url")
           .eq("user_id", participants[0].user_id)
           .single();
-        if (profile) setRecipient(profile);
+        if (profile) {
+          setRecipient(profile);
+          // Fetch follower/following counts
+          const [{ count: followers }, { count: following }] = await Promise.all([
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", profile.user_id),
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", profile.user_id),
+          ]);
+          setRecipientStats({ followers: followers ?? 0, following: following ?? 0 });
+        }
       }
     };
     fetchRecipient();
@@ -640,14 +656,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     )}
 
                     <div className={cn(
-                      "flex flex-col gap-1 max-w-[80%]",
+                      "flex flex-col gap-1 max-w-[80%] min-w-0",
                       isOwn ? "items-end" : "items-start"
                     )}>
-                      {/* Swipe Context Action would go here */}
-                      <div className="relative group/bubble">
+                      <div className="relative group/bubble max-w-full overflow-hidden">
                         <div
                           className={cn(
-                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden",
+                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden max-w-full",
                             isOwn
                               ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
                               : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
@@ -694,13 +709,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               </div>
                             </div>
                           ) : (
-                            <div className="overflow-hidden">
-                              <p className="whitespace-pre-wrap break-words" style={{ wordBreak: "break-word" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
+                            <div className="overflow-hidden max-w-full">
+                              <p className="whitespace-pre-wrap break-words overflow-hidden" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
                             </div>
                           )}
                         </div>
 
-                        {/* Quick Reactions Hidden by Default */}
+                        {/* Reply + Emoji buttons on hover */}
                         <div className={cn(
                           "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 px-2",
                           isOwn ? "right-full mr-2" : "left-full ml-2"
@@ -708,15 +723,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                           <button onClick={() => setReplyingTo(data)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
                             <Reply className="h-4 w-4" />
                           </button>
-                          {["🔥", "❤️", "😂", "😮"].map(emoji => (
-                            <button
-                              key={emoji}
-                              onClick={() => setReactions(prev => ({ ...prev, [msg.id]: emoji }))}
-                              className="p-1.5 text-sm hover:scale-125 transition-transform"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
+                          <button onClick={() => setEmojiDrawerMsgId(msg.id)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                            <Smile className="h-4 w-4" />
+                          </button>
                         </div>
 
                         {reactions[msg.id] && (
@@ -969,12 +978,11 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 <div className="flex justify-center gap-8 py-4 border-y border-white/[0.05] mb-6">
                   <div className="flex items-center gap-1.5">
                     <Users className="h-3 w-3 text-primary/60" />
-                    <span className="text-sm font-black text-white">—</span>
-                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Followers</span>
+                    <span className="text-sm font-black text-white">{recipientStats.followers}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <UserCheck className="h-3 w-3 text-accent/60" />
-                    <span className="text-sm font-black text-white">—</span>
+                    <span className="text-sm font-black text-white">{recipientStats.following}</span>
                     <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Following</span>
                   </div>
                 </div>
@@ -1098,6 +1106,34 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Emoji Reaction Drawer */}
+      <Drawer open={!!emojiDrawerMsgId} onOpenChange={(open) => { if (!open) setEmojiDrawerMsgId(null); }}>
+        <DrawerContent className="bg-[#0A0A0A]/95 backdrop-blur-3xl border-white/[0.06]">
+          <DrawerTitle className="sr-only">Choose a reaction</DrawerTitle>
+          <div className="py-6 px-4">
+            <Dock magnification={64} distance={120} panelHeight={56} className="border-none bg-transparent">
+              {["🔥", "❤️", "😂", "😮", "👍", "😢", "🙏", "💀", "🤯", "👀", "💯", "🎉", "😍", "🥺", "💜"].map(emoji => (
+                <DockItem
+                  key={emoji}
+                  onClick={() => {
+                    if (emojiDrawerMsgId) {
+                      setReactions(prev => ({ ...prev, [emojiDrawerMsgId]: emoji }));
+                      navigator.vibrate?.(10);
+                    }
+                    setEmojiDrawerMsgId(null);
+                  }}
+                >
+                  <DockIcon>
+                    <span className="text-2xl select-none">{emoji}</span>
+                  </DockIcon>
+                  <DockLabel>{emoji}</DockLabel>
+                </DockItem>
+              ))}
+            </Dock>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </motion.div>
   );
 }
