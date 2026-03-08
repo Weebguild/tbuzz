@@ -555,7 +555,7 @@ export default function Feed() {
                   {/* Post header */}
                   <div className="px-4 pt-4 pb-2 flex items-center gap-3">
                     <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">
-                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                      <Avatar className={cn("h-9 w-9", getHaloClass(post.user_id))}>
                         {post.profiles?.avatar_url ? (
                           <AvatarImage src={post.profiles.avatar_url} />
                         ) : (
