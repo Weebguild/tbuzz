@@ -116,7 +116,7 @@ export function useMessages(conversationId: string | undefined) {
   }, [conversationId, user]);
 
   const sendMessage = useCallback(
-    async (content: string, file?: File, type: "text" | "image" | "video" | "audio" = "text") => {
+    async (content: string, file?: File, type: "text" | "image" | "video" | "audio" | "file" = "text") => {
       if (!conversationId || !user || (!content.trim() && !file)) return;
       setTyping(false);
 
