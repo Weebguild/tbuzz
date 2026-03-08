@@ -363,7 +363,16 @@ export default function Messages() {
                             <div className="h-2 w-2 rounded-full bg-primary shrink-0 shadow-[0_0_6px_hsl(var(--primary)/0.6)]" />
                           )}
                           <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-muted-foreground/60")}>
-                            {conv.last_message || "No messages yet"}
+                            {conv.isTyping ? (
+                              <span className="text-primary font-bold italic flex items-center gap-1">
+                                typing
+                                <span className="inline-flex gap-0.5">
+                                  <span className="h-1 w-1 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                                  <span className="h-1 w-1 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                                  <span className="h-1 w-1 rounded-full bg-primary animate-bounce" />
+                                </span>
+                              </span>
+                            ) : (conv.last_message || "No messages yet")}
                           </p>
                         </div>
                         <button

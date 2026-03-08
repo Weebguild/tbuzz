@@ -308,7 +308,7 @@ export default function Leaderboard() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="rounded-2xl border border-[#2D2D2D] bg-[#1A1A1A] p-4"
+                  className="rounded-2xl glass-panel p-4"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Avatar className="h-6 w-6">

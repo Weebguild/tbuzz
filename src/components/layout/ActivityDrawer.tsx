@@ -181,9 +181,9 @@ export function ActivityDrawer() {
                     action();
                     setIsOpen(false);
                   }}
-                  className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${notif.is_read ? "hover:bg-[#1A1A1A]" : "bg-primary/10 border border-primary/20 hover:bg-primary/20"}`}
+                  className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${notif.is_read ? "hover:bg-white/[0.04]" : "glass-panel border-primary/20 hover:bg-primary/10"}`}
                 >
-                  <div className="mt-1 shrink-0 bg-[#1A1A1A] p-2 rounded-full border border-[#2D2D2D]">{icon}</div>
+                  <div className="mt-1 shrink-0 bg-white/[0.04] p-2 rounded-full border border-white/[0.05]">{icon}</div>
                   <div className="flex-1 min-w-0 pt-1">
                     <p className="text-sm text-muted-foreground leading-tight">{text}</p>
                     <p className="text-[10px] text-muted-foreground/60 mt-1 font-medium tracking-wide uppercase">
