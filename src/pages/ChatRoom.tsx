@@ -712,8 +712,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
                         {/* Reply + Emoji buttons on hover */}
                         <div className={cn(
-                          "absolute bottom-full mb-1 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 z-10",
-                          isOwn ? "right-0" : "left-0"
+                          "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 z-10",
+                          isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
                         )}>
                           <button onClick={() => setReplyingTo(data)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
                             <Reply className="h-3.5 w-3.5" />
