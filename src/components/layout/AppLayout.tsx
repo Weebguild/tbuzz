@@ -10,14 +10,10 @@ export function AppLayout() {
   const isMessagesRoute = location.pathname.startsWith("/messages");
   const isInChatRoom = isMessagesRoute && location.pathname.split("/").filter(Boolean).length > 1;
 
-  // On desktop: always full height with sidebar. On mobile chat room: locked layout.
-  const useLockedLayout = !isMobile || (isMobile && isInChatRoom);
+  const useLockedLayout = isMessagesRoute && (!isMobile || isInChatRoom);
 
   return (
-    <div className={cn(
-      "min-h-screen bg-black relative selection:bg-primary/30 flex",
-      useLockedLayout && "h-[100dvh] overflow-hidden"
-    )}>
+    <div className="min-h-screen bg-black relative selection:bg-primary/30 flex">
       {/* ── THE AURORA BACKGROUND ── */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#7C3AED] mix-blend-screen filter blur-[120px] opacity-30 animate-aurora-1" />
@@ -34,9 +30,9 @@ export function AppLayout() {
       {/* ── THE CONTENT LAYER ── */}
       <main className={cn(
         "relative z-10 flex-1 min-w-0",
-        isMobile
-          ? (isInChatRoom ? "h-[100dvh] overflow-hidden" : "pb-24 min-h-screen max-w-lg mx-auto")
-          : "h-[100dvh] overflow-y-auto"
+        useLockedLayout
+          ? "max-w-none pb-0 h-[100dvh] overflow-hidden"
+          : "max-w-lg mx-auto pb-24 min-h-screen"
       )}>
         <Outlet />
       </main>
