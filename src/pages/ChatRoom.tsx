@@ -789,7 +789,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         {showInfo && recipient && (
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            className="fixed inset-0 z-[100] bg-[#050505] flex flex-col pt-12"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-3xl flex flex-col pt-12"
           >
             <div className="px-6 flex items-center justify-between mb-8">
               <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl bg-white/5">
