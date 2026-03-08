@@ -497,37 +497,8 @@ export default function Profile() {
     fetchProfileData();
   }, [fetchProfileData]);
 
-  // ── REALTIME LIKES ──
-  useEffect(() => {
-    const reactionChannel = supabase
-      .channel("public:reactions-profile")
-      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, (payload) => {
-        if (payload.eventType === "INSERT") {
-          setTextPosts((prev) =>
-            prev.map((p) => (p.id === payload.new.post_id ? { ...p, reaction_count: p.reaction_count + 1 } : p)),
-          );
-          setPhotos((prev) =>
-            prev.map((p) => (p.id === payload.new.post_id ? { ...p, reaction_count: p.reaction_count + 1 } : p)),
-          );
-        } else if (payload.eventType === "DELETE") {
-          setTextPosts((prev) =>
-            prev.map((p) =>
-              p.id === payload.old.post_id ? { ...p, reaction_count: Math.max(0, p.reaction_count - 1) } : p,
-            ),
-          );
-          setPhotos((prev) =>
-            prev.map((p) =>
-              p.id === payload.old.post_id ? { ...p, reaction_count: Math.max(0, p.reaction_count - 1) } : p,
-            ),
-          );
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(reactionChannel);
-    };
-  }, []);
+  // Realtime reactions listener removed — toggleLike handles optimistic UI,
+  // and fetchProfileData loads fresh counts on revisit.
 
   const toggleLike = async (postId: string, hasLiked: boolean) => {
     if (!user) return;

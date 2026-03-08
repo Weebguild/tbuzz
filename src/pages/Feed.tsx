@@ -239,15 +239,19 @@ export default function Feed() {
     fetchTrendingGossip();
   }, [profile]);
 
+  // Keep a ref to the latest fetchPosts so the channel doesn't tear down on every recreation
+  const fetchPostsRef = useRef(fetchPosts);
+  useEffect(() => { fetchPostsRef.current = fetchPosts; }, [fetchPosts]);
+
   // ── REALTIME: only listen for new posts from others ──
   useEffect(() => {
     if (!profile) return;
     const channel = supabase
       .channel("feed-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchPosts())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchPostsRef.current())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [profile, fetchPosts]);
+  }, [profile?.university_id]);
 
   const handlePost = async () => {
     if (!user || !profile || !newPost.trim()) return;

@@ -231,15 +231,19 @@ export default function Gossip() {
     fetchGossip();
   }, [profile, filterMode, timeRange]);
 
+  // Keep a ref to the latest fetchGossip so the channel doesn't tear down on every recreation
+  const fetchGossipRef = useRef(fetchGossip);
+  useEffect(() => { fetchGossipRef.current = fetchGossip; }, [fetchGossip]);
+
   // ── REALTIME: only listen for new gossip posts ──
   useEffect(() => {
     if (!profile) return;
     const channel = supabase
       .channel("gossip-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gossip_posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchGossip())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gossip_posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchGossipRef.current())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [profile, fetchGossip]);
+  }, [profile?.university_id]);
 
   const searchTags = async (query: string) => {
     setTagQuery(query);

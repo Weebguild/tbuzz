@@ -33,7 +33,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center overflow-hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+          exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
         >
           {/* Interactive WebGL Liquid Background */}
