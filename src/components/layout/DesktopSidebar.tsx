@@ -92,7 +92,7 @@ export function DesktopSidebar() {
   return (
     <>
       <div
-        className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 shrink-0 h-[100dvh] sticky top-0"
+        className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 shrink-0 h-[100dvh] sticky top-0 relative z-30 overflow-visible"
         onMouseMove={(e) => mouseY.set(e.clientY)}
         onMouseLeave={() => mouseY.set(Infinity)}
       >
