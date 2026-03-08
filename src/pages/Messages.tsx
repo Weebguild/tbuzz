@@ -305,7 +305,7 @@ export default function Messages() {
             )}
 
             <section>
-              <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center justify-between mb-4 px-2 pb-2 border-b border-white/[0.05]">
                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Recent Messages</h2>
                 <div className="h-1 w-1 rounded-full bg-muted-foreground/20" />
               </div>
