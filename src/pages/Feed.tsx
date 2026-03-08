@@ -239,14 +239,12 @@ export default function Feed() {
     fetchTrendingGossip();
   }, [profile]);
 
-  // ── REALTIME ──
+  // ── REALTIME: only listen for new posts from others ──
   useEffect(() => {
     if (!profile) return;
     const channel = supabase
       .channel("feed-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => fetchPosts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => fetchPosts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => fetchPosts())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchPosts())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile, fetchPosts]);
