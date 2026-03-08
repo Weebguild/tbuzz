@@ -816,7 +816,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-6">Shared Media</h4>
                   <div className="grid grid-cols-3 gap-2">
                     {sharedMedia.slice(0, 9).map((media, i) => (
-                      <div key={i} className="aspect-square rounded-2xl bg-[#111] overflow-hidden group">
+                      <div key={i} className="aspect-square rounded-2xl bg-white/5 overflow-hidden group">
                         <img src={media.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
                     ))}
