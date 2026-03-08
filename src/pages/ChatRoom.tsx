@@ -803,7 +803,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               <div className="flex flex-col items-center mb-12">
                 <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-2xl mb-6">
                   <AvatarImage src={recipient.avatar_url || ""} />
-                  <AvatarFallback className="text-4xl font-black bg-[#111]">
+                  <AvatarFallback className="text-4xl font-black bg-white/5">
                     {recipient.display_name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
