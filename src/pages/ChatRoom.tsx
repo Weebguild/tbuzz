@@ -492,7 +492,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Flagship Header */}
       <header
         onPointerDown={(e) => !showChatSearch && dragControls.start(e)}
-        className="relative z-30 px-6 py-5 flex items-center justify-between bg-transparent backdrop-blur-xl"
+        className="relative z-30 px-3 sm:px-6 py-5 flex items-center justify-between bg-transparent backdrop-blur-xl"
       >
         <div className="flex items-center gap-5 flex-1 mr-4">
           {!showChatSearch ? (
@@ -613,7 +613,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Messages Scroll Area */}
       <div className="flex-1 relative overflow-hidden">
         <ScrollArea
-          className="h-full px-6 py-8"
+          className="h-full px-3 sm:px-6 py-8"
           onScroll={(e) => {
             const target = e.currentTarget;
             const isBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
@@ -889,7 +889,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Flagship Input Experience */}
       <footer
         onPointerDown={(e) => e.stopPropagation()}
-        className="relative z-40 px-6 pb-6 pt-3 bg-transparent backdrop-blur-xl"
+        className="relative z-40 px-3 sm:px-6 pb-6 pt-3 bg-transparent backdrop-blur-xl"
       >
         <AnimatePresence>
           {replyingTo && (
