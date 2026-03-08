@@ -1,118 +1,38 @@
 
 
-# Real-Time Direct Messaging (DM) Feature
+## Visual Consistency for ChatRoom (Individual Chats)
 
-## Overview
-Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
+The ChatRoom page uses hardcoded `bg-[#050505]` and `bg-[#111]` backgrounds throughout, blocking the global aurora. It needs the same glass-panel treatment applied to Messages, Feed, and Gossip.
 
----
+### Changes to `src/pages/ChatRoom.tsx`
 
-## Phase 1: Database Schema & Security
+1. **Root container** — Replace `bg-[#050505]` with `bg-transparent` on the main `motion.div` (line 358). Remove the custom background gradient blobs (lines 363-366) since the global aurora handles this.
 
-### Migration: Create tables, functions, RLS, and realtime
+2. **Header** — Replace `bg-[#050505]/40` with `glass-panel` styling: `bg-white/[0.02] backdrop-blur-xl border-b border-white/5`. Update avatar fallback from `bg-[#111]` to `bg-white/5`.
 
-**New tables:**
-- `conversations` (id uuid PK, created_at, updated_at)
-- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
-- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
+3. **Message bubbles (received)** — Replace `bg-[#111]` with `bg-white/[0.04] backdrop-blur-sm` and `border border-white/5` (glass-panel look). Keep own-message purple styling as-is.
 
-**Security definer functions:**
-- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
-- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
+4. **Typing indicator** — Replace `bg-[#111]` with `bg-white/[0.04] backdrop-blur-sm border border-white/5`.
 
-**RLS policies (all restrictive):**
-- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
-- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
-- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
-- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
+5. **Footer/input area** — Replace `bg-[#050505]/80` with `bg-white/[0.02] backdrop-blur-xl`. Replace input `bg-[#111]` with `bg-white/[0.04] border-white/5`. Replace recording bar `bg-[#111]` with same glass treatment.
 
-**Realtime:** Enable realtime for `messages` table.
+6. **Loading state** — Replace `bg-[#050505]` with `bg-transparent`.
 
-**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
+7. **Info panel** — Replace `bg-[#050505]` with `bg-black/90 backdrop-blur-3xl`. Replace `bg-[#111]` on media grid items and avatar fallbacks with `bg-white/5`.
 
----
+8. **Dropdown menu** — Replace `bg-[#0A0A0A]` with `glass-panel bg-black/80 backdrop-blur-xl`.
 
-## Phase 2: Frontend -- New Files
+9. **Link preview** — Replace `bg-black/30` with `bg-white/[0.03] backdrop-blur-sm`.
 
-### `src/hooks/use-messages.ts`
-Custom hook that:
-- Fetches message history for a conversation ordered by created_at ASC
-- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
-- Returns messages array, sendMessage function, loading state
+### Changes to `src/components/chat/DesktopChatLayout.tsx`
 
-### `src/pages/Messages.tsx` (Inbox)
-- Route: `/messages`
-- Lists all conversations for the current user
-- Shows other participant's avatar, name, last message snippet, timestamp
-- Clicking a conversation navigates to `/messages/:conversationId`
-- Sorted by `updated_at` descending
+10. **Root container** — Replace `bg-[#0A0A0A]` with `bg-transparent`. Replace sidebar `bg-black/40` columns with `bg-white/[0.02] backdrop-blur-sm`.
 
-### `src/pages/ChatRoom.tsx`
-- Route: `/messages/:conversationId`
-- Header: back button, recipient avatar + name
-- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
-- Auto-scroll to bottom on new messages
-- Input + Send button (paper plane icon) at bottom
-- Marks messages as read when viewing
+11. **Desktop sidebar conversation cards** — Use `glass-panel rounded-2xl` on active state instead of `bg-white/5 border border-white/5`.
 
----
+12. **Empty state panel** — Remove opaque backgrounds, use glass-panel styling.
 
-## Phase 3: Profile Page Update
+13. **Right panel (shared files)** — Replace `bg-black/40` with `bg-white/[0.02] backdrop-blur-sm`. Replace `bg-white/5` stat cards and file items with `glass-panel` treatment.
 
-### `src/pages/Profile.tsx`
-- Add state: `isMutualFollow` (boolean)
-- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
-- Next to the Follow/Unfollow button, conditionally render a "Message" button:
-  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
-  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
-
----
-
-## Phase 4: Routing & Navigation
-
-### `src/App.tsx`
-- Import Messages and ChatRoom pages
-- Add routes inside the ProtectedRoute + AppLayout group:
-  - `/messages` -> Messages
-  - `/messages/:conversationId` -> ChatRoom
-
-### `src/components/layout/BottomNav.tsx`
-- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
-- Add unread badge: query `messages` where `is_read = false` and sender is not current user
-- Real-time subscription for unread count updates
-
-### `src/pages/Feed.tsx`
-- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
-
----
-
-## Technical Details
-
-```text
-conversations          conversation_participants         messages
-+------------+        +------------------------+      +------------------+
-| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
-| created_at |        | user_id                |      | conversation_id  |
-| updated_at |        | id (PK)                |      | sender_id        |
-+------------+        +------------------------+      | content          |
-                                                       | is_read          |
-                                                       | created_at       |
-                                                       +------------------+
-```
-
-### Find-or-create conversation logic (client-side):
-1. Query `conversation_participants` to find a conversation where both users participate
-2. If found, navigate to it
-3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
-
-### Files to create:
-- `src/hooks/use-messages.ts`
-- `src/pages/Messages.tsx`
-- `src/pages/ChatRoom.tsx`
-
-### Files to modify:
-- `src/pages/Profile.tsx` (add Message button)
-- `src/App.tsx` (add routes)
-- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
-- `src/pages/Feed.tsx` (add Leaderboard button to header)
+All changes are purely cosmetic — no logic modifications.
 
