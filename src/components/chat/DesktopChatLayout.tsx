@@ -245,11 +245,11 @@ export function DesktopChatLayout() {
                 <div className="p-8 border-b border-white/5">
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">Shared Files</h3>
                     <div className="flex gap-4">
-                        <div className="flex-1 p-4 rounded-3xl bg-white/5 text-center border border-white/5">
+                        <div className="flex-1 p-4 rounded-3xl glass-panel text-center">
                             <p className="text-xl font-black text-white">{mediaAssets.files.length}</p>
                             <p className="text-[10px] uppercase font-bold text-muted-foreground mt-1">Media</p>
                         </div>
-                        <div className="flex-1 p-4 rounded-3xl bg-white/5 text-center border border-white/5">
+                        <div className="flex-1 p-4 rounded-3xl glass-panel text-center">
                             <p className="text-xl font-black text-white">{mediaAssets.photos.length}</p>
                             <p className="text-[10px] uppercase font-bold text-muted-foreground mt-1">Photos</p>
                         </div>
