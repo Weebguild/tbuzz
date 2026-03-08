@@ -12,7 +12,7 @@ import {
   X, Send, Loader2, Check, CheckCheck, Plus, Mic,
   Play, Pause, Image as ImageIcon, Video as VideoIcon,
   Trash2, Volume2, ChevronLeft, Info, MoreVertical,
-  Smile, Reply, Share2, Copy, ExternalLink, Link as LinkIcon,
+  Smile, Reply, Share2, Copy, ExternalLink,
   Search, BellOff, Ban, Ghost, Users, UserCheck, GraduationCap, CalendarDays
 } from "lucide-react";
 import {
@@ -307,87 +307,31 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     }).map(m => parseMessageContent(m.content));
   }, [messages]);
 
-  const LinkPreview = ({ url }: { url: string }) => {
-    const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
-    let domain: string;
-    try {
-      domain = new URL(normalizedUrl).hostname;
-    } catch {
-      domain = url;
-    }
-    const [isHovering, setIsHovering] = useState(false);
-    const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
-    const screenshotUrl = `https://image.thum.io/get/width/560/crop/320/${normalizedUrl}`;
+  // Hover preview state for inline links
+  const [linkHover, setLinkHover] = useState<{ url: string; pos: { x: number; y: number } } | null>(null);
 
-    // Preload screenshot
-    useEffect(() => {
-      const img = new Image();
-      img.src = screenshotUrl;
-    }, [screenshotUrl]);
+  const handleLinkMouseEnter = useCallback((url: string, e: React.MouseEvent) => {
+    const cardW = 304, cardH = 260, offsetY = 20;
+    let x = e.clientX - cardW / 2;
+    let y = e.clientY - cardH - offsetY;
+    if (x + cardW > window.innerWidth - 20) x = window.innerWidth - cardW - 20;
+    if (x < 20) x = 20;
+    if (y < 20) y = e.clientY + offsetY;
+    setLinkHover({ url, pos: { x, y } });
+  }, []);
 
-    const handleMouseMove = useCallback((e: React.MouseEvent) => {
-      const cardW = 304;
-      const cardH = 260;
-      const offsetY = 20;
-      let x = e.clientX - cardW / 2;
-      let y = e.clientY - cardH - offsetY;
-      if (x + cardW > window.innerWidth - 20) x = window.innerWidth - cardW - 20;
-      if (x < 20) x = 20;
-      if (y < 20) y = e.clientY + offsetY;
-      setHoverPos({ x, y });
-    }, []);
+  const handleLinkMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!linkHover) return;
+    const cardW = 304, cardH = 260, offsetY = 20;
+    let x = e.clientX - cardW / 2;
+    let y = e.clientY - cardH - offsetY;
+    if (x + cardW > window.innerWidth - 20) x = window.innerWidth - cardW - 20;
+    if (x < 20) x = 20;
+    if (y < 20) y = e.clientY + offsetY;
+    setLinkHover(prev => prev ? { ...prev, pos: { x, y } } : null);
+  }, [linkHover]);
 
-    return (
-      <>
-        <motion.a
-          href={normalizedUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          onMouseEnter={(e) => { setIsHovering(true); handleMouseMove(e); }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => setIsHovering(false)}
-          className="mt-2 block rounded-2xl glass-panel border-l-2 border-primary/30 overflow-hidden hover:bg-white/[0.06] transition-all group/link"
-        >
-          <div className="flex items-center gap-3 p-3">
-            <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <LinkIcon className="h-5 w-5 opacity-40 group-hover/link:opacity-100 transition-opacity" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5">{domain}</p>
-              <p className="text-sm font-bold truncate opacity-80">{url}</p>
-            </div>
-            <ExternalLink className="h-4 w-4 opacity-20" />
-          </div>
-        </motion.a>
-
-        {/* Floating hover preview */}
-        {isHovering && (
-          <div
-            className="fixed pointer-events-none z-[9999] transition-all duration-200"
-            style={{
-              left: hoverPos.x,
-              top: hoverPos.y,
-              opacity: isHovering ? 1 : 0,
-              transform: isHovering ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.95)',
-            }}
-          >
-            <div className="bg-popover/90 backdrop-blur-xl rounded-2xl p-2 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.1)]">
-              <img
-                src={screenshotUrl}
-                alt={domain}
-                className="w-[288px] h-auto rounded-xl block"
-                crossOrigin="anonymous"
-              />
-              <p className="px-2 pt-3 pb-1 text-sm font-bold text-foreground">{domain}</p>
-              <p className="px-2 pb-2 text-xs text-muted-foreground truncate max-w-[280px]">{normalizedUrl}</p>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
+  const handleLinkMouseLeave = useCallback(() => setLinkHover(null), []);
 
   const getUrlFromText = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+|(?:[\w-]+\.)+(?:com|org|net|io|dev|in|co|app|me|info|biz|edu|gov|xyz|ai|us|uk|de|fr|jp|ru|br|ca|au|it|es|nl|se|no|fi|dk|pl|cz|kr|tw|hk|sg|my|id|th|ph|vn|pk|bd|lk|np|ng|za|ke|eg|ar|cl|mx|co\.in|co\.uk|co\.jp|co\.kr)(?:\/[^\s]*)?)/gi;
@@ -399,10 +343,19 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     const parts = text.split(urlRegex);
     return parts.map((part, i) => {
       if (urlRegex.test(part)) {
-        urlRegex.lastIndex = 0; // reset regex state
+        urlRegex.lastIndex = 0;
         const href = part.startsWith("http") ? part : `https://${part}`;
         return (
-          <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="text-primary font-semibold underline decoration-primary/30 hover:text-primary/80 transition-colors">
+          <a
+            key={i}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary font-semibold underline decoration-primary/30 hover:text-primary/80 transition-colors"
+            onMouseEnter={(e) => handleLinkMouseEnter(href, e)}
+            onMouseMove={handleLinkMouseMove}
+            onMouseLeave={handleLinkMouseLeave}
+          >
             {part}
           </a>
         );
@@ -698,9 +651,6 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                           ) : (
                             <div>
                               <p className="whitespace-pre-wrap">{renderMessageText(data.content || data.text || "")}</p>
-                              {data.content && getUrlFromText(data.content)?.map((url, i) => (
-                                <LinkPreview key={i} url={url} />
-                              ))}
                             </div>
                           )}
                         </div>
@@ -1070,6 +1020,33 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 src={selectedMedia}
                 className="max-w-full max-h-full object-contain rounded-3xl shadow-2xl"
               />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating link hover preview */}
+      <AnimatePresence>
+        {linkHover && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
+            className="fixed pointer-events-none z-[9999]"
+            style={{ left: linkHover.pos.x, top: linkHover.pos.y }}
+          >
+            <div className="bg-popover/90 backdrop-blur-xl rounded-2xl p-2 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.1)]">
+              <img
+                src={`https://image.thum.io/get/width/560/crop/320/${linkHover.url}`}
+                alt="Preview"
+                className="w-[288px] h-auto rounded-xl block"
+                crossOrigin="anonymous"
+              />
+              <p className="px-2 pt-3 pb-1 text-sm font-bold text-foreground">
+                {(() => { try { return new URL(linkHover.url).hostname; } catch { return linkHover.url; } })()}
+              </p>
+              <p className="px-2 pb-2 text-xs text-muted-foreground truncate max-w-[280px]">{linkHover.url}</p>
             </div>
           </motion.div>
         )}
