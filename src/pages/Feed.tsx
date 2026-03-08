@@ -273,7 +273,6 @@ export default function Feed() {
       setImageConfirmed(false);
       setShowComposer(false);
       toast.success("Posted!");
-      fetchPosts();
     } catch (error: any) {
       toast.error(sanitizeError(error));
     } finally {
