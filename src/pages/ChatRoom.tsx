@@ -439,7 +439,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 <MoreVertical className="h-5 w-5 opacity-60" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-[#0A0A0A] border-white/10 text-white rounded-2xl p-2 z-[100]">
+            <DropdownMenuContent align="end" className="w-56 bg-black/80 backdrop-blur-xl border-white/10 text-white rounded-2xl p-2 z-[100]">
               <DropdownMenuItem
                 onSelect={() => setShowChatSearch(true)}
                 className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer"
