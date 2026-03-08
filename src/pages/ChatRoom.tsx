@@ -274,13 +274,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     if (!confirm) return;
 
     toast.promise(
-      new Promise(async (resolve) => {
-        const blockedUsers = JSON.parse(localStorage.getItem("blocked_users") || "[]");
-        if (!blockedUsers.includes(recipient.user_id)) {
-          localStorage.setItem("blocked_users", JSON.stringify([...blockedUsers, recipient.user_id]));
-        }
-        setTimeout(resolve, 800);
-      }),
+      (async () => {
+        const { error } = await supabase.from("blocked_users").insert({
+          blocker_user_id: user!.id,
+          blocked_user_id: recipient.user_id,
+        });
+        if (error) throw error;
+      })(),
       {
         loading: 'Blocking user...',
         success: () => {
