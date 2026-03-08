@@ -381,7 +381,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   <div className="relative">
                     <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-xl">
                       <AvatarImage src={recipient.avatar_url || ""} />
-                      <AvatarFallback className="bg-[#111] text-xs font-black">
+                      <AvatarFallback className="bg-white/5 text-xs font-black">
                         {recipient.display_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
