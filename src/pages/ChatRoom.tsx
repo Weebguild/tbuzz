@@ -58,6 +58,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     user_id: string;
     display_name: string;
     avatar_url: string | null;
+    department: string | null;
+    year: string | null;
+    bio: string | null;
   } | null>(null);
 
   // Online presence tracking
@@ -86,7 +89,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       if (participants && participants.length > 0) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("user_id, display_name, avatar_url")
+          .select("user_id, display_name, avatar_url, department, year, bio")
           .eq("user_id", participants[0].user_id)
           .single();
         if (profile) {
@@ -271,13 +274,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     if (!confirm) return;
 
     toast.promise(
-      new Promise(async (resolve) => {
-        const blockedUsers = JSON.parse(localStorage.getItem("blocked_users") || "[]");
-        if (!blockedUsers.includes(recipient.user_id)) {
-          localStorage.setItem("blocked_users", JSON.stringify([...blockedUsers, recipient.user_id]));
-        }
-        setTimeout(resolve, 800);
-      }),
+      (async () => {
+        const { error } = await supabase.from("blocked_users").insert({
+          blocker_user_id: user!.id,
+          blocked_user_id: recipient.user_id,
+        });
+        if (error) throw error;
+      })(),
       {
         loading: 'Blocking user...',
         success: () => {
@@ -967,16 +970,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
                   {/* Pills */}
                   <div className="flex flex-wrap justify-center gap-1.5 mb-3">
-                    {(recipient as any).department && (
+                    {recipient.department && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
                         <GraduationCap className="h-2.5 w-2.5 text-primary/70" />
-                        {(recipient as any).department}
+                        {recipient.department}
                       </span>
                     )}
-                    {(recipient as any).year && (
+                    {recipient.year && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
                         <CalendarDays className="h-2.5 w-2.5 text-accent/70" />
-                        {(recipient as any).year}
+                        {recipient.year}
                       </span>
                     )}
                     <span className="inline-flex items-center gap-1 text-[9px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
@@ -985,11 +988,19 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   </div>
 
                   {/* Bio */}
-                  {(recipient as any).bio && (
+                  {recipient.bio && (
                     <p className="text-[12px] text-zinc-400 text-center line-clamp-2 leading-[1.6] max-w-[280px]">
-                      {(recipient as any).bio}
+                      {recipient.bio}
                     </p>
                   )}
+
+                  {/* View Profile Button */}
+                  <button
+                    onClick={() => navigate(`/profile/${recipient.user_id}`)}
+                    className="mt-3 px-5 py-2 rounded-full text-xs font-bold bg-white/[0.06] border border-white/[0.06] text-foreground hover:bg-white/[0.1] transition-colors"
+                  >
+                    View Profile
+                  </button>
                 </div>
 
                 {/* ─── Stats Bar ─── */}

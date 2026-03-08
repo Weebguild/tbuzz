@@ -163,7 +163,7 @@ export default function Auth() {
           <p className="mt-2 text-sm text-muted-foreground">Your campus. Your people. Your gossip.</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl glass-panel bg-black/40 backdrop-blur-xl p-6">
           <AnimatePresence mode="wait">
             <motion.form
               key={isLogin ? "login" : "signup"}
@@ -210,7 +210,7 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground transition-all duration-300 focus:ring-2 focus:ring-primary/20"
+                    className="pl-10 h-11 rounded-xl bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground transition-all duration-300 focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
@@ -232,7 +232,7 @@ export default function Auth() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                    className="pl-10 h-11 rounded-xl bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
@@ -255,7 +255,7 @@ export default function Auth() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="pl-10 pr-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                      className="pl-10 pr-10 h-11 rounded-xl bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground"
                     />
                     {passwordsMatch && (
                       <Check className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />

@@ -141,6 +141,7 @@ export default function Profile() {
 
 
   const [activeTab, setActiveTab] = useState<ProfileTab>("posts");
+  const [tabDirection, setTabDirection] = useState(0);
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
 
   // Saved tab state
@@ -827,10 +828,14 @@ export default function Profile() {
         className={`flex gap-2 mb-6 p-1 glass-panel rounded-full mx-auto ${isOwnProfile ? "max-w-[300px]" : "max-w-[200px]"
           }`}
       >
-        {tabs.map((tab) => (
+        {tabs.map((tab, i) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => {
+              const currentIdx = tabs.findIndex((t) => t.key === activeTab);
+              setTabDirection(i > currentIdx ? 1 : -1);
+              setActiveTab(tab.key);
+            }}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.key
               ? "bg-white/10 text-white shadow-md"
               : "text-muted-foreground hover:text-white/70"
@@ -847,9 +852,11 @@ export default function Profile() {
         {activeTab === "posts" && (
           <motion.div
             key="posts"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            custom={tabDirection}
+            initial={{ opacity: 0, x: tabDirection * 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: tabDirection * -30 }}
+            transition={{ duration: 0.2 }}
             className="space-y-4"
           >
             {textPosts.length === 0 ? (
@@ -909,9 +916,11 @@ export default function Profile() {
         {activeTab === "gallery" && (
           <motion.div
             key="gallery"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            custom={tabDirection}
+            initial={{ opacity: 0, x: tabDirection * 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: tabDirection * -30 }}
+            transition={{ duration: 0.2 }}
             className="grid grid-cols-2 gap-3"
           >
             {photos.length === 0 ? (
@@ -954,9 +963,11 @@ export default function Profile() {
         {activeTab === "saved" && isOwnProfile && (
           <motion.div
             key="saved"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            custom={tabDirection}
+            initial={{ opacity: 0, x: tabDirection * 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: tabDirection * -30 }}
+            transition={{ duration: 0.2 }}
             className="space-y-4"
           >
             {/* Sub-filter */}
