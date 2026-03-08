@@ -256,14 +256,38 @@ export default function Feed() {
     }
   };
 
+  const likingRef = useRef<Set<string>>(new Set());
+  const [burstingPostId, setBurstingPostId] = useState<string | null>(null);
+
   const toggleLike = async (postId: string, hasLiked: boolean) => {
-    if (!user) return;
-    if (hasLiked) {
-      await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", user.id);
-    } else {
-      await supabase.from("reactions").insert({ user_id: user.id, post_id: postId, reaction_type: "like" });
+    if (!user || likingRef.current.has(postId)) return;
+    likingRef.current.add(postId);
+
+    // Optimistic update
+    setPosts((prev) => prev.map((p) =>
+      p.id === postId
+        ? { ...p, has_liked: !hasLiked, reaction_count: p.reaction_count + (hasLiked ? -1 : 1) }
+        : p
+    ));
+
+    if (!hasLiked) setBurstingPostId(postId);
+
+    try {
+      if (hasLiked) {
+        await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", user.id).eq("reaction_type", "like");
+      } else {
+        await supabase.from("reactions").insert({ user_id: user.id, post_id: postId, reaction_type: "like" });
+      }
+    } catch {
+      // Revert on error
+      setPosts((prev) => prev.map((p) =>
+        p.id === postId
+          ? { ...p, has_liked: hasLiked, reaction_count: p.reaction_count + (hasLiked ? 1 : -1) }
+          : p
+      ));
+    } finally {
+      likingRef.current.delete(postId);
     }
-    fetchPosts();
   };
 
   const toggleSave = async (postId: string, hasSaved: boolean) => {
