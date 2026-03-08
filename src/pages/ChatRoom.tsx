@@ -313,7 +313,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         rel="noopener noreferrer"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="mt-2 block rounded-2xl bg-black/30 border border-white/10 overflow-hidden hover:bg-black/40 transition-all group/link"
+        className="mt-2 block rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/10 overflow-hidden hover:bg-white/[0.06] transition-all group/link"
       >
         <div className="flex items-center gap-3 p-3">
           <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
@@ -336,7 +336,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#050505]">
+      <div className="flex h-screen items-center justify-center bg-transparent">
         <div className="relative">
           <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin shadow-2xl shadow-primary/40" />
         </div>
@@ -355,20 +355,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       dragElastic={0.05}
       onDragEnd={handleDragEnd}
       className={cn(
-        "z-50 flex flex-col bg-[#050505] text-white",
+        "z-50 flex flex-col bg-transparent text-white",
         desktop ? "relative h-full w-full" : "fixed inset-0"
       )}
     >
-      {/* Background Gradients */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-[-20%] w-[60%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 left-[-20%] w-[60%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
-      </div>
+      {/* Background handled by global aurora */}
 
       {/* Flagship Header */}
       <header
         onPointerDown={(e) => !showChatSearch && dragControls.start(e)}
-        className="relative z-30 px-6 py-5 flex items-center justify-between bg-[#050505]/40 backdrop-blur-3xl border-b border-white/[0.03]"
+        className="relative z-30 px-6 py-5 flex items-center justify-between bg-white/[0.02] backdrop-blur-xl border-b border-white/5"
       >
         <div className="flex items-center gap-5 flex-1 mr-4">
           {!showChatSearch ? (
@@ -385,11 +381,11 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   <div className="relative">
                     <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-xl">
                       <AvatarImage src={recipient.avatar_url || ""} />
-                      <AvatarFallback className="bg-[#111] text-xs font-black">
+                      <AvatarFallback className="bg-white/5 text-xs font-black">
                         {recipient.display_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-[#050505]" />
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-background" />
                   </div>
                   <div className="flex flex-col">
                     <span className="font-black text-base tracking-tight leading-none mb-1">
@@ -443,7 +439,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 <MoreVertical className="h-5 w-5 opacity-60" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-[#0A0A0A] border-white/10 text-white rounded-2xl p-2 z-[100]">
+            <DropdownMenuContent align="end" className="w-56 bg-black/80 backdrop-blur-xl border-white/10 text-white rounded-2xl p-2 z-[100]">
               <DropdownMenuItem
                 onSelect={() => setShowChatSearch(true)}
                 className="rounded-xl flex gap-3 p-3 focus:bg-white/5 cursor-pointer"
@@ -515,7 +511,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                         {isLastInGroup && recipient && (
                           <Avatar className="h-8 w-8 ring-1 ring-white/10 shadow-lg">
                             <AvatarImage src={recipient.avatar_url || ""} />
-                            <AvatarFallback className="text-[10px] font-bold bg-[#111]">
+                            <AvatarFallback className="text-[10px] font-bold bg-white/5">
                               {recipient.display_name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
@@ -534,7 +530,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                             "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative",
                             isOwn
                               ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
-                              : "bg-[#111] text-white/90 border border-white/[0.03]",
+                              : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
                             isOwn && isLastInGroup ? "rounded-br-lg" : "",
                             !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
                             (data.type === "image" || data.type === "video") ? "p-1.5" : "px-6 py-4"
@@ -636,7 +632,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
               {isTyping && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mt-4">
-                  <div className="h-8 w-12 bg-[#111] rounded-full flex items-center justify-center gap-1.5 px-3">
+                  <div className="h-8 w-12 bg-white/[0.04] backdrop-blur-sm border border-white/5 rounded-full flex items-center justify-center gap-1.5 px-3">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" />
@@ -665,7 +661,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Flagship Input Experience */}
       <footer
         onPointerDown={(e) => e.stopPropagation()}
-        className="relative z-40 px-6 pb-10 pt-4 bg-[#050505]/80 backdrop-blur-3xl border-t border-white/[0.03]"
+        className="relative z-40 px-6 pb-10 pt-4 bg-white/[0.02] backdrop-blur-xl border-t border-white/5"
       >
         <AnimatePresence>
           {replyingTo && (
@@ -723,7 +719,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             <div className="pointer-events-none absolute -inset-[1px] bg-gradient-to-r from-primary to-accent rounded-[32px] opacity-0 group-focus-within:opacity-20 transition duration-500 blur-md" />
 
             {isRecording ? (
-              <div className="bg-[#111] rounded-[32px] h-16 px-6 flex items-center justify-between border border-primary/20">
+              <div className="bg-white/[0.04] backdrop-blur-sm rounded-[32px] h-16 px-6 flex items-center justify-between border border-primary/20">
                 <div className="flex items-center gap-3">
                   <motion.div animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="h-3 w-3 rounded-full bg-red-500 shadow-xl shadow-red-500/40" />
                   <span className="text-sm font-mono font-bold text-red-500 tracking-tighter">
@@ -749,7 +745,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   handleInputChange();
                 }}
                 onKeyDown={handleKeyDown}
-                className="bg-[#111] border border-white/5 rounded-[32px] h-16 px-6 text-base text-white caret-primary placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
+                className="bg-white/[0.04] backdrop-blur-sm border border-white/5 rounded-[32px] h-16 px-6 text-base text-white caret-primary placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all duration-300 w-full"
               />
             )}
           </div>
@@ -793,7 +789,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         {showInfo && recipient && (
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            className="fixed inset-0 z-[100] bg-[#050505] flex flex-col pt-12"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-3xl flex flex-col pt-12"
           >
             <div className="px-6 flex items-center justify-between mb-8">
               <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl bg-white/5">
@@ -807,7 +803,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               <div className="flex flex-col items-center mb-12">
                 <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-2xl mb-6">
                   <AvatarImage src={recipient.avatar_url || ""} />
-                  <AvatarFallback className="text-4xl font-black bg-[#111]">
+                  <AvatarFallback className="text-4xl font-black bg-white/5">
                     {recipient.display_name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
@@ -820,7 +816,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-6">Shared Media</h4>
                   <div className="grid grid-cols-3 gap-2">
                     {sharedMedia.slice(0, 9).map((media, i) => (
-                      <div key={i} className="aspect-square rounded-2xl bg-[#111] overflow-hidden group">
+                      <div key={i} className="aspect-square rounded-2xl bg-white/5 overflow-hidden group">
                         <img src={media.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
                     ))}
