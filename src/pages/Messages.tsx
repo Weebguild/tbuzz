@@ -5,10 +5,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Loader2, MessageSquare, ArrowRight, Search, Pin, Star,
-  Plus, MoreHorizontal, Filter, Home, User, Mail,
-  Settings, LogOut, ChevronRight, Files, Image as ImageIcon,
-  Link as LinkIcon, X
+  Loader2, ArrowRight, Search, Pin, Star,
+  Plus, MoreHorizontal, Filter, Mail,
+  ChevronRight, X
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -168,15 +167,7 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <div className={cn("flex bg-[#050505] text-white", isMobile ? "flex-col min-h-full" : "h-[100dvh] flex-row overflow-hidden")}>
-        {!isMobile && (
-          <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 animate-pulse">
-            <div className="h-12 w-12 rounded-full bg-white/5" />
-            <div className="flex flex-col gap-6 mt-8">
-              {[1, 2, 3, 4].map(i => <div key={i} className="h-6 w-6 rounded-lg bg-white/5" />)}
-            </div>
-          </div>
-        )}
+      <div className={cn("flex bg-[#050505] text-white", isMobile ? "flex-col min-h-full" : "h-full flex-row overflow-hidden")}>
         <div className={cn(
           "flex flex-col bg-black/20 shrink-0 min-h-0",
           isMobile ? "w-full" : "w-[360px] border-r border-white/5"
@@ -212,39 +203,8 @@ export default function Messages() {
   return (
     <div className={cn(
       "bg-[#050505] text-white selection:bg-primary/30 flex",
-      isMobile ? "flex-col min-h-full" : "h-[100dvh] flex-row overflow-hidden"
+      isMobile ? "flex-col min-h-full" : "h-full flex-row overflow-hidden"
     )}>
-      {!isMobile && (
-        <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 shrink-0">
-          <Link to="/feed" className="group">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)] group-hover:scale-110 transition-transform cursor-pointer relative overflow-hidden">
-              <span className="text-3xl font-black text-white relative z-10" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>T</span>
-            </div>
-          </Link>
-          <div className="flex flex-col gap-6 mt-8">
-            {[
-              { icon: Home, path: "/feed" },
-              { icon: MessageSquare, path: "/gossip" },
-              { icon: Mail, path: "/messages", active: true },
-              { icon: User, path: "/profile" },
-            ].map((item, i) => (
-              <Link
-                key={i}
-                to={item.path}
-                className={cn(
-                  "p-3 rounded-2xl transition-all duration-300 group relative",
-                  item.active ? "bg-white/10 text-white shadow-xl" : "text-muted-foreground hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <item.icon className="h-6 w-6" />
-                {item.active && (
-                  <motion.div layoutId="sidebar-active" className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full" />
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Conversation List Column */}
       <div className={cn(
