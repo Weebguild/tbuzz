@@ -12,7 +12,7 @@ import {
   Play, Pause, Image as ImageIcon, Video as VideoIcon,
   Trash2, Volume2, ChevronLeft, Info, MoreVertical,
   Smile, Reply, Share2, Copy, ExternalLink, Link as LinkIcon,
-  Search, BellOff, Ban, Ghost
+  Search, BellOff, Ban, Ghost, Users, UserCheck, GraduationCap, CalendarDays
 } from "lucide-react";
 import {
   DropdownMenu,
