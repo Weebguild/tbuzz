@@ -54,7 +54,7 @@ export function DesktopSidebar() {
                     )}
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
+                <TooltipContent side="right" className="z-[9999] bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
                   {item.label}
                 </TooltipContent>
               </Tooltip>
@@ -71,7 +71,7 @@ export function DesktopSidebar() {
                   <Search className="h-6 w-6" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
+              <TooltipContent side="right" className="z-[9999] bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
                 Search
               </TooltipContent>
             </Tooltip>
