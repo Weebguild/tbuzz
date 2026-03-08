@@ -731,14 +731,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
                       {isLastInGroup && (
                         <div className={cn(
-                          "flex items-center gap-2 mt-1 px-2 opacity-30",
+                          "flex items-center gap-2 mt-1 px-2",
                           isOwn ? "flex-row-reverse" : "flex-row"
                         )}>
-                          <span className="text-[9px] font-black uppercase tracking-widest">
+                          <span className="text-[9px] font-black uppercase tracking-widest opacity-30">
                             {formatDistanceToNow(new Date(msg.created_at))}
                           </span>
                           {isOwn && (
-                            msg.is_read ? <CheckCheck className="h-3 w-3 text-primary" /> : <Check className="h-3 w-3" />
+                            msg.is_read
+                              ? <CheckCheck className="h-3.5 w-3.5 text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.4)]" />
+                              : <Check className="h-3 w-3 text-white/40" />
                           )}
                         </div>
                       )}
