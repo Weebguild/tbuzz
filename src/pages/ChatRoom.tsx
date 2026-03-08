@@ -427,7 +427,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              "underline decoration-2 underline-offset-2 transition-all duration-300",
+              "underline decoration-2 underline-offset-2 transition-all duration-300 break-all",
               isOwn
                 ? "text-white font-bold decoration-white/40 hover:decoration-white/80 hover:brightness-125"
                 : "text-cyan-400 font-semibold decoration-cyan-400/30 hover:decoration-cyan-400/70 hover:brightness-125"
