@@ -163,7 +163,7 @@ export default function Auth() {
           <p className="mt-2 text-sm text-muted-foreground">Your campus. Your people. Your gossip.</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl glass-panel bg-black/40 backdrop-blur-xl p-6">
           <AnimatePresence mode="wait">
             <motion.form
               key={isLogin ? "login" : "signup"}
