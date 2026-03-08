@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Loader2, ArrowRight, Search, Pin, Star,
   Plus, MoreHorizontal, Filter, Mail,
-  ChevronRight, X
+  ChevronRight, X, ImageIcon, FileText, Link as LinkIcon
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
