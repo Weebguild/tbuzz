@@ -573,13 +573,16 @@ export default function Feed() {
 
                   {/* Action row */}
                   <div className="px-4 pb-3 flex items-center gap-4">
-                    <button
+                    <motion.button
                       onClick={() => toggleLike(post.id, post.has_liked)}
-                      className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                      whileTap={{ scale: 1.3 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      className={`relative flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
                     >
+                      <HeartBurst show={post.has_liked} />
                       <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
                       {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
-                    </button>
+                    </motion.button>
                     <button
                       onClick={() => toggleComments(post.id)}
                       className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"

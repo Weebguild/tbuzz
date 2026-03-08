@@ -3,6 +3,7 @@ import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function AppLayout() {
   const location = useLocation();
@@ -34,7 +35,18 @@ export function AppLayout() {
           ? "max-w-none pb-0 h-[100dvh] overflow-hidden"
           : "max-w-lg mx-auto pb-24 min-h-screen"
       )}>
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="h-full"
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* ── MOBILE BOTTOM NAV ── */}

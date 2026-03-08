@@ -255,7 +255,7 @@ export default function Auth() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="pl-10 pr-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                      className="pl-10 pr-10 h-11 rounded-xl bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground"
                     />
                     {passwordsMatch && (
                       <Check className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />
