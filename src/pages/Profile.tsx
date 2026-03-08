@@ -916,9 +916,11 @@ export default function Profile() {
         {activeTab === "gallery" && (
           <motion.div
             key="gallery"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            custom={tabDirection}
+            initial={{ opacity: 0, x: tabDirection * 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: tabDirection * -30 }}
+            transition={{ duration: 0.2 }}
             className="grid grid-cols-2 gap-3"
           >
             {photos.length === 0 ? (
