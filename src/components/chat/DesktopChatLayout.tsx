@@ -193,7 +193,7 @@ export function DesktopChatLayout() {
                                 onClick={() => navigate(`/messages/${conv.id}`)}
                                 className={cn(
                                     "w-full p-3 rounded-2xl flex items-center gap-4 transition-all group",
-                                    conversationId === conv.id ? "bg-white/5 border border-white/5" : "hover:bg-white/[0.03]"
+                                    conversationId === conv.id ? "glass-panel border-primary/20" : "hover:bg-white/[0.03]"
                                 )}
                             >
                                 <div className="relative">
