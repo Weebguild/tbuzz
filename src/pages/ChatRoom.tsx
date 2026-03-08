@@ -530,7 +530,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                             "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative",
                             isOwn
                               ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
-                              : "bg-[#111] text-white/90 border border-white/[0.03]",
+                              : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
                             isOwn && isLastInGroup ? "rounded-br-lg" : "",
                             !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
                             (data.type === "image" || data.type === "video") ? "p-1.5" : "px-6 py-4"
