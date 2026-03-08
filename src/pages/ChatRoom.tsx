@@ -355,7 +355,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       dragElastic={0.05}
       onDragEnd={handleDragEnd}
       className={cn(
-        "z-50 flex flex-col bg-[#050505] text-white",
+        "z-50 flex flex-col bg-transparent text-white",
         desktop ? "relative h-full w-full" : "fixed inset-0"
       )}
     >
