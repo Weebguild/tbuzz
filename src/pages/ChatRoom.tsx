@@ -719,7 +719,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             <div className="pointer-events-none absolute -inset-[1px] bg-gradient-to-r from-primary to-accent rounded-[32px] opacity-0 group-focus-within:opacity-20 transition duration-500 blur-md" />
 
             {isRecording ? (
-              <div className="bg-[#111] rounded-[32px] h-16 px-6 flex items-center justify-between border border-primary/20">
+              <div className="bg-white/[0.04] backdrop-blur-sm rounded-[32px] h-16 px-6 flex items-center justify-between border border-primary/20">
                 <div className="flex items-center gap-3">
                   <motion.div animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="h-3 w-3 rounded-full bg-red-500 shadow-xl shadow-red-500/40" />
                   <span className="text-sm font-mono font-bold text-red-500 tracking-tighter">
