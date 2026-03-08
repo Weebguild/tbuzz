@@ -108,26 +108,24 @@ export function TextScramble({
     [chars, dudClassName]
   );
 
-  // Idle scramble effect when not revealed
+  // Static scramble - generate once on mount, not continuously
+  const [staticScramble] = useState(() => {
+    let output = "";
+    for (let i = 0; i < text.length; i++) {
+      output += randomChar(chars);
+    }
+    return output;
+  });
+
+  // Set static scramble on mount
   useEffect(() => {
     if (revealed || !containerRef.current) return;
-
-    const generateScrambled = () => {
-      const el = containerRef.current;
-      if (!el) return;
-      let output = "";
-      for (let i = 0; i < text.length; i++) {
-        output += `<span class="${dudClassName}">${escapeHtml(randomChar(chars))}</span>`;
-      }
-      el.innerHTML = output;
-    };
-
-    generateScrambled();
-    const interval = setInterval(generateScrambled, 80);
-    scrambleIntervalRef.current = interval as unknown as number;
-
-    return () => clearInterval(interval);
-  }, [revealed, text, chars, dudClassName]);
+    let html = "";
+    for (let i = 0; i < staticScramble.length; i++) {
+      html += `<span class="${dudClassName}">${escapeHtml(staticScramble[i])}</span>`;
+    }
+    containerRef.current.innerHTML = html;
+  }, [revealed, staticScramble, dudClassName]);
 
   // Reveal animation
   useEffect(() => {
