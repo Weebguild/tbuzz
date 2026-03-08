@@ -139,8 +139,25 @@ export default function Messages() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchConversations)
       .subscribe();
 
+    // Subscribe to typing broadcasts for each conversation
+    const typingChannels = participations?.map(p => {
+      return supabase
+        .channel(`messages:${p.conversation_id}`)
+        .on("broadcast", { event: "typing" }, (payload) => {
+          if (payload.payload.userId !== user.id) {
+            setConversations(prev => prev.map(c =>
+              c.conversation_id === p.conversation_id
+                ? { ...c, isTyping: payload.payload.isTyping }
+                : c
+            ));
+          }
+        })
+        .subscribe();
+    }) ?? [];
+
     return () => {
       supabase.removeChannel(channel);
+      typingChannels.forEach(ch => supabase.removeChannel(ch));
     };
   }, [user]);
 
