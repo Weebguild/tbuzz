@@ -80,6 +80,7 @@ interface ProfileData {
   bio: string | null;
   department: string | null;
   year: string | null;
+  anonymous_alias: string | null;
 }
 
 interface PhotoPost {
