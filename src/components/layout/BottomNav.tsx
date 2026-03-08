@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { UserSearch } from "@/components/UserSearch";
-import { useIsMobile } from "@/hooks/use-mobile";
+
 
 const tabs = [
   { path: "/feed", icon: Home },
