@@ -13,6 +13,7 @@ interface Notification {
   is_read: boolean;
   created_at: string;
   actor_id: string | null;
+  entity_id: string | null;
   actor_profile?: { display_name: string; avatar_url: string | null };
 }
 
