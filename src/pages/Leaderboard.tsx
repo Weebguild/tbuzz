@@ -273,9 +273,9 @@ export default function Leaderboard() {
       <Sheet open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
         <SheetContent
           side="bottom"
-          className="h-[85vh] bg-[#0D0D0D] border-t border-[#2D2D2D] rounded-t-3xl px-0 pt-0 flex flex-col"
+          className="h-[85vh] bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-white/[0.05] rounded-t-3xl px-0 pt-0 flex flex-col"
         >
-          <SheetHeader className="px-6 pt-6 pb-4 border-b border-[#2D2D2D] shrink-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/[0.05] shrink-0">
             <div className="flex items-center justify-between">
               <SheetTitle className="text-foreground text-left flex items-center gap-2">
                 <Flame className="h-5 w-5 text-primary" />
