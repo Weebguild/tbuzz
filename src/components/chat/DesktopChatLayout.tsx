@@ -210,7 +210,7 @@ export function DesktopChatLayout() {
                                 </div>
                                 <div className="flex-1 text-left min-w-0">
                                     <p className="font-bold text-sm text-white truncate">{conv.other_user.display_name}</p>
-                                    <p className="text-xs text-muted-foreground truncate opacity-60">
+                                    <p className="text-xs text-muted-foreground opacity-60 flex-1 w-0 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
                                         {conv.last_message || "No messages yet"}
                                     </p>
                                 </div>
