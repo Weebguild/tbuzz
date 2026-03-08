@@ -269,7 +269,7 @@ export default function Messages() {
           <div className="space-y-6 pb-20">
             {pinnedConversations.length > 0 && (
               <section>
-                <div className="flex items-center gap-2 mb-4 ml-2">
+                <div className="flex items-center gap-2 mb-4 ml-2 pb-2 border-b border-white/[0.05]">
                   <Star className="h-3 w-3 text-primary fill-primary" />
                   <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Pinned</h2>
                 </div>
