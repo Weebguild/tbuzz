@@ -221,7 +221,7 @@ export default function Leaderboard() {
                 {/* ── ROW IS NOW A BUTTON THAT OPENS GOSSIP ── */}
                 <div
                   onClick={() => openGossipSheet(entry)}
-                  className="w-full flex items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left hover:border-primary/30 transition-colors cursor-pointer group"
+                  className="w-full flex items-center gap-4 rounded-2xl glass-panel p-4 text-left hover:border-primary/30 transition-colors cursor-pointer group"
                 >
                   <span className="text-xl font-extrabold text-foreground w-8 text-center shrink-0">{entry.rank}</span>
 
