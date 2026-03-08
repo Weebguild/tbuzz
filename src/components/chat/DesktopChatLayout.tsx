@@ -173,7 +173,7 @@ export function DesktopChatLayout() {
             </AnimatePresence>
 
             {/* COLUMN 2: CONVERSATION LIST */}
-            <div className="w-[320px] border-r border-white/5 flex flex-col bg-black/20 shrink-0 min-h-0">
+            <div className="w-[320px] border-r border-white/5 flex flex-col bg-white/[0.02] backdrop-blur-sm shrink-0 min-h-0">
                 <div className="p-6">
                     <h2 className="text-2xl font-black tracking-tighter text-white mb-6 uppercase">Messages</h2>
                     <div className="relative">
