@@ -249,7 +249,7 @@ export default function Messages() {
       {/* Conversation List Column */}
       <div className={cn(
         "flex flex-col bg-black/20 shrink-0 min-h-0 relative z-10",
-        isMobile ? "w-full h-full pb-24" : "w-[360px] border-r border-white/5"
+        isMobile ? "w-full h-full" : "w-[360px] border-r border-white/5"
       )}>
         {/* Dynamic Background (Only Mobile) */}
         {isMobile && (
