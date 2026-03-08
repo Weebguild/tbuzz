@@ -512,6 +512,21 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           }}
         >
           <div className="max-w-3xl mx-auto space-y-12">
+            {/* Empty state */}
+            {filteredMessages.length === 0 && !loading && recipient && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="relative mb-6">
+                  <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 blur-lg opacity-40" />
+                  <Avatar className="relative h-20 w-20 ring-2 ring-primary/20">
+                    <AvatarImage src={recipient.avatar_url || ""} />
+                    <AvatarFallback className="bg-white/5 text-2xl font-black">{recipient.display_name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </div>
+                <p className="text-lg font-extrabold text-white/80 mb-1">Say hi to {recipient.display_name} 👋</p>
+                <p className="text-xs text-muted-foreground/50">Send a message to start the conversation</p>
+              </div>
+            )}
+
             <AnimatePresence mode="popLayout" initial={false}>
               {filteredMessages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user?.id;
@@ -521,9 +536,20 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 const isGrouping = prevMsg?.sender_id === msg.sender_id;
                 const isLastInGroup = nextMsg?.sender_id !== msg.sender_id;
 
+                // Date separator
+                const msgDate = new Date(msg.created_at);
+                const showDateSeparator = !prevMsg || !isSameDay(msgDate, new Date(prevMsg.created_at));
+
                 return (
+                  <div key={msg.id}>
+                    {showDateSeparator && (
+                      <div className="flex items-center justify-center my-6">
+                        <div className="px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.05] backdrop-blur-sm">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">{getDateLabel(msgDate)}</span>
+                        </div>
+                      </div>
+                    )}
                   <motion.div
-                    key={msg.id}
                     layout
                     initial={{ opacity: 0, scale: 0.9, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
