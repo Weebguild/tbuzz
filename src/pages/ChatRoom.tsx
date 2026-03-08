@@ -1106,6 +1106,34 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Emoji Reaction Drawer */}
+      <Drawer open={!!emojiDrawerMsgId} onOpenChange={(open) => { if (!open) setEmojiDrawerMsgId(null); }}>
+        <DrawerContent className="bg-[#0A0A0A]/95 backdrop-blur-3xl border-white/[0.06]">
+          <DrawerTitle className="sr-only">Choose a reaction</DrawerTitle>
+          <div className="py-6 px-4">
+            <Dock magnification={64} distance={120} panelHeight={56} className="border-none bg-transparent">
+              {["🔥", "❤️", "😂", "😮", "👍", "😢", "🙏", "💀", "🤯", "👀", "💯", "🎉", "😍", "🥺", "💜"].map(emoji => (
+                <DockItem
+                  key={emoji}
+                  onClick={() => {
+                    if (emojiDrawerMsgId) {
+                      setReactions(prev => ({ ...prev, [emojiDrawerMsgId]: emoji }));
+                      navigator.vibrate?.(10);
+                    }
+                    setEmojiDrawerMsgId(null);
+                  }}
+                >
+                  <DockIcon>
+                    <span className="text-2xl select-none">{emoji}</span>
+                  </DockIcon>
+                  <DockLabel>{emoji}</DockLabel>
+                </DockItem>
+              ))}
+            </Dock>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </motion.div>
   );
 }
