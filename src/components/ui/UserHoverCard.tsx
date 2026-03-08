@@ -54,6 +54,7 @@ interface UserHoverCardProps {
 }
 
 export function UserHoverCard({ userId, children, className }: UserHoverCardProps) {
+    const { getHaloClass } = useHalo();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [stats, setStats] = useState<UserStats>({ followers: 0, following: 0 });
     const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);

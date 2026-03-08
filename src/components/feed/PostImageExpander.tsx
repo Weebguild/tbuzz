@@ -48,6 +48,7 @@ export function PostImageExpander({
   onToggleLike,
   onToggleSave,
 }: PostImageExpanderProps) {
+  const { getHaloClass } = useHalo();
   const { user } = useAuth();
   const [isSplitScreen, setIsSplitScreen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);

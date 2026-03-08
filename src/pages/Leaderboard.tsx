@@ -30,6 +30,7 @@ type TimeRange = "week" | "month";
 
 export default function Leaderboard() {
   const { profile } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);

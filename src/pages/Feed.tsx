@@ -69,6 +69,7 @@ const PAGE_SIZE = 20;
 
 export default function Feed() {
   const { user, profile } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);

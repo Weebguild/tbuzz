@@ -20,6 +20,7 @@ interface Notification {
 
 export function ActivityDrawer() {
   const { user } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

@@ -17,6 +17,7 @@ import { UserSearch } from "@/components/UserSearch";
 
 export function DesktopChatLayout() {
     const { user } = useAuth();
+    const { getHaloClass } = useHalo();
     const navigate = useNavigate();
     const { conversationId } = useParams();
     const [conversations, setConversations] = useState<any[]>([]);

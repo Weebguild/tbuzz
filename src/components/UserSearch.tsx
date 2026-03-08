@@ -19,6 +19,7 @@ interface SearchResult {
 export function UserSearch({ onClose }: { onClose: () => void }) {
     const navigate = useNavigate();
     const { user, profile } = useAuth();
+    const { getHaloClass } = useHalo();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);

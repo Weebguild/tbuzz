@@ -32,6 +32,7 @@ import { toast } from "sonner";
 export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const { messages, loading, sendMessage, markAsRead, isTyping, handleInputChange } = useMessages(conversationId);
   const [input, setInput] = useState("");

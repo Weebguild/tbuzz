@@ -35,6 +35,7 @@ interface ConversationItem {
 
 export default function Messages() {
   const { user } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const { conversationId } = useParams();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
