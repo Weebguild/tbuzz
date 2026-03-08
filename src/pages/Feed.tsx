@@ -91,6 +91,31 @@ export default function Feed() {
   const [expandedImage, setExpandedImage] = useState<Post | null>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
+  // Deep-link: scroll to post from notification
+  useEffect(() => {
+    if (loading || posts.length === 0) return;
+    const targetPostId = searchParams.get("postId");
+    if (!targetPostId) return;
+
+    const showComments = searchParams.get("showComments") === "true";
+
+    // Small delay to let DOM render
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`post-${targetPostId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightedPostId(targetPostId);
+        if (showComments) {
+          setExpandedComments((prev) => new Set(prev).add(targetPostId));
+        }
+      }
+      setSearchParams({}, { replace: true });
+      setTimeout(() => setHighlightedPostId(null), 2500);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [loading, posts.length]);
+
   const fetchFollowing = async () => {
     if (!user) return;
     const { data } = await supabase.from("follows").select("following_user_id").eq("follower_user_id", user.id);
