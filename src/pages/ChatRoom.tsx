@@ -343,11 +343,29 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     return text.match(urlRegex);
   };
 
+  // Date separator helper
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return "Today";
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "MMM d, yyyy");
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-transparent">
-        <div className="relative">
-          <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin shadow-2xl shadow-primary/40" />
+        <div className="max-w-3xl mx-auto w-full px-6 space-y-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className={cn("flex items-end gap-3", i % 2 === 0 ? "flex-row" : "flex-row-reverse")}>
+              {i % 2 === 0 && <div className="h-8 w-8 rounded-full bg-white/[0.04] animate-skeleton-pulse" />}
+              <div className={cn("space-y-1", i % 2 === 0 ? "items-start" : "items-end", "flex flex-col")}>
+                <div className={cn(
+                  "rounded-[28px] animate-skeleton-pulse",
+                  i % 2 === 0 ? "bg-white/[0.04]" : "bg-primary/20",
+                  i % 3 === 0 ? "h-12 w-48" : i % 3 === 1 ? "h-10 w-32" : "h-16 w-56"
+                )} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
