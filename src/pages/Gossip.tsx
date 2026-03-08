@@ -296,14 +296,35 @@ export default function Gossip() {
     }
   };
 
+  const upvotingRef = useRef<Set<string>>(new Set());
+
   const toggleUpvote = async (postId: string, hasUpvoted: boolean) => {
-    if (!user) return;
-    if (hasUpvoted) {
-      await supabase.from("reactions").delete().eq("gossip_post_id", postId).eq("user_id", user.id);
-    } else {
-      await supabase.from("reactions").insert({ user_id: user.id, gossip_post_id: postId, reaction_type: "upvote" });
+    if (!user || upvotingRef.current.has(postId)) return;
+    upvotingRef.current.add(postId);
+
+    // Optimistic update
+    setPosts((prev) => prev.map((p) =>
+      p.id === postId
+        ? { ...p, has_upvoted: !hasUpvoted, upvote_count: p.upvote_count + (hasUpvoted ? -1 : 1) }
+        : p
+    ));
+
+    try {
+      if (hasUpvoted) {
+        await supabase.from("reactions").delete().eq("gossip_post_id", postId).eq("user_id", user.id).eq("reaction_type", "upvote");
+      } else {
+        await supabase.from("reactions").insert({ user_id: user.id, gossip_post_id: postId, reaction_type: "upvote" });
+      }
+    } catch {
+      // Revert on error
+      setPosts((prev) => prev.map((p) =>
+        p.id === postId
+          ? { ...p, has_upvoted: hasUpvoted, upvote_count: p.upvote_count + (hasUpvoted ? 1 : -1) }
+          : p
+      ));
+    } finally {
+      upvotingRef.current.delete(postId);
     }
-    fetchGossip();
   };
 
   const toggleSaveGossip = async (postId: string, hasSaved: boolean) => {
