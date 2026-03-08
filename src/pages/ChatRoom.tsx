@@ -328,6 +328,30 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       });
     }
   };
+  const handleDocumentDownload = async (url: string, fileName: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch file");
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.error("Direct download was blocked. File link copied to clipboard.");
+      } catch {
+        toast.error("Download blocked by browser settings. Please allow the file domain and try again.");
+      }
+    }
+  };
+
   const toggleAudioPlayback = (msgId: string, url: string) => {
     const current = audioRefs.current[msgId];
     if (playingAudioId === msgId && current) {
@@ -690,41 +714,51 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                             </div>
                           ) : data.type === "file" && data.url ? (
                             (() => {
-                            const fileName = data.fileName || data.url.split("/").pop()?.split("?")[0] || "Document";
-                            const displayName = fileName.replace(/^\d+\./, "");
-                            const fileExt = fileName.split(".").pop()?.toUpperCase() || "FILE";
-                            const fileSize = data.fileSize ? (data.fileSize < 1024 * 1024 ? `${(data.fileSize / 1024).toFixed(0)} KB` : `${(data.fileSize / (1024 * 1024)).toFixed(1)} MB`) : fileExt;
-                            return (
-                              <a
-                                href={data.url}
-                                download={displayName}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-4 py-1.5 px-2 min-w-[220px] max-w-[320px] group/file hover:brightness-110 transition-all"
-                              >
-                                <div className={cn(
-                                  "h-14 w-14 flex items-center justify-center rounded-2xl shrink-0 shadow-lg",
-                                  isOwn
-                                    ? "bg-white/15 shadow-white/5"
-                                    : "bg-gradient-to-br from-red-500/20 to-orange-500/20 shadow-red-500/10"
-                                )}>
-                                  <FileText className={cn("h-7 w-7", isOwn ? "text-white/80" : "text-red-400")} />
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-0.5">
-                                  <p className="text-sm font-bold truncate leading-tight">{displayName}</p>
-                                  <p className={cn(
-                                    "text-[10px] font-semibold uppercase tracking-widest",
-                                    isOwn ? "text-white/40" : "text-muted-foreground/40"
-                                  )}>{fileSize} · {fileExt}</p>
-                                </div>
-                                <div className={cn(
-                                  "h-9 w-9 flex items-center justify-center rounded-full shrink-0 transition-all group-hover/file:scale-110",
-                                  isOwn ? "bg-white/10 group-hover/file:bg-white/20" : "bg-white/[0.06] group-hover/file:bg-white/10"
-                                )}>
-                                  <Download className={cn("h-4 w-4", isOwn ? "text-white/60" : "text-white/40")} />
-                                </div>
-                              </a>
-                            );
+                              const fileNameFromUrl = data.url.split("/").pop()?.split("?")[0] || "";
+                              const hasStoredName = typeof data.fileName === "string" && data.fileName.trim().length > 0;
+                              const inferredExt = fileNameFromUrl.split(".").pop()?.toLowerCase() || "pdf";
+                              const displayName = hasStoredName
+                                ? data.fileName
+                                : /^\d+\.[a-z0-9]+$/i.test(fileNameFromUrl)
+                                  ? `document.${inferredExt}`
+                                  : fileNameFromUrl || `document.${inferredExt}`;
+
+                              const fileExt = displayName.split(".").pop()?.toUpperCase() || "FILE";
+                              const fileSize = data.fileSize
+                                ? (data.fileSize < 1024 * 1024
+                                  ? `${(data.fileSize / 1024).toFixed(0)} KB`
+                                  : `${(data.fileSize / (1024 * 1024)).toFixed(1)} MB`)
+                                : fileExt;
+
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDocumentDownload(data.url, displayName)}
+                                  className="flex w-full items-center gap-4 py-1.5 px-2 min-w-[220px] max-w-[320px] text-left group/file hover:brightness-110 transition-all"
+                                >
+                                  <div className={cn(
+                                    "h-14 w-14 flex items-center justify-center rounded-2xl shrink-0 shadow-lg",
+                                    isOwn
+                                      ? "bg-white/15 shadow-white/5"
+                                      : "bg-gradient-to-br from-red-500/20 to-orange-500/20 shadow-red-500/10"
+                                  )}>
+                                    <FileText className={cn("h-7 w-7", isOwn ? "text-white/80" : "text-red-400")} />
+                                  </div>
+                                  <div className="flex-1 min-w-0 space-y-0.5">
+                                    <p className="text-sm font-bold truncate leading-tight">{displayName}</p>
+                                    <p className={cn(
+                                      "text-[10px] font-semibold uppercase tracking-widest",
+                                      isOwn ? "text-white/40" : "text-muted-foreground/40"
+                                    )}>{fileSize} · {fileExt}</p>
+                                  </div>
+                                  <div className={cn(
+                                    "h-9 w-9 flex items-center justify-center rounded-full shrink-0 transition-all group-hover/file:scale-110",
+                                    isOwn ? "bg-white/10 group-hover/file:bg-white/20" : "bg-white/[0.06] group-hover/file:bg-white/10"
+                                  )}>
+                                    <Download className={cn("h-4 w-4", isOwn ? "text-white/60" : "text-white/40")} />
+                                  </div>
+                                </button>
+                              );
                             })()
                           ) : data.type === "audio" && data.url ? (
                             <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
