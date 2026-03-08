@@ -336,7 +336,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#050505]">
+      <div className="flex h-screen items-center justify-center bg-transparent">
         <div className="relative">
           <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin shadow-2xl shadow-primary/40" />
         </div>
