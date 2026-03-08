@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Camera,
   Settings,
+  Ghost,
 } from "lucide-react";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
