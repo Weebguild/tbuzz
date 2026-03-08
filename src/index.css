@@ -87,7 +87,7 @@
 
   /* The core component of the Midnight Glass look */
   .glass-panel {
-    @apply bg-white/[0.02] backdrop-blur-[24px] border border-white/[0.05];
+    @apply bg-white/[0.02] backdrop-blur-md border border-white/[0.05];
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 }
@@ -147,7 +147,7 @@
 }
 
 .card-heat-high {
-  animation: fire-flicker 0.15s ease-in-out infinite alternate;
+  animation: fire-flicker 1.5s ease-in-out infinite alternate;
   border-radius: 2rem;
 }
 

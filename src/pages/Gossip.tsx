@@ -110,19 +110,10 @@ export default function Gossip() {
   const enrichGossipData = useCallback(async (data: any[], append = false) => {
     if (!user || !profile) return;
 
-    const { data: ownPosts } = await supabase
-      .from("gossip_posts")
-      .select("id, expires_at")
-      .eq("user_id", user.id);
-
     const postIds = data.map((p) => p.id);
 
-    const { data: extraData } = await supabase
-      .from("gossip_posts")
-      .select("id, expires_at, hotness_score")
-      .in("id", postIds);
-
-    const [{ data: reactions }, { data: tags }, { data: savedGossips }] = await Promise.all([
+    const [{ data: extraData }, { data: reactions }, { data: tags }, { data: savedGossips }] = await Promise.all([
+      supabase.from("gossip_posts").select("id, user_id, expires_at, hotness_score").in("id", postIds),
       supabase.from("reactions").select("gossip_post_id, user_id").in("gossip_post_id", postIds),
       supabase.from("gossip_tags").select("gossip_post_id, tagged_user_id").in("gossip_post_id", postIds),
       supabase.from("saved_gossips").select("gossip_post_id").eq("user_id", user.id).in("gossip_post_id", postIds),
@@ -153,7 +144,7 @@ export default function Gossip() {
               const p = taggedProfiles.find((tp) => tp.user_id === t.tagged_user_id);
               return { user_id: t.tagged_user_id, display_name: p?.display_name ?? "Unknown" };
             }) ?? [],
-        is_own: ownPosts?.some((op) => op.id === post.id) ?? false,
+        is_own: extra?.user_id === user.id,
       };
     }).filter(post => {
       if (!post.expires_at) return true;
@@ -240,17 +231,15 @@ export default function Gossip() {
     fetchGossip();
   }, [profile, filterMode, timeRange]);
 
-  // ── REALTIME ──
+  // ── REALTIME: only listen for new gossip posts ──
   useEffect(() => {
     if (!profile) return;
     const channel = supabase
       .channel("gossip-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "gossip_posts" }, () => fetchGossip())
-      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => fetchGossip())
-      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => fetchGossip())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gossip_posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchGossip())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [profile, filterMode, timeRange, fetchGossip]);
+  }, [profile, fetchGossip]);
 
   const searchTags = async (query: string) => {
     setTagQuery(query);
@@ -574,13 +563,9 @@ export default function Gossip() {
               <motion.div
                 key={post.id}
                 id={`gossip-${post.id}`}
-                initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                whileHover={{ scale: 1.01, translateY: -2 }}
-                transition={{
-                  duration: 0.5,
-                  ease: [0.23, 1, 0.32, 1]
-                }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
               >
                 <SelfDestructWrapper expiresAt={post.expires_at}>
                   <div

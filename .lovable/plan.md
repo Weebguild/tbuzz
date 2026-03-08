@@ -1,88 +1,118 @@
 
 
-## Performance Optimization Plan
+# Real-Time Direct Messaging (DM) Feature
 
-### Issues Identified
+## Overview
+Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
 
-**1. CRITICAL: Realtime listeners trigger full data re-fetches on every change (Feed.tsx lines 243-252, Gossip.tsx lines 243-253)**
+---
 
-Both Feed and Gossip subscribe to `postgres_changes` on `posts`, `reactions`, and `comments` tables with `event: "*"`. Every single change to ANY row in these tables (even from other universities) triggers a full `fetchPosts()` or `fetchGossip()` which does 4-5 parallel Supabase queries. This is the primary cause of slowness — the app is constantly re-fetching everything.
+## Phase 1: Database Schema & Security
 
-**Fix:** Remove the overly broad realtime re-fetch. The optimistic UI updates for likes/saves/comments already handle the immediate feedback. Only listen for `INSERT` on `posts` (new posts from others) and apply the change locally instead of re-fetching everything. For reactions/comments, rely on optimistic updates already in place.
+### Migration: Create tables, functions, RLS, and realtime
 
-**2. CRITICAL: `fetchPosts` is called redundantly on multiple dependency changes (Feed.tsx line 237-240)**
+**New tables:**
+- `conversations` (id uuid PK, created_at, updated_at)
+- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
+- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
 
-`fetchPosts()` depends on `[profile, followingIds]`. When the component mounts, `fetchFollowing()` runs and updates `followingIds`, which triggers `fetchPosts` again even though it was already called from the `profile` dep. This causes a double-fetch on every mount.
+**Security definer functions:**
+- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
+- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
 
-**Fix:** Remove `followingIds` from the `fetchPosts` useEffect dependency since following data is not used in post fetching or enrichment.
+**RLS policies (all restrictive):**
+- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
+- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
+- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
+- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
 
-**3. CRITICAL: Gossip `enrichGossipData` fetches own posts redundantly (Gossip.tsx lines 113-116)**
+**Realtime:** Enable realtime for `messages` table.
 
-Every call to `enrichGossipData` fetches ALL of the current user's gossip posts (no filter on IDs), just to determine `is_own`. This is a separate query on every data load.
+**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
 
-**Fix:** Compare `user_id` from `gossip_posts` extra data instead, or fetch own post IDs once on mount and reuse.
+---
 
-**4. HIGH: `submitComment` calls both `loadComments` AND `fetchPosts` (Feed.tsx line 393-394)**
+## Phase 2: Frontend -- New Files
 
-Submitting a comment triggers a full feed re-fetch (`fetchPosts`) which re-enriches every post. Since the realtime listener also catches this change, it triggers ANOTHER `fetchPosts`. That's 3 round-trips for one comment.
+### `src/hooks/use-messages.ts`
+Custom hook that:
+- Fetches message history for a conversation ordered by created_at ASC
+- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
+- Returns messages array, sendMessage function, loading state
 
-**Fix:** Only call `loadComments(postId)` and increment the local comment count optimistically. Remove the `fetchPosts()` call from `submitComment`.
+### `src/pages/Messages.tsx` (Inbox)
+- Route: `/messages`
+- Lists all conversations for the current user
+- Shows other participant's avatar, name, last message snippet, timestamp
+- Clicking a conversation navigates to `/messages/:conversationId`
+- Sorted by `updated_at` descending
 
-**5. HIGH: Staggered animation delays scale with post count (Feed.tsx line 548)**
+### `src/pages/ChatRoom.tsx`
+- Route: `/messages/:conversationId`
+- Header: back button, recipient avatar + name
+- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
+- Auto-scroll to bottom on new messages
+- Input + Send button (paper plane icon) at bottom
+- Marks messages as read when viewing
 
-`delay: i * 0.05` means the 20th post gets a 1-second delay before appearing. Combined with the 300ms deep-link timeout, this creates perceived slowness.
+---
 
-**Fix:** Cap the stagger delay with `Math.min(i * 0.05, 0.3)` so posts beyond the 6th render immediately.
+## Phase 3: Profile Page Update
 
-**6. HIGH: Gossip posts have expensive per-card `whileHover` with scale+translateY (Gossip.tsx line 579)**
+### `src/pages/Profile.tsx`
+- Add state: `isMutualFollow` (boolean)
+- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
+- Next to the Follow/Unfollow button, conditionally render a "Message" button:
+  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
+  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
 
-Every gossip card recalculates layout on hover due to `scale(1.01)` and `translateY(-2)`. With backdrop-blur cards, this forces GPU re-compositing.
+---
 
-**Fix:** Remove `whileHover` from gossip cards. The CSS `.glass-card-modern:hover` already handles the hover transform.
+## Phase 4: Routing & Navigation
 
-**7. MEDIUM: `fire-flicker` animation runs at 0.15s interval infinitely (index.css line 151)**
+### `src/App.tsx`
+- Import Messages and ChatRoom pages
+- Add routes inside the ProtectedRoute + AppLayout group:
+  - `/messages` -> Messages
+  - `/messages/:conversationId` -> ChatRoom
 
-`animation: fire-flicker 0.15s ease-in-out infinite alternate` — this is a ~6.7fps CSS animation causing constant repaints for hot gossip cards. Multiple hot cards multiply the paint cost.
+### `src/components/layout/BottomNav.tsx`
+- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
+- Add unread badge: query `messages` where `is_read = false` and sender is not current user
+- Real-time subscription for unread count updates
 
-**Fix:** Increase to `1.5s` which still creates a flickering fire effect without thrashing the compositor.
+### `src/pages/Feed.tsx`
+- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
 
-**8. MEDIUM: Aurora background divs use heavy blur filters (AppLayout.tsx lines 19-26)**
+---
 
-Three large `blur(120px)` / `blur(150px)` divs with `mix-blend-screen` running CSS animations. These are always composited.
+## Technical Details
 
-**Fix:** Add `will-change: transform` to these elements and reduce blur to `80px` which is visually similar but cheaper.
+```text
+conversations          conversation_participants         messages
++------------+        +------------------------+      +------------------+
+| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
+| created_at |        | user_id                |      | conversation_id  |
+| updated_at |        | id (PK)                |      | sender_id        |
++------------+        +------------------------+      | content          |
+                                                       | is_read          |
+                                                       | created_at       |
+                                                       +------------------+
+```
 
-**9. MEDIUM: Splash screen runs for 5.5 seconds with WebGL**
+### Find-or-create conversation logic (client-side):
+1. Query `conversation_participants` to find a conversation where both users participate
+2. If found, navigate to it
+3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
 
-The Three.js LiquidBackground loads the entire Three.js library (500KB+) for a splash screen that plays for 5.5 seconds.
+### Files to create:
+- `src/hooks/use-messages.ts`
+- `src/pages/Messages.tsx`
+- `src/pages/ChatRoom.tsx`
 
-**Fix:** Reduce splash to 3 seconds total (enter 0.5s, sustain to 2s, exit at 2.5s, complete at 3s). This doesn't change functionality — just gets users to content faster.
-
-**10. LOW: `glass-panel` uses `backdrop-blur-[24px]` on every post card**
-
-`backdrop-filter: blur(24px)` is expensive on mobile. Each post card has this.
-
-**Fix:** Reduce to `backdrop-blur-md` (12px) which is visually similar but ~2x cheaper.
-
-**11. LOW: Gossip initial animation uses `filter: "blur(10px)"` per card (Gossip.tsx line 577)**
-
-Each gossip card animates from `blur(10px)` to `blur(0px)`. Filter animations are GPU-expensive.
-
-**Fix:** Remove the blur from initial/animate and use only opacity + scale for entrance.
-
-### Files Changed
-
-| File | Changes |
-|---|---|
-| `src/pages/Feed.tsx` | Remove broad realtime re-fetch; remove `followingIds` from fetch dep; remove `fetchPosts()` from `submitComment`; cap stagger delay; add `initial={false}` to prevent re-animation |
-| `src/pages/Gossip.tsx` | Remove broad realtime re-fetch; remove redundant own-posts query; remove `whileHover` from cards; simplify entrance animation |
-| `src/components/layout/AppLayout.tsx` | Add `will-change: transform` to aurora divs; reduce blur values |
-| `src/components/SplashScreen.tsx` | Reduce splash duration from 5.5s to 3s |
-| `src/index.css` | Increase `fire-flicker` duration; reduce `glass-panel` blur |
-
-### What is NOT changed
-- All existing functionality (likes, comments, saves, follows, deep-links, notifications, realtime badge updates)
-- Visual design and layout
-- Database schema and RLS policies
-- Component structure and routing
+### Files to modify:
+- `src/pages/Profile.tsx` (add Message button)
+- `src/App.tsx` (add routes)
+- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
+- `src/pages/Feed.tsx` (add Leaderboard button to header)
 

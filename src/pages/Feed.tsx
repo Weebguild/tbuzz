@@ -237,16 +237,14 @@ export default function Feed() {
   useEffect(() => {
     fetchPosts();
     fetchTrendingGossip();
-  }, [profile, followingIds]);
+  }, [profile]);
 
-  // ── REALTIME ──
+  // ── REALTIME: only listen for new posts from others ──
   useEffect(() => {
     if (!profile) return;
     const channel = supabase
       .channel("feed-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => fetchPosts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, () => fetchPosts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, () => fetchPosts())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchPosts())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [profile, fetchPosts]);
@@ -390,8 +388,9 @@ export default function Feed() {
       return;
     }
     setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+    // Optimistic comment count update + reload comments for this post only
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p));
     loadComments(postId);
-    fetchPosts();
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -545,7 +544,7 @@ export default function Feed() {
                 id={`post-${post.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
+                transition={{ duration: 0.3, delay: Math.min(i * 0.05, 0.3) }}
               >
                 <div className={`rounded-3xl glass-panel overflow-hidden transition-all duration-500 ${highlightedPostId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : "hover:border-primary/30"}`}>
                   {/* Post header */}

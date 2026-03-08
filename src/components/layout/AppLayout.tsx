@@ -17,10 +17,10 @@ export function AppLayout() {
     <div className="min-h-screen bg-black relative selection:bg-primary/30 flex">
       {/* ── THE AURORA BACKGROUND ── */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#7C3AED] mix-blend-screen filter blur-[120px] opacity-30 animate-aurora-1" />
-        <div className="absolute top-[40%] right-[-20%] w-[400px] h-[400px] rounded-full bg-[#EC4899] mix-blend-screen filter blur-[120px] opacity-20 animate-aurora-2" />
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#7C3AED] mix-blend-screen filter blur-[80px] opacity-30 animate-aurora-1 will-change-transform" />
+        <div className="absolute top-[40%] right-[-20%] w-[400px] h-[400px] rounded-full bg-[#EC4899] mix-blend-screen filter blur-[80px] opacity-20 animate-aurora-2 will-change-transform" />
         <div
-          className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] rounded-full bg-[#3B82F6] mix-blend-screen filter blur-[150px] opacity-20 animate-aurora-1"
+          className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] rounded-full bg-[#3B82F6] mix-blend-screen filter blur-[100px] opacity-20 animate-aurora-1 will-change-transform"
           style={{ animationDelay: "-5s" }}
         />
       </div>
