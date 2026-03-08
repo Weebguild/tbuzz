@@ -125,7 +125,7 @@ export function useMessages(conversationId: string | undefined) {
       if (file) {
         const ext = file.name.split(".").pop();
         const path = `${user.id}/${Date.now()}.${ext}`;
-        const bucket = "post-images"; // Using post-images for all media for now
+        const bucket = "post-images";
 
         const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file);
         if (uploadError) {
@@ -138,6 +138,8 @@ export function useMessages(conversationId: string | undefined) {
           type,
           url: publicUrl.publicUrl,
           text: content.trim() || undefined,
+          fileName: file.name,
+          fileSize: file.size,
         });
       }
 
