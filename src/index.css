@@ -334,6 +334,20 @@
   background: rgba(239, 68, 68, 0.6) !important;
 }
 
+/* ── HALO PULSE (Mutual Follow) ── */
+@keyframes halo-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(52, 211, 153, 0.4);
+  }
+}
+
+.animate-halo-pulse {
+  animation: halo-pulse 3s ease-in-out infinite;
+}
+
 @keyframes shatter-fly-1 {
   0% {
     transform: translate(-50%, -50%) rotate(0deg) scale(1);

@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
@@ -68,6 +70,7 @@ const PAGE_SIZE = 20;
 
 export default function Feed() {
   const { user, profile } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -553,7 +556,7 @@ export default function Feed() {
                   {/* Post header */}
                   <div className="px-4 pt-4 pb-2 flex items-center gap-3">
                     <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">
-                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                      <Avatar className={cn("h-9 w-9", getHaloClass(post.user_id))}>
                         {post.profiles?.avatar_url ? (
                           <AvatarImage src={post.profiles.avatar_url} />
                         ) : (
@@ -666,7 +669,7 @@ export default function Feed() {
                         {(commentsMap[post.id] ?? []).map((c) => (
                           <div key={c.id} className="flex gap-2.5">
                             <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
-                              <Avatar className="h-6 w-6 ring-1 ring-white/10">
+                              <Avatar className={cn("h-6 w-6", getHaloClass(c.user_id))}>
                                 {c.avatar_url ? (
                                   <AvatarImage src={c.avatar_url} />
                                 ) : (

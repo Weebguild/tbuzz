@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls 
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { useMessages } from "@/hooks/use-messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,6 +32,7 @@ import { toast } from "sonner";
 export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const { messages, loading, sendMessage, markAsRead, isTyping, handleInputChange } = useMessages(conversationId);
   const [input, setInput] = useState("");
@@ -507,7 +509,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               {recipient && (
                 <div className="flex items-center gap-4 cursor-pointer" onClick={() => setShowInfo(true)}>
                   <div className="relative">
-                    <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-xl">
+                    <Avatar className={cn("h-12 w-12 shadow-xl", recipient ? getHaloClass(recipient.user_id) : "ring-2 ring-primary/20")}>
                       <AvatarImage src={recipient.avatar_url || ""} />
                       <AvatarFallback className="bg-white/5 text-xs font-black">
                         {recipient.display_name.charAt(0)}
@@ -671,7 +673,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     {!isOwn && (
                       <div className="w-8 shrink-0">
                         {isLastInGroup && recipient && (
-                          <Avatar className="h-8 w-8 ring-1 ring-white/10 shadow-lg">
+                          <Avatar className={cn("h-8 w-8 shadow-lg", recipient ? getHaloClass(recipient.user_id) : "ring-1 ring-white/10")}>
                             <AvatarImage src={recipient.avatar_url || ""} />
                             <AvatarFallback className="text-[10px] font-bold bg-white/5">
                               {recipient.display_name.charAt(0)}

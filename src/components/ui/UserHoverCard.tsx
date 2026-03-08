@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2, Users, UserCheck, GraduationCap, CalendarDays } from "lucide-react";
 import gsap from "gsap";
 import { cn } from "@/lib/utils";
+import { useHalo } from "@/hooks/useHalo";
 
 interface UserProfile {
     user_id: string;
@@ -53,6 +54,7 @@ interface UserHoverCardProps {
 }
 
 export function UserHoverCard({ userId, children, className }: UserHoverCardProps) {
+    const { getHaloClass } = useHalo();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [stats, setStats] = useState<UserStats>({ followers: 0, following: 0 });
     const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
@@ -275,7 +277,7 @@ export function UserHoverCard({ userId, children, className }: UserHoverCardProp
                                     {/* Avatar with neon ring */}
                                     <div className="relative">
                                         <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 blur-sm opacity-60" />
-                                        <Avatar className="relative h-16 w-16 border-2 border-[#1A1A1A] ring-2 ring-primary/30">
+                                        <Avatar className={cn("relative h-16 w-16 border-2 border-[#1A1A1A]", getHaloClass(userId))}>
                                             <AvatarImage src={profile.avatar_url || ""} className="object-cover" />
                                             <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/20 text-white text-xl font-black">
                                                 {profile.display_name?.charAt(0) || "?"}

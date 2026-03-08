@@ -3,6 +3,7 @@ import { Search, User, X, Loader2, UserPlus, UserCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ interface SearchResult {
 export function UserSearch({ onClose }: { onClose: () => void }) {
     const navigate = useNavigate();
     const { user, profile } = useAuth();
+    const { getHaloClass } = useHalo();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -197,7 +199,7 @@ export function UserSearch({ onClose }: { onClose: () => void }) {
                             className="group/item relative p-4 rounded-3xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-purple-500/30 transition-all cursor-pointer overflow-hidden backdrop-blur-md"
                         >
                             <div className="flex items-center gap-4 relative z-10">
-                                <Avatar className="h-14 w-14 border border-white/10 shadow-2xl">
+                                <Avatar className={cn("h-14 w-14 border border-white/10 shadow-2xl", getHaloClass(r.user_id))}>
                                     {r.avatar_url ? (
                                         <AvatarImage src={r.avatar_url} />
                                     ) : (

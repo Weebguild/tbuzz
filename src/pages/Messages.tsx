@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Loader2, ArrowRight, Search, Pin, Star,
@@ -34,6 +35,7 @@ interface ConversationItem {
 
 export default function Messages() {
   const { user } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const { conversationId } = useParams();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -373,7 +375,7 @@ export default function Messages() {
                     )}
                   >
                     <div className="relative shrink-0">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className={cn("h-12 w-12", getHaloClass(conv.other_user.user_id))}>
                         <AvatarImage src={conv.other_user.avatar_url || ""} />
                         <AvatarFallback className="bg-muted text-base font-bold">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
                       </Avatar>

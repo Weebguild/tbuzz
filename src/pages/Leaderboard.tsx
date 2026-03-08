@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Trophy, Crown, Calendar, CalendarDays, Flame, User as UserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 import { UserHoverCard } from "@/components/ui/UserHoverCard";
 
 interface LeaderboardEntry {
@@ -29,6 +31,7 @@ type TimeRange = "week" | "month";
 
 export default function Leaderboard() {
   const { profile } = useAuth();
+  const { getHaloClass } = useHalo();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,7 +298,7 @@ export default function Leaderboard() {
                     }}
                     className="shrink-0 relative z-10"
                   >
-                    <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+                    <Avatar className={cn("h-10 w-10 transition-all", getHaloClass(entry.user_id))}>
                       {entry.avatar_url ? (
                         <AvatarImage src={entry.avatar_url} />
                       ) : (

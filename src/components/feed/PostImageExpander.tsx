@@ -3,10 +3,12 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-mo
 import { X, Heart, MessageCircle, Send, Loader2, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useHalo } from "@/hooks/useHalo";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { MicroExpander } from "@/components/ui/micro-expander";
 
 interface Spark {
@@ -47,6 +49,7 @@ export function PostImageExpander({
   onToggleLike,
   onToggleSave,
 }: PostImageExpanderProps) {
+  const { getHaloClass } = useHalo();
   const { user } = useAuth();
   const [isSplitScreen, setIsSplitScreen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -306,7 +309,7 @@ export function PostImageExpander({
               ) : (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8 ring-1 ring-white/10 shrink-0">
+                    <Avatar className={cn("h-8 w-8 shrink-0", getHaloClass(c.user_id))}>
                       {c.avatar_url ? (
                         <AvatarImage src={c.avatar_url} />
                       ) : (

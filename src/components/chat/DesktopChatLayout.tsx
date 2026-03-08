@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useHalo } from "@/hooks/useHalo";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,6 +17,7 @@ import { UserSearch } from "@/components/UserSearch";
 
 export function DesktopChatLayout() {
     const { user } = useAuth();
+    const { getHaloClass } = useHalo();
     const navigate = useNavigate();
     const { conversationId } = useParams();
     const [conversations, setConversations] = useState<any[]>([]);
@@ -197,7 +199,7 @@ export function DesktopChatLayout() {
                                 )}
                             >
                                 <div className="relative">
-                                    <Avatar className="h-12 w-12 ring-2 ring-white/5 group-hover:ring-primary/40 transition-all">
+                                    <Avatar className={cn("h-12 w-12 transition-all", getHaloClass(conv.other_user.user_id))}>
                                         {conv.other_user.avatar_url ? (
                                             <AvatarImage src={conv.other_user.avatar_url} />
                                         ) : (
