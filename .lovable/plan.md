@@ -1,37 +1,118 @@
 
 
-## Redesign Messages Page for Visual Consistency
+# Real-Time Direct Messaging (DM) Feature
 
-The core issue: Messages uses `bg-[#050505]`, `bg-black/20`, `bg-[#111]` solid backgrounds and its own layout wrapper, while Feed and Gossip use the global aurora background with `glass-panel` cards, `rounded-3xl`, and consistent typography. The Messages page essentially creates its own dark world that blocks the shared aurora.
+## Overview
+Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
 
-### Key Design Gaps
+---
 
-1. **Background**: Messages sets `bg-[#050505]` on its root div, hiding the global aurora. Feed/Gossip are transparent and let it show through.
-2. **Container padding**: Feed/Gossip use `px-4 pt-6 pb-4`. Messages uses `px-6 pt-12` with completely different spacing.
-3. **Header**: Feed/Gossip use `text-4xl tracking-widest uppercase drop-shadow-md`. Messages uses `text-5xl` — too large.
-4. **Conversation cards**: Use flat `bg-transparent` / plain borders instead of `glass-panel` or `glass-card-modern` styling used in Feed/Gossip post cards.
-5. **Loading skeletons**: Messages has custom skeleton markup vs Feed/Gossip using `<PostSkeleton />`.
-6. **"New Conversation" button**: Solid white button doesn't match the `bg-foreground text-background rounded-full` action buttons in Feed/Gossip headers.
-7. **Empty state**: The desktop "Select a Chat" panel is wrapped in glass but the opacity-30 makes it nearly invisible.
-8. **Section labels**: Already use `text-primary` (good), but the overall card/container feel is flat.
+## Phase 1: Database Schema & Security
 
-### Changes to `src/pages/Messages.tsx`
+### Migration: Create tables, functions, RLS, and realtime
 
-1. **Remove opaque backgrounds** — Change root `bg-[#050505]` to `bg-transparent` so the global aurora shows through (matching Feed/Gossip). Remove `bg-black/20` from the conversation list column.
+**New tables:**
+- `conversations` (id uuid PK, created_at, updated_at)
+- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
+- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
 
-2. **Normalize header** — Change `text-5xl` to `text-4xl` to match Feed/Gossip. Adjust padding from `px-6 pt-12` to `px-4 pt-6 pb-4` for consistency.
+**Security definer functions:**
+- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
+- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
 
-3. **Restyle conversation cards as glass cards** — Wrap each conversation item in `glass-panel rounded-3xl` styling (matching Feed post cards). Add subtle `hover:border-primary/30 transition-colors` like Feed cards. Remove the current bare `hover:bg-white/[0.03]`.
+**RLS policies (all restrictive):**
+- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
+- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
+- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
+- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
 
-4. **Move "New Conversation" button into header** — Place a `h-10 w-10 rounded-full bg-foreground text-background` Plus button in the header row (matching Feed/Gossip composer toggle buttons), and remove the bottom "New Conversation" bar on desktop.
+**Realtime:** Enable realtime for `messages` table.
 
-5. **Fix empty state** — Remove `opacity-30`, keep the `glass-panel` container, match the muted styling of Feed/Gossip empty states.
+**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
 
-6. **Normalize loading skeleton** — Use the same `PostSkeleton`-like glass-panel skeleton cards with matching border radius and animation.
+---
 
-7. **Search bar** — Keep current glass-panel search (already consistent), just match padding to `px-4`.
+## Phase 2: Frontend -- New Files
 
-8. **Desktop chat column** — Change `bg-[#050505]` to `bg-transparent` to let aurora bleed through behind the chat area too.
+### `src/hooks/use-messages.ts`
+Custom hook that:
+- Fetches message history for a conversation ordered by created_at ASC
+- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
+- Returns messages array, sendMessage function, loading state
 
-All changes confined to `src/pages/Messages.tsx`. No logic changes — purely cosmetic alignment with Feed/Gossip design language.
+### `src/pages/Messages.tsx` (Inbox)
+- Route: `/messages`
+- Lists all conversations for the current user
+- Shows other participant's avatar, name, last message snippet, timestamp
+- Clicking a conversation navigates to `/messages/:conversationId`
+- Sorted by `updated_at` descending
+
+### `src/pages/ChatRoom.tsx`
+- Route: `/messages/:conversationId`
+- Header: back button, recipient avatar + name
+- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
+- Auto-scroll to bottom on new messages
+- Input + Send button (paper plane icon) at bottom
+- Marks messages as read when viewing
+
+---
+
+## Phase 3: Profile Page Update
+
+### `src/pages/Profile.tsx`
+- Add state: `isMutualFollow` (boolean)
+- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
+- Next to the Follow/Unfollow button, conditionally render a "Message" button:
+  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
+  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
+
+---
+
+## Phase 4: Routing & Navigation
+
+### `src/App.tsx`
+- Import Messages and ChatRoom pages
+- Add routes inside the ProtectedRoute + AppLayout group:
+  - `/messages` -> Messages
+  - `/messages/:conversationId` -> ChatRoom
+
+### `src/components/layout/BottomNav.tsx`
+- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
+- Add unread badge: query `messages` where `is_read = false` and sender is not current user
+- Real-time subscription for unread count updates
+
+### `src/pages/Feed.tsx`
+- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
+
+---
+
+## Technical Details
+
+```text
+conversations          conversation_participants         messages
++------------+        +------------------------+      +------------------+
+| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
+| created_at |        | user_id                |      | conversation_id  |
+| updated_at |        | id (PK)                |      | sender_id        |
++------------+        +------------------------+      | content          |
+                                                       | is_read          |
+                                                       | created_at       |
+                                                       +------------------+
+```
+
+### Find-or-create conversation logic (client-side):
+1. Query `conversation_participants` to find a conversation where both users participate
+2. If found, navigate to it
+3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
+
+### Files to create:
+- `src/hooks/use-messages.ts`
+- `src/pages/Messages.tsx`
+- `src/pages/ChatRoom.tsx`
+
+### Files to modify:
+- `src/pages/Profile.tsx` (add Message button)
+- `src/App.tsx` (add routes)
+- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
+- `src/pages/Feed.tsx` (add Leaderboard button to header)
 
