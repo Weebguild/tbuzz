@@ -680,6 +680,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                       )}
                     </div>
                   </motion.div>
+                  </div>
                 );
               })}
 
