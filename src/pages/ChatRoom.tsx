@@ -673,7 +673,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     {!isOwn && (
                       <div className="w-8 shrink-0">
                         {isLastInGroup && recipient && (
-                          <Avatar className="h-8 w-8 ring-1 ring-white/10 shadow-lg">
+                          <Avatar className={cn("h-8 w-8 shadow-lg", recipient ? getHaloClass(recipient.user_id) : "ring-1 ring-white/10")}>
                             <AvatarImage src={recipient.avatar_url || ""} />
                             <AvatarFallback className="text-[10px] font-bold bg-white/5">
                               {recipient.display_name.charAt(0)}

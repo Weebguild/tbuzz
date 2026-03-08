@@ -297,7 +297,7 @@ export default function Leaderboard() {
                     }}
                     className="shrink-0 relative z-10"
                   >
-                    <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+                    <Avatar className={cn("h-10 w-10 transition-all", getHaloClass(entry.user_id))}>
                       {entry.avatar_url ? (
                         <AvatarImage src={entry.avatar_url} />
                       ) : (

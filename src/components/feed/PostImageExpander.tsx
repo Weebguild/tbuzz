@@ -308,7 +308,7 @@ export function PostImageExpander({
               ) : (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8 ring-1 ring-white/10 shrink-0">
+                    <Avatar className={cn("h-8 w-8 shrink-0", getHaloClass(c.user_id))}>
                       {c.avatar_url ? (
                         <AvatarImage src={c.avatar_url} />
                       ) : (

@@ -668,7 +668,7 @@ export default function Feed() {
                         {(commentsMap[post.id] ?? []).map((c) => (
                           <div key={c.id} className="flex gap-2.5">
                             <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
-                              <Avatar className="h-6 w-6 ring-1 ring-white/10">
+                              <Avatar className={cn("h-6 w-6", getHaloClass(c.user_id))}>
                                 {c.avatar_url ? (
                                   <AvatarImage src={c.avatar_url} />
                                 ) : (

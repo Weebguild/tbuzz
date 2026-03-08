@@ -375,7 +375,7 @@ export default function Messages() {
                     )}
                   >
                     <div className="relative shrink-0">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className={cn("h-12 w-12", getHaloClass(conv.other_user.user_id))}>
                         <AvatarImage src={conv.other_user.avatar_url || ""} />
                         <AvatarFallback className="bg-muted text-base font-bold">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
                       </Avatar>
