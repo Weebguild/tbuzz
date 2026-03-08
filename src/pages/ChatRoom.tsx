@@ -328,6 +328,30 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       });
     }
   };
+  const handleDocumentDownload = async (url: string, fileName: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch file");
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.error("Direct download was blocked. File link copied to clipboard.");
+      } catch {
+        toast.error("Download blocked by browser settings. Please allow the file domain and try again.");
+      }
+    }
+  };
+
   const toggleAudioPlayback = (msgId: string, url: string) => {
     const current = audioRefs.current[msgId];
     if (playingAudioId === msgId && current) {
