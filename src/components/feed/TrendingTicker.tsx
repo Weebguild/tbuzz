@@ -61,12 +61,11 @@ export function TrendingTicker({ items }: TrendingTickerProps) {
           <motion.div
             key={current.id}
             // Vertical slide-up animation (Slot machine effect)
-            initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{
               opacity: 0,
               y: -20,
-              filter: "blur(4px)",
               transition: { duration: 0.2, ease: "easeIn" },
             }}
             transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}

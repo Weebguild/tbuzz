@@ -1,71 +1,118 @@
 
 
-## Performance Optimization Plan — Round 2
+# Real-Time Direct Messaging (DM) Feature
 
-### Issues Found
+## Overview
+Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
 
-**1. CRITICAL: Messages page N+1 query waterfall (Messages.tsx lines 98-129)**
+---
 
-`fetchConversations` loops through every conversation sequentially, making 2 individual queries per conversation (last message + unread count). With 10 conversations, that's 20 sequential network requests. This is the #1 cause of slow Messages page load.
+## Phase 1: Database Schema & Security
 
-**Fix:** Batch both queries. Fetch all messages for all conversation IDs in one query (ordered by created_at desc), then group client-side. Fetch all unread counts in one query using `.in("conversation_id", convIds)`.
+### Migration: Create tables, functions, RLS, and realtime
 
-**2. HIGH: AuthProvider double-fetches profile on mount (useAuth.tsx lines 50-69)**
+**New tables:**
+- `conversations` (id uuid PK, created_at, updated_at)
+- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
+- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
 
-Both `onAuthStateChange` and `getSession` fire on mount and both call `fetchProfile`. The `setTimeout` on line 55 doesn't prevent the race — it just defers one by a tick.
+**Security definer functions:**
+- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
+- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
 
-**Fix:** Add a `fetchingRef` to deduplicate. If a fetch is already in-flight for the same userId, skip.
+**RLS policies (all restrictive):**
+- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
+- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
+- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
+- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
 
-**3. HIGH: BottomNav unread listener is unfiltered (BottomNav.tsx line 51)**
+**Realtime:** Enable realtime for `messages` table.
 
-`event: "*"` on the entire `messages` table. Every message sent by anyone triggers `fetchUnread`. This fires on every INSERT, UPDATE (mark-read), etc.
+**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
 
-**Fix:** Change to `event: "INSERT"` only. Mark-as-read doesn't increase unread count so no need to re-fetch on UPDATE.
+---
 
-**4. HIGH: Feed `deletePost` and Gossip `deleteGossip` call full re-fetch (Feed.tsx:345, Gossip.tsx:364)**
+## Phase 2: Frontend -- New Files
 
-Deleting a post triggers `fetchPosts()`/`fetchGossip()` which re-fetches and re-enriches the entire feed. Should just remove the item from local state.
+### `src/hooks/use-messages.ts`
+Custom hook that:
+- Fetches message history for a conversation ordered by created_at ASC
+- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
+- Returns messages array, sendMessage function, loading state
 
-**Fix:** Replace `fetchPosts()` with `setPosts(prev => prev.filter(p => p.id !== postId))`. Same for gossip.
+### `src/pages/Messages.tsx` (Inbox)
+- Route: `/messages`
+- Lists all conversations for the current user
+- Shows other participant's avatar, name, last message snippet, timestamp
+- Clicking a conversation navigates to `/messages/:conversationId`
+- Sorted by `updated_at` descending
 
-**5. HIGH: Feed `handlePost` calls `fetchPosts()` after insert (Feed.tsx:276)**
+### `src/pages/ChatRoom.tsx`
+- Route: `/messages/:conversationId`
+- Header: back button, recipient avatar + name
+- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
+- Auto-scroll to bottom on new messages
+- Input + Send button (paper plane icon) at bottom
+- Marks messages as read when viewing
 
-The realtime INSERT listener on line 247 already calls `fetchPosts()` when a new post arrives. Calling it manually in `handlePost` causes a double-fetch.
+---
 
-**Fix:** Remove `fetchPosts()` from `handlePost`. The realtime listener handles it.
+## Phase 3: Profile Page Update
 
-**6. MEDIUM: Gossip `handlePost` same double-fetch (Gossip.tsx:301)**
+### `src/pages/Profile.tsx`
+- Add state: `isMutualFollow` (boolean)
+- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
+- Next to the Follow/Unfollow button, conditionally render a "Message" button:
+  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
+  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
 
-Same issue — `fetchGossip()` called manually after insert, while realtime listener on line 239 also fires.
+---
 
-**Fix:** Remove `fetchGossip()` from `handlePost`.
+## Phase 4: Routing & Navigation
 
-**7. MEDIUM: TrendingTicker blur animation on every rotation (TrendingTicker.tsx:64)**
+### `src/App.tsx`
+- Import Messages and ChatRoom pages
+- Add routes inside the ProtectedRoute + AppLayout group:
+  - `/messages` -> Messages
+  - `/messages/:conversationId` -> ChatRoom
 
-`filter: "blur(4px)"` on initial and exit. Each 4-second rotation triggers a blur filter animation. On mobile this forces GPU filter compositing every 4s.
+### `src/components/layout/BottomNav.tsx`
+- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
+- Add unread badge: query `messages` where `is_read = false` and sender is not current user
+- Real-time subscription for unread count updates
 
-**Fix:** Remove `filter` from initial/exit. Keep opacity + y only.
+### `src/pages/Feed.tsx`
+- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
 
-**8. LOW: Messages realtime INSERT listener is unfiltered (Messages.tsx:166)**
+---
 
-Any INSERT to the global `messages` table triggers a full `fetchConversations` (which has the N+1 problem above). Even messages from other users' conversations trigger this.
+## Technical Details
 
-**Fix:** After fixing the N+1 issue, this becomes less critical, but ideally filter or debounce. At minimum, add a 500ms debounce to prevent rapid-fire re-fetches.
+```text
+conversations          conversation_participants         messages
++------------+        +------------------------+      +------------------+
+| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
+| created_at |        | user_id                |      | conversation_id  |
+| updated_at |        | id (PK)                |      | sender_id        |
++------------+        +------------------------+      | content          |
+                                                       | is_read          |
+                                                       | created_at       |
+                                                       +------------------+
+```
 
-### Files Changed
+### Find-or-create conversation logic (client-side):
+1. Query `conversation_participants` to find a conversation where both users participate
+2. If found, navigate to it
+3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
 
-| File | Changes |
-|---|---|
-| `src/pages/Messages.tsx` | Batch last-message + unread-count queries; debounce realtime listener |
-| `src/hooks/useAuth.tsx` | Add fetchingRef to deduplicate profile fetch |
-| `src/components/layout/BottomNav.tsx` | Change realtime listener from `*` to `INSERT` |
-| `src/pages/Feed.tsx` | Remove `fetchPosts()` from `deletePost` and `handlePost`; use local state updates |
-| `src/pages/Gossip.tsx` | Remove `fetchGossip()` from `deleteGossip` and `handlePost`; use local state updates |
-| `src/components/feed/TrendingTicker.tsx` | Remove blur filter from animation |
+### Files to create:
+- `src/hooks/use-messages.ts`
+- `src/pages/Messages.tsx`
+- `src/pages/ChatRoom.tsx`
 
-### What is NOT changed
-- All existing functionality (messaging, posting, deleting, likes, saves, follows, notifications, deep-links)
-- Visual design and layout
-- Database schema and RLS policies
-- Component structure and routing
+### Files to modify:
+- `src/pages/Profile.tsx` (add Message button)
+- `src/App.tsx` (add routes)
+- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
+- `src/pages/Feed.tsx` (add Leaderboard button to header)
 

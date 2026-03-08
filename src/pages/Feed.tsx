@@ -273,7 +273,6 @@ export default function Feed() {
       setImageConfirmed(false);
       setShowComposer(false);
       toast.success("Posted!");
-      fetchPosts();
     } catch (error: any) {
       toast.error(sanitizeError(error));
     } finally {
@@ -342,7 +341,7 @@ export default function Feed() {
       toast.error(sanitizeError(error));
     } else {
       toast.success("Post deleted");
-      fetchPosts();
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
     }
     setDeletePostId(null);
   };
