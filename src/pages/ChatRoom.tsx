@@ -89,7 +89,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       if (participants && participants.length > 0) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("user_id, display_name, avatar_url")
+          .select("user_id, display_name, avatar_url, department, year, bio")
           .eq("user_id", participants[0].user_id)
           .single();
         if (profile) {
