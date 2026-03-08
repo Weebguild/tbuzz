@@ -211,21 +211,83 @@ export default function Leaderboard() {
             exit={{ opacity: 0 }}
             className="space-y-2.5"
           >
-            {entries.map((entry, i) => (
+            {/* ── TOP 3 PODIUM ── */}
+            {entries.length >= 3 && (
+              <div className="flex items-end justify-center gap-3 mb-8 pt-4">
+                {/* 2nd place */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="flex flex-col items-center"
+                >
+                  <button onClick={() => navigate(`/profile/${entries[1].user_id}`)} className="mb-2">
+                    <Avatar className="h-14 w-14 ring-[3px] ring-zinc-400 shadow-[0_0_15px_rgba(161,161,170,0.3)]">
+                      {entries[1].avatar_url ? <AvatarImage src={entries[1].avatar_url} /> : <AvatarFallback className="bg-white/[0.04] font-bold text-foreground">{entries[1].display_name.charAt(0)}</AvatarFallback>}
+                    </Avatar>
+                  </button>
+                  <span className="text-xs font-bold text-foreground truncate max-w-[70px]">{entries[1].display_name}</span>
+                  <span className="text-lg font-black text-zinc-400">{entries[1].score}</span>
+                  <div className="w-20 h-16 rounded-t-xl bg-zinc-400/10 border border-zinc-400/20 flex items-center justify-center mt-1">
+                    <span className="text-2xl font-black text-zinc-400">2</span>
+                  </div>
+                </motion.div>
+
+                {/* 1st place */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  className="flex flex-col items-center -mt-4"
+                >
+                  <Crown className="h-6 w-6 text-yellow-500 mb-1 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
+                  <button onClick={() => navigate(`/profile/${entries[0].user_id}`)} className="mb-2">
+                    <Avatar className="h-18 w-18 ring-[3px] ring-yellow-500 shadow-[0_0_25px_rgba(234,179,8,0.4)]">
+                      {entries[0].avatar_url ? <AvatarImage src={entries[0].avatar_url} /> : <AvatarFallback className="bg-white/[0.04] font-bold text-lg text-foreground">{entries[0].display_name.charAt(0)}</AvatarFallback>}
+                    </Avatar>
+                  </button>
+                  <span className="text-sm font-bold text-foreground truncate max-w-[80px]">{entries[0].display_name}</span>
+                  <span className="text-xl font-black text-yellow-500">{entries[0].score}</span>
+                  <div className="w-24 h-20 rounded-t-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center mt-1">
+                    <span className="text-3xl font-black text-yellow-500">1</span>
+                  </div>
+                </motion.div>
+
+                {/* 3rd place */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="flex flex-col items-center"
+                >
+                  <button onClick={() => navigate(`/profile/${entries[2].user_id}`)} className="mb-2">
+                    <Avatar className="h-12 w-12 ring-[3px] ring-amber-700 shadow-[0_0_12px_rgba(180,83,9,0.3)]">
+                      {entries[2].avatar_url ? <AvatarImage src={entries[2].avatar_url} /> : <AvatarFallback className="bg-white/[0.04] font-bold text-foreground">{entries[2].display_name.charAt(0)}</AvatarFallback>}
+                    </Avatar>
+                  </button>
+                  <span className="text-xs font-bold text-foreground truncate max-w-[70px]">{entries[2].display_name}</span>
+                  <span className="text-lg font-black text-amber-700">{entries[2].score}</span>
+                  <div className="w-20 h-12 rounded-t-xl bg-amber-700/10 border border-amber-700/20 flex items-center justify-center mt-1">
+                    <span className="text-2xl font-black text-amber-700">3</span>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* ── REST OF LIST (4th onward, or all if < 3) ── */}
+            {(entries.length >= 3 ? entries.slice(3) : entries).map((entry, i) => (
               <motion.div
                 key={entry.user_id}
                 initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
+                transition={{ delay: (entries.length >= 3 ? i + 3 : i) * 0.04 }}
               >
-                {/* ── ROW IS NOW A BUTTON THAT OPENS GOSSIP ── */}
                 <div
                   onClick={() => openGossipSheet(entry)}
                   className="w-full flex items-center gap-4 rounded-2xl glass-panel p-4 text-left hover:border-primary/30 transition-colors cursor-pointer group"
                 >
                   <span className="text-xl font-extrabold text-foreground w-8 text-center shrink-0">{entry.rank}</span>
 
-                  {/* ── AVATAR IS A SEPARATE BUTTON TO GO TO PROFILE ── */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -251,7 +313,6 @@ export default function Leaderboard() {
                           {entry.display_name}
                         </span>
                       </UserHoverCard>
-                      {entry.rank === 1 && <Crown className="h-4 w-4 text-yellow-500 shrink-0" />}
                     </div>
                     <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 mt-0.5">
                       Tap to read gossip <Flame className="h-3 w-3 text-primary" />
