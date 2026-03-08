@@ -370,7 +370,7 @@ export default function Messages() {
           <div className="p-4 border-t border-white/5">
             <button
               onClick={() => setShowSearchModal(true)}
-              className="w-full h-12 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="w-full h-12 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"
             >
               <Plus className="h-4 w-4 stroke-[3px]" />
               New Conversation
