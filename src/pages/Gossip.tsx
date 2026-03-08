@@ -298,7 +298,6 @@ export default function Gossip() {
       setIsBurner(false);
       setShowComposer(false);
       toast.success("Gossip posted!");
-      fetchGossip();
     } catch (error: any) {
       toast.error(sanitizeError(error));
     } finally {
