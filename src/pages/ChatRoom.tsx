@@ -313,15 +313,18 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : null;
+      const type = file.type.startsWith("image/") ? "image" 
+        : file.type.startsWith("video/") ? "video" 
+        : file.type === "application/pdf" ? "file" 
+        : null;
       if (!type) {
         toast.error("Unsupported file type");
         return;
       }
       setAttachment({
         file,
-        type,
-        preview: URL.createObjectURL(file),
+        type: type as "image" | "video" | "audio" | "file",
+        preview: type === "file" ? file.name : URL.createObjectURL(file),
       });
     }
   };
