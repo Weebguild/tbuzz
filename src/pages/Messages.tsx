@@ -94,28 +94,42 @@ export default function Messages() {
         .select("user_id, display_name, avatar_url")
         .in("user_id", otherUserIds);
 
+      // Batch: fetch last messages and unread counts for ALL conversations at once
+      const [{ data: allMessages }, { data: unreadMessages }] = await Promise.all([
+        supabase
+          .from("messages")
+          .select("conversation_id, content, created_at")
+          .in("conversation_id", convIds)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("messages")
+          .select("conversation_id")
+          .in("conversation_id", convIds)
+          .neq("sender_id", user.id)
+          .eq("is_read", false),
+      ]);
+
+      // Group last message per conversation (first occurrence = latest due to order)
+      const lastMsgMap = new Map<string, { content: string; created_at: string }>();
+      for (const msg of allMessages ?? []) {
+        if (!lastMsgMap.has(msg.conversation_id)) {
+          lastMsgMap.set(msg.conversation_id, { content: msg.content, created_at: msg.created_at });
+        }
+      }
+
+      // Count unreads per conversation
+      const unreadCountMap = new Map<string, number>();
+      for (const msg of unreadMessages ?? []) {
+        unreadCountMap.set(msg.conversation_id, (unreadCountMap.get(msg.conversation_id) ?? 0) + 1);
+      }
+
       const items: ConversationItem[] = [];
       for (const conv of convs || []) {
         const otherParticipant = allParticipants?.find(p => p.conversation_id === conv.id);
         const otherProfile = profiles?.find(p => p.user_id === otherParticipant?.user_id);
-
         if (!otherProfile) continue;
 
-        const { data: lastMsg } = await supabase
-          .from("messages")
-          .select("content, created_at")
-          .eq("conversation_id", conv.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const { count: unreadCount } = await supabase
-          .from("messages")
-          .select("*", { count: "exact", head: true })
-          .eq("conversation_id", conv.id)
-          .neq("sender_id", user.id)
-          .eq("is_read", false);
-
+        const lastMsg = lastMsgMap.get(conv.id);
         items.push({
           conversation_id: conv.id,
           updated_at: conv.updated_at,
@@ -124,7 +138,7 @@ export default function Messages() {
             lastMsg.content.startsWith("{") ? "Media Message" : lastMsg.content
           ) : "No messages yet",
           last_message_at: lastMsg?.created_at ?? null,
-          unread_count: unreadCount ?? 0,
+          unread_count: unreadCountMap.get(conv.id) ?? 0,
         });
       }
 
