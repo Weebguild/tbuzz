@@ -171,7 +171,7 @@ export default function Messages() {
       <div className={cn("flex text-foreground", isMobile ? "flex-col min-h-full" : "h-full flex-row overflow-hidden")}>
         <div className={cn(
           "flex flex-col shrink-0 min-h-0",
-          isMobile ? "w-full" : "w-[360px] border-r border-border/30"
+          isMobile ? "w-full" : "w-[360px] border-r border-white/[0.08]"
         )}>
           <div className="px-4 pt-6 pb-4 space-y-6">
             <div className="space-y-3">

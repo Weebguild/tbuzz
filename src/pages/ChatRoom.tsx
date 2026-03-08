@@ -835,10 +835,18 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     </div>
                     <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
                   </button>
-                  <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold">
+                  <button
+                    onClick={() => {
+                      if (recipient) {
+                        navigator.clipboard.writeText(recipient.user_id);
+                        toast.success("Username copied");
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold"
+                  >
                     <div className="flex items-center gap-4 text-white/60">
                       <Copy className="h-5 w-5" />
-                      <span>Copy Client ID</span>
+                      <span>Copy Username</span>
                     </div>
                     <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
                   </button>
