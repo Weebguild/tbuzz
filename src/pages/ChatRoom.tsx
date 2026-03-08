@@ -427,7 +427,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              "underline decoration-2 underline-offset-2 transition-all duration-300 break-all",
+              "underline decoration-2 underline-offset-2 transition-all duration-300 break-all inline-block max-w-full align-bottom [overflow-wrap:anywhere]",
               isOwn
                 ? "text-white font-bold decoration-white/40 hover:decoration-white/80 hover:brightness-125"
                 : "text-cyan-400 font-semibold decoration-cyan-400/30 hover:decoration-cyan-400/70 hover:brightness-125"
@@ -440,7 +440,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </a>
         );
       }
-      return <span key={i}>{part}</span>;
+      return <span key={i} className="[overflow-wrap:anywhere] break-words">{part}</span>;
     });
   };
 

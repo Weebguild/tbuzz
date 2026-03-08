@@ -396,7 +396,7 @@ export default function Messages() {
                           {conv.unread_count > 0 && (
                             <div className="h-2 w-2 rounded-full bg-primary shrink-0 shadow-[0_0_6px_hsl(var(--primary)/0.6)]" />
                           )}
-                          <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-muted-foreground/60")}>
+                          <p className={cn("text-xs flex-1 w-0 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap", conv.unread_count > 0 ? "text-primary font-black" : "text-muted-foreground/60")}>
                             {conv.isTyping ? (
                               <span className="text-primary font-bold italic flex items-center gap-1">
                                 typing
