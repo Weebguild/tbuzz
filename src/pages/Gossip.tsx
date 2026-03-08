@@ -574,6 +574,7 @@ export default function Gossip() {
             {posts.map((post) => (
               <motion.div
                 key={post.id}
+                id={`gossip-${post.id}`}
                 initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                 whileHover={{ scale: 1.01, translateY: -2 }}
@@ -589,7 +590,7 @@ export default function Gossip() {
                       : post.hotness_score >= 0.3
                         ? "card-heat-medium"
                         : ""
-                      }`}
+                      } ${highlightedGossipId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : ""}`}
                   >
                     <div className="glass-card-inner">
                       <div className="flex gap-3">
