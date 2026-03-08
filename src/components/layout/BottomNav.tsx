@@ -56,8 +56,8 @@ export function BottomNav() {
   const isMessagesPage = location.pathname.startsWith("/messages");
   const isInChatRoom = isMessagesPage && location.pathname.split("/").filter(Boolean).length > 1;
 
-  // Hide when: expander open, OR inside a mobile chat room
-  if (hidden || (!isMobile && isMessagesPage) || (isMobile && isInChatRoom)) return null;
+  // Hide when: expander open, OR inside a chat room
+  if (hidden || isInChatRoom) return null;
 
   return (
     <>
