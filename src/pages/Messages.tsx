@@ -366,7 +366,7 @@ export default function Messages() {
 
       {/* Main Chat Column */}
       {!isMobile && (
-        <div className="flex-1 flex flex-col relative min-w-0">
+        <div className="flex-1 flex flex-col relative min-w-0 shadow-[inset_1px_0_0_rgba(255,255,255,0.03)]">
           {conversationId ? (
             <ChatRoom desktop={true} />
           ) : (
@@ -379,6 +379,11 @@ export default function Messages() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Shared Files Right Panel (Desktop only) */}
+      {!isMobile && conversationId && (
+        <DesktopSharedPanel conversationId={conversationId} conversations={conversations} />
       )}
 
       {/* Discovery Modal */}
