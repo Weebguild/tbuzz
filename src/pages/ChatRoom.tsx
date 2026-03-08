@@ -688,22 +688,43 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
                               {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
                             </div>
-                          ) : data.type === "file" && data.url ? (
-                            <a
-                              href={data.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-3 py-1 px-2 min-w-[200px] hover:opacity-80 transition-opacity"
-                            >
-                              <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/20 shrink-0">
-                                <FileText className="h-6 w-6 text-red-400" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold truncate">{data.text || "PDF Document"}</p>
-                                <p className="text-[10px] uppercase tracking-widest opacity-50">PDF</p>
-                              </div>
-                              <Download className="h-4 w-4 opacity-40 shrink-0" />
-                            </a>
+                          ) : data.type === "file" && data.url ? (() => {
+                            const fileName = data.fileName || data.url.split("/").pop()?.split("?")[0] || "Document";
+                            const displayName = fileName.replace(/^\d+\./, "");
+                            const fileExt = fileName.split(".").pop()?.toUpperCase() || "FILE";
+                            const fileSize = data.fileSize ? (data.fileSize < 1024 * 1024 ? `${(data.fileSize / 1024).toFixed(0)} KB` : `${(data.fileSize / (1024 * 1024)).toFixed(1)} MB`) : fileExt;
+                            return (
+                              <a
+                                href={data.url}
+                                download={displayName}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-4 py-1.5 px-2 min-w-[220px] max-w-[320px] group/file hover:brightness-110 transition-all"
+                              >
+                                <div className={cn(
+                                  "h-14 w-14 flex items-center justify-center rounded-2xl shrink-0 shadow-lg",
+                                  isOwn
+                                    ? "bg-white/15 shadow-white/5"
+                                    : "bg-gradient-to-br from-red-500/20 to-orange-500/20 shadow-red-500/10"
+                                )}>
+                                  <FileText className={cn("h-7 w-7", isOwn ? "text-white/80" : "text-red-400")} />
+                                </div>
+                                <div className="flex-1 min-w-0 space-y-0.5">
+                                  <p className="text-sm font-bold truncate leading-tight">{displayName}</p>
+                                  <p className={cn(
+                                    "text-[10px] font-semibold uppercase tracking-widest",
+                                    isOwn ? "text-white/40" : "text-muted-foreground/40"
+                                  )}>{fileSize} · {fileExt}</p>
+                                </div>
+                                <div className={cn(
+                                  "h-9 w-9 flex items-center justify-center rounded-full shrink-0 transition-all group-hover/file:scale-110",
+                                  isOwn ? "bg-white/10 group-hover/file:bg-white/20" : "bg-white/[0.06] group-hover/file:bg-white/10"
+                                )}>
+                                  <Download className={cn("h-4 w-4", isOwn ? "text-white/60" : "text-white/40")} />
+                                </div>
+                              </a>
+                            );
+                          })()
                           ) : data.type === "audio" && data.url ? (
                             <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
                               <button
