@@ -304,15 +304,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   }, [messages]);
 
   const LinkPreview = ({ url }: { url: string }) => {
+    const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
     let domain: string;
     try {
-      domain = new URL(url).hostname;
+      domain = new URL(normalizedUrl).hostname;
     } catch {
       domain = url;
     }
     return (
       <motion.a
-        href={url}
+        href={normalizedUrl}
         target="_blank"
         rel="noopener noreferrer"
         initial={{ opacity: 0, scale: 0.95 }}
