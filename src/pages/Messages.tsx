@@ -274,8 +274,8 @@ export default function Messages() {
             {pinnedConversations.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-4 ml-2">
-                  <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                  <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Pinned</h2>
+                  <Star className="h-3 w-3 text-primary fill-primary" />
+                  <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Pinned</h2>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                   {pinnedConversations.map((conv) => (
