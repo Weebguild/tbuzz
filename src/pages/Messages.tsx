@@ -225,14 +225,14 @@ export default function Messages() {
               <motion.h1
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-5xl font-black tracking-tight uppercase leading-none"
+                className="text-5xl font-black tracking-widest uppercase leading-none drop-shadow-md"
               >
                 Messages
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.4 }}
-                className="text-[10px] font-bold tracking-[0.4em] uppercase mt-2 ml-1"
+                className="text-[10px] font-bold tracking-[0.4em] uppercase mt-2 ml-1 text-muted-foreground/80"
               >
                 Chat & Connect
               </motion.p>
@@ -251,7 +251,7 @@ export default function Messages() {
 
           <div className="relative mb-8 group">
             <div className="pointer-events-none absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-accent/30 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
-            <div className="relative flex items-center bg-[#111] border border-white/5 rounded-2xl h-14 px-5 overflow-hidden">
+            <div className="relative flex items-center glass-panel rounded-2xl h-14 px-5 overflow-hidden">
               <Search className="h-4 w-4 text-muted-foreground mr-3" />
               <input
                 type="text"
@@ -274,8 +274,8 @@ export default function Messages() {
             {pinnedConversations.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-4 ml-2">
-                  <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                  <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Pinned</h2>
+                  <Star className="h-3 w-3 text-primary fill-primary" />
+                  <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Pinned</h2>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                   {pinnedConversations.map((conv) => (
@@ -287,7 +287,7 @@ export default function Messages() {
                       <div className="relative group/avatar">
                         <Avatar className={cn(
                           "h-16 w-16 ring-4 transition-all",
-                          conversationId === conv.conversation_id ? "ring-primary shadow-xl scale-105" : "ring-[#050505] group-hover/avatar:ring-white/20"
+                          conversationId === conv.conversation_id ? "ring-primary shadow-xl scale-105" : "ring-primary/30 group-hover/avatar:ring-primary/50"
                         )}>
                           <AvatarImage src={conv.other_user.avatar_url || ""} />
                           <AvatarFallback className="bg-[#111] text-lg font-black">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
@@ -310,7 +310,7 @@ export default function Messages() {
 
             <section>
               <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Recent Messages</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Recent Messages</h2>
                 <div className="h-1 w-1 rounded-full bg-white/20" />
               </div>
 
@@ -322,8 +322,8 @@ export default function Messages() {
                     className={cn(
                       "w-full text-left p-4 rounded-3xl transition-all flex items-center gap-4 relative group overflow-hidden border",
                       conversationId === conv.conversation_id
-                        ? "bg-white/5 border-white/10 shadow-xl"
-                        : "bg-transparent border-transparent hover:bg-white/[0.03] hover:border-white/5"
+                        ? "glass-panel border-white/10 shadow-xl"
+                        : "bg-transparent border-transparent hover:bg-white/[0.03] hover:backdrop-blur-sm hover:border-white/5"
                     )}
                   >
                     <div className="relative shrink-0">
@@ -344,9 +344,14 @@ export default function Messages() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-4">
-                        <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-white/40")}>
-                          {conv.last_message || "No messages yet"}
-                        </p>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {conv.unread_count > 0 && (
+                            <div className="h-2 w-2 rounded-full bg-primary shrink-0 shadow-[0_0_6px_hsl(var(--primary)/0.6)]" />
+                          )}
+                          <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-white/40")}>
+                            {conv.last_message || "No messages yet"}
+                          </p>
+                        </div>
                         <button
                           onClick={(e) => togglePin(e, conv.conversation_id)}
                           className="p-2 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-all text-white/20 hover:text-white"
@@ -365,7 +370,7 @@ export default function Messages() {
           <div className="p-4 border-t border-white/5">
             <button
               onClick={() => setShowSearchModal(true)}
-              className="w-full h-12 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="w-full h-12 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"
             >
               <Plus className="h-4 w-4 stroke-[3px]" />
               New Conversation
@@ -380,10 +385,12 @@ export default function Messages() {
           {conversationId ? (
             <ChatRoom desktop={true} />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-20">
-              <Mail className="h-20 w-20 mb-6 stroke-[0.5px]" />
-              <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Select a Chat</h2>
-              <p className="text-xs uppercase tracking-widest mt-4">Pick a conversation to start messaging</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-30">
+              <div className="glass-panel rounded-3xl p-12 flex flex-col items-center">
+                <Mail className="h-20 w-20 mb-6 stroke-[0.5px]" />
+                <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Select a Chat</h2>
+                <p className="text-xs uppercase tracking-widest mt-4 text-muted-foreground/80">Pick a conversation to start messaging</p>
+              </div>
             </div>
           )}
         </div>
