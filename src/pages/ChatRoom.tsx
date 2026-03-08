@@ -338,22 +338,31 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     return text.match(urlRegex);
   };
 
-  const renderMessageText = (text: string) => {
+  const renderMessageText = (text: string, isOwn: boolean) => {
     const urlRegex = /(https?:\/\/[^\s]+|(?:[\w-]+\.)+(?:com|org|net|io|dev|in|co|app|me|info|biz|edu|gov|xyz|ai|us|uk|de|fr|jp|ru|br|ca|au|it|es|nl|se|no|fi|dk|pl|cz|kr|tw|hk|sg|my|id|th|ph|vn|pk|bd|lk|np|ng|za|ke|eg|ar|cl|mx|co\.in|co\.uk|co\.jp|co\.kr)(?:\/[^\s]*)?)/gi;
     const parts = text.split(urlRegex);
+
     if (parts.length === 1) return text;
+
     return parts.map((part, i) => {
       if (!part) return null;
+
       // When splitting by a capturing group, matches land at odd indices
       if (i % 2 === 1) {
         const href = part.startsWith("http") ? part : `https://${part}`;
+
         return (
           <a
             key={i}
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary font-semibold underline decoration-primary/30 hover:text-primary/80 transition-colors"
+            className={cn(
+              "font-semibold underline transition-colors story-link",
+              isOwn
+                ? "text-primary-foreground decoration-primary-foreground/60 hover:text-primary-foreground/80"
+                : "text-primary decoration-primary/40 hover:text-primary/80"
+            )}
             onMouseEnter={(e) => handleLinkMouseEnter(href, e)}
             onMouseMove={handleLinkMouseMove}
             onMouseLeave={handleLinkMouseLeave}
@@ -362,6 +371,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </a>
         );
       }
+
       return <span key={i}>{part}</span>;
     });
   };
