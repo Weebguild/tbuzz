@@ -42,6 +42,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [recipientStats, setRecipientStats] = useState<{ followers: number; following: number }>({ followers: 0, following: 0 });
+  const [emojiDrawerMsgId, setEmojiDrawerMsgId] = useState<string | null>(null);
 
   // Gesture handling for back navigation
   const x = useMotionValue(0);
