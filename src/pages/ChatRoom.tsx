@@ -632,7 +632,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
               {isTyping && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mt-4">
-                  <div className="h-8 w-12 bg-[#111] rounded-full flex items-center justify-center gap-1.5 px-3">
+                  <div className="h-8 w-12 bg-white/[0.04] backdrop-blur-sm border border-white/5 rounded-full flex items-center justify-center gap-1.5 px-3">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" />
