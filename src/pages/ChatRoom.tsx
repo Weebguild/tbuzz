@@ -726,7 +726,6 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               </a>
                             );
                             })()
-                          )
                           ) : data.type === "audio" && data.url ? (
                             <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
                               <button
