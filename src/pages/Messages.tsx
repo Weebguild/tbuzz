@@ -287,7 +287,7 @@ export default function Messages() {
                       <div className="relative group/avatar">
                         <Avatar className={cn(
                           "h-16 w-16 ring-4 transition-all",
-                          conversationId === conv.conversation_id ? "ring-primary shadow-xl scale-105" : "ring-[#050505] group-hover/avatar:ring-white/20"
+                          conversationId === conv.conversation_id ? "ring-primary shadow-xl scale-105" : "ring-primary/30 group-hover/avatar:ring-primary/50"
                         )}>
                           <AvatarImage src={conv.other_user.avatar_url || ""} />
                           <AvatarFallback className="bg-[#111] text-lg font-black">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
