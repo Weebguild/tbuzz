@@ -359,11 +359,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         desktop ? "relative h-full w-full" : "fixed inset-0"
       )}
     >
-      {/* Background Gradients */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-[-20%] w-[60%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 left-[-20%] w-[60%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
-      </div>
+      {/* Background handled by global aurora */}
 
       {/* Flagship Header */}
       <header
