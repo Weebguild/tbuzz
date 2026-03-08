@@ -175,9 +175,15 @@ export default function Messages() {
     let typingChannels: ReturnType<typeof supabase.channel>[] = [];
     setupTypingChannels().then(ch => { typingChannels = ch; });
 
+    let debounceTimer: NodeJS.Timeout;
+    const debouncedFetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(fetchConversations, 500);
+    };
+
     const channel = supabase
       .channel('messages-inbox')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchConversations)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, debouncedFetch)
       .subscribe();
 
     return () => {
