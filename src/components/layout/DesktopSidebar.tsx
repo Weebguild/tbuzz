@@ -97,8 +97,17 @@ export function DesktopSidebar() {
         onMouseLeave={() => mouseY.set(Infinity)}
       >
         <Link to="/feed" className="group">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)] group-hover:scale-110 transition-transform cursor-pointer relative overflow-hidden">
-            <span className="text-3xl font-black text-white relative z-10" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>T</span>
+          <div className="h-12 w-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center cursor-pointer relative transition-all duration-300 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.25)]">
+            <span
+              className="text-[28px] font-black relative z-10 leading-none"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                backgroundImage: "linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.65) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >T</span>
+            <span className="absolute bottom-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-primary" />
           </div>
         </Link>
         <TooltipProvider delayDuration={200}>
