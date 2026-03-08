@@ -139,52 +139,61 @@ export function UserHoverCard({ userId, children, className }: UserHoverCardProp
 
     const fetchUserData = async () => {
         if (loading || profile) return;
+
+        // Check cache first
+        const cached = getCachedData(userId);
+        if (cached) {
+            setProfile(cached.profile);
+            setStats(cached.stats);
+            setRecentPosts(cached.recentPosts);
+            return;
+        }
+
         setLoading(true);
 
         try {
-            // Fetch Profile
-            const { data: profileData } = await supabase
-                .from("profiles")
-                .select("user_id, display_name, avatar_url, bio, department, year")
-                .eq("user_id", userId)
-                .single();
-
-            if (profileData) setProfile(profileData);
-
-            // Fetch Stats
-            const [{ count: followersCount }, { count: followingCount }] = await Promise.all([
+            // Fetch Profile, Stats, and Posts in parallel
+            const [{ data: profileData }, { count: followersCount }, { count: followingCount }, { data: postsData }] = await Promise.all([
+                supabase
+                    .from("profiles")
+                    .select("user_id, display_name, avatar_url, bio, department, year")
+                    .eq("user_id", userId)
+                    .single(),
                 supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", userId),
                 supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", userId),
+                supabase
+                    .from("posts")
+                    .select("id, content, image_url, created_at, reactions(id)")
+                    .eq("user_id", userId)
+                    .order("created_at", { ascending: false })
+                    .limit(40),
             ]);
 
-            setStats({
-                followers: followersCount || 0,
-                following: followingCount || 0,
-            });
+            const fetchedProfile = profileData as UserProfile | null;
+            const fetchedStats = { followers: followersCount || 0, following: followingCount || 0 };
 
-            // Fetch posts with reaction counts to determine "top 3"
-            const { data: postsData } = await supabase
-                .from("posts")
-                .select("id, content, image_url, created_at, reactions(id)")
-                .eq("user_id", userId)
-                .order("created_at", { ascending: false })
-                .limit(40); // Fetch a larger sample to find the top ones
-
+            let fetchedPosts: RecentPost[] = [];
             if (postsData) {
-                // Map to include reaction counts
                 const processed = postsData.map(p => ({
                     ...p,
                     reaction_count: (p.reactions as any[])?.length || 0
                 }));
-
-                // Sort by reaction count (popularity) first, then date
                 processed.sort((a, b) => b.reaction_count - a.reaction_count || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                fetchedPosts = processed.slice(0, 3);
+            }
 
-                // Take top 3
-                const topPostsData = processed.slice(0, 3);
+            if (fetchedProfile) {
+                setProfile(fetchedProfile);
+                setStats(fetchedStats);
+                setRecentPosts(fetchedPosts);
 
-                // Keep the logic for initializing recentPosts state (renamed the logic variable for clarity)
-                setRecentPosts(topPostsData);
+                // Store in cache
+                userDataCache.set(userId, {
+                    profile: fetchedProfile,
+                    stats: fetchedStats,
+                    recentPosts: fetchedPosts,
+                    fetchedAt: Date.now(),
+                });
             }
         } catch (error) {
             console.error("Error fetching user preview data:", error);
