@@ -341,9 +341,11 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const renderMessageText = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+|(?:[\w-]+\.)+(?:com|org|net|io|dev|in|co|app|me|info|biz|edu|gov|xyz|ai|us|uk|de|fr|jp|ru|br|ca|au|it|es|nl|se|no|fi|dk|pl|cz|kr|tw|hk|sg|my|id|th|ph|vn|pk|bd|lk|np|ng|za|ke|eg|ar|cl|mx|co\.in|co\.uk|co\.jp|co\.kr)(?:\/[^\s]*)?)/gi;
     const parts = text.split(urlRegex);
+    if (parts.length === 1) return text;
     return parts.map((part, i) => {
-      if (urlRegex.test(part)) {
-        urlRegex.lastIndex = 0;
+      if (!part) return null;
+      // When splitting by a capturing group, matches land at odd indices
+      if (i % 2 === 1) {
         const href = part.startsWith("http") ? part : `https://${part}`;
         return (
           <a
@@ -360,8 +362,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </a>
         );
       }
-      urlRegex.lastIndex = 0;
-      return part;
+      return <span key={i}>{part}</span>;
     });
   };
 
