@@ -148,7 +148,7 @@ export function DesktopChatLayout() {
                             {item.active && (
                                 <motion.div layoutId="sidebar-active" className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full" />
                             )}
-                            <div className="absolute left-full ml-4 px-2 py-1 bg-white text-black text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 capitalize">
+                            <div className="absolute left-full ml-4 px-2 py-1 bg-white text-black text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-[100] capitalize">
                                 {item.path.split('/').pop() || 'feed'}
                             </div>
                         </Link>
