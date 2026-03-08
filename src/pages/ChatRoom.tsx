@@ -697,7 +697,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                             </div>
                           ) : (
                             <div>
-                              <p className="whitespace-pre-wrap">{data.content || data.text}</p>
+                              <p className="whitespace-pre-wrap">{renderMessageText(data.content || data.text || "")}</p>
                               {data.content && getUrlFromText(data.content)?.map((url, i) => (
                                 <LinkPreview key={i} url={url} />
                               ))}
