@@ -364,7 +364,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Flagship Header */}
       <header
         onPointerDown={(e) => !showChatSearch && dragControls.start(e)}
-        className="relative z-30 px-6 py-5 flex items-center justify-between bg-[#050505]/40 backdrop-blur-3xl border-b border-white/[0.03]"
+        className="relative z-30 px-6 py-5 flex items-center justify-between bg-white/[0.02] backdrop-blur-xl border-b border-white/5"
       >
         <div className="flex items-center gap-5 flex-1 mr-4">
           {!showChatSearch ? (
