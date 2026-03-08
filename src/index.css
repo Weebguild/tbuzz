@@ -147,7 +147,7 @@
 }
 
 .card-heat-high {
-  animation: fire-flicker 0.15s ease-in-out infinite alternate;
+  animation: fire-flicker 1.5s ease-in-out infinite alternate;
   border-radius: 2rem;
 }
 
