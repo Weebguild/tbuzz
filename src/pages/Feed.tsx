@@ -92,29 +92,29 @@ export default function Feed() {
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
   // Deep-link: scroll to post from notification
+  const deepLinkPostId = searchParams.get("postId");
   useEffect(() => {
-    if (loading || posts.length === 0) return;
-    const targetPostId = searchParams.get("postId");
-    if (!targetPostId) return;
+    if (loading || posts.length === 0 || !deepLinkPostId) return;
 
     const showComments = searchParams.get("showComments") === "true";
 
     // Small delay to let DOM render
     const timer = setTimeout(() => {
-      const el = document.getElementById(`post-${targetPostId}`);
+      const el = document.getElementById(`post-${deepLinkPostId}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setHighlightedPostId(targetPostId);
+        setHighlightedPostId(deepLinkPostId);
         if (showComments) {
-          setExpandedComments((prev) => new Set(prev).add(targetPostId));
+          setExpandedComments((prev) => new Set(prev).add(deepLinkPostId));
+          loadComments(deepLinkPostId);
         }
+        setSearchParams({}, { replace: true });
+        setTimeout(() => setHighlightedPostId(null), 2500);
       }
-      setSearchParams({}, { replace: true });
-      setTimeout(() => setHighlightedPostId(null), 2500);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [loading, posts.length]);
+  }, [loading, posts.length, deepLinkPostId]);
 
   const fetchFollowing = async () => {
     if (!user) return;
