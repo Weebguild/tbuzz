@@ -58,6 +58,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     user_id: string;
     display_name: string;
     avatar_url: string | null;
+    department: string | null;
+    year: string | null;
+    bio: string | null;
   } | null>(null);
 
   // Online presence tracking
