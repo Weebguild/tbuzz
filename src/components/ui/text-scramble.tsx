@@ -117,15 +117,23 @@ export function TextScramble({
     return output;
   });
 
-  // Set static scramble on mount
+  // Set static scramble on mount (no animation)
+  const initialSetDone = useRef(false);
   useEffect(() => {
     if (revealed || !containerRef.current) return;
-    let html = "";
-    for (let i = 0; i < staticScramble.length; i++) {
-      html += `<span class="${dudClassName}">${escapeHtml(staticScramble[i])}</span>`;
+    if (!initialSetDone.current) {
+      // First time: just set static scramble immediately
+      let html = "";
+      for (let i = 0; i < staticScramble.length; i++) {
+        html += `<span class="${dudClassName}">${escapeHtml(staticScramble[i])}</span>`;
+      }
+      containerRef.current.innerHTML = html;
+      initialSetDone.current = true;
+    } else {
+      // Subsequent times (reverting): animate into scramble
+      scrambleTo(staticScramble);
     }
-    containerRef.current.innerHTML = html;
-  }, [revealed, staticScramble, dudClassName]);
+  }, [revealed, staticScramble, dudClassName, scrambleTo]);
 
   // Reveal animation
   useEffect(() => {
