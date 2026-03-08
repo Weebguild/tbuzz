@@ -204,7 +204,7 @@ export default function Messages() {
   return (
     <div className={cn(
       "bg-[#050505] text-white selection:bg-primary/30 flex",
-      isMobile ? "flex-col min-h-full" : "h-[100dvh] flex-row overflow-hidden"
+      isMobile ? "flex-col min-h-full" : "h-full flex-row overflow-hidden"
     )}>
 
       {/* Conversation List Column */}
