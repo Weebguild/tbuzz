@@ -1,40 +1,118 @@
 
 
-## Issues Found
+# Real-Time Direct Messaging (DM) Feature
 
-### 1. Double Heart Icon (Feed)
-In `Feed.tsx` line 582, `<HeartBurst show={post.has_liked} />` is always rendered when `has_liked` is true — meaning every liked post permanently shows the burst heart overlay (a big filled heart in the center) ON TOP of the regular `<Heart>` icon on line 583. The HeartBurst should only fire momentarily when the user clicks like, not persist based on `has_liked` state.
-
-### 2. Multiple Upvotes Allowed (Gossip)
-In `Gossip.tsx` line 299-306, `toggleUpvote` does a simple insert without checking for duplicates. The `reactions` table has no unique constraint on `(user_id, gossip_post_id)`, so a user can spam-click and insert multiple upvote rows. The same issue exists in `Feed.tsx` line 259-266 for `toggleLike` with `(user_id, post_id)`.
-
-### 3. No Optimistic UI Guard
-Both `toggleUpvote` and `toggleLike` don't disable the button or use optimistic state — the user can click rapidly before the async operation completes, inserting duplicate reactions.
+## Overview
+Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
 
 ---
 
-## Plan
+## Phase 1: Database Schema & Security
 
-### A. Fix HeartBurst in Feed (double heart)
-- Add a `burstingPostId` state (`string | null`) in Feed.tsx
-- When user clicks like (and it's not already liked), set `burstingPostId = post.id`
-- Pass `show={burstingPostId === post.id}` to `<HeartBurst>` instead of `show={post.has_liked}`
-- On `onComplete` callback, reset `burstingPostId` to `null`
-- This makes the burst animation fire once on click, then disappear
+### Migration: Create tables, functions, RLS, and realtime
 
-### B. Add unique constraint on reactions table
-- Create a migration adding a unique index on `(user_id, post_id)` where `post_id IS NOT NULL` and another on `(user_id, gossip_post_id)` where `gossip_post_id IS NOT NULL`
-- This prevents duplicate reactions at the database level
+**New tables:**
+- `conversations` (id uuid PK, created_at, updated_at)
+- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
+- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
 
-### C. Add optimistic UI + guard for like/upvote
-- **Feed `toggleLike`**: Add optimistic state update (toggle `has_liked` and adjust `reaction_count` immediately), add an `isLiking` guard ref to prevent double-clicks
-- **Gossip `toggleUpvote`**: Same pattern — optimistic toggle of `has_upvoted` and `upvote_count`, plus guard ref
-- Use `.eq("reaction_type", "like")` / `.eq("reaction_type", "upvote")` in the delete queries for safety
+**Security definer functions:**
+- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
+- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
 
-### Files Changed
-| File | Change |
-|------|--------|
-| `src/pages/Feed.tsx` | Fix HeartBurst to use transient state; add optimistic like toggle with guard |
-| `src/pages/Gossip.tsx` | Add optimistic upvote toggle with guard |
-| Migration | Add unique partial indexes on `reactions` table |
+**RLS policies (all restrictive):**
+- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
+- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
+- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
+- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
+
+**Realtime:** Enable realtime for `messages` table.
+
+**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
+
+---
+
+## Phase 2: Frontend -- New Files
+
+### `src/hooks/use-messages.ts`
+Custom hook that:
+- Fetches message history for a conversation ordered by created_at ASC
+- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
+- Returns messages array, sendMessage function, loading state
+
+### `src/pages/Messages.tsx` (Inbox)
+- Route: `/messages`
+- Lists all conversations for the current user
+- Shows other participant's avatar, name, last message snippet, timestamp
+- Clicking a conversation navigates to `/messages/:conversationId`
+- Sorted by `updated_at` descending
+
+### `src/pages/ChatRoom.tsx`
+- Route: `/messages/:conversationId`
+- Header: back button, recipient avatar + name
+- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
+- Auto-scroll to bottom on new messages
+- Input + Send button (paper plane icon) at bottom
+- Marks messages as read when viewing
+
+---
+
+## Phase 3: Profile Page Update
+
+### `src/pages/Profile.tsx`
+- Add state: `isMutualFollow` (boolean)
+- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
+- Next to the Follow/Unfollow button, conditionally render a "Message" button:
+  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
+  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
+
+---
+
+## Phase 4: Routing & Navigation
+
+### `src/App.tsx`
+- Import Messages and ChatRoom pages
+- Add routes inside the ProtectedRoute + AppLayout group:
+  - `/messages` -> Messages
+  - `/messages/:conversationId` -> ChatRoom
+
+### `src/components/layout/BottomNav.tsx`
+- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
+- Add unread badge: query `messages` where `is_read = false` and sender is not current user
+- Real-time subscription for unread count updates
+
+### `src/pages/Feed.tsx`
+- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
+
+---
+
+## Technical Details
+
+```text
+conversations          conversation_participants         messages
++------------+        +------------------------+      +------------------+
+| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
+| created_at |        | user_id                |      | conversation_id  |
+| updated_at |        | id (PK)                |      | sender_id        |
++------------+        +------------------------+      | content          |
+                                                       | is_read          |
+                                                       | created_at       |
+                                                       +------------------+
+```
+
+### Find-or-create conversation logic (client-side):
+1. Query `conversation_participants` to find a conversation where both users participate
+2. If found, navigate to it
+3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
+
+### Files to create:
+- `src/hooks/use-messages.ts`
+- `src/pages/Messages.tsx`
+- `src/pages/ChatRoom.tsx`
+
+### Files to modify:
+- `src/pages/Profile.tsx` (add Message button)
+- `src/App.tsx` (add routes)
+- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
+- `src/pages/Feed.tsx` (add Leaderboard button to header)
 

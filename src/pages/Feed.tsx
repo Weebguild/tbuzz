@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeError } from "@/lib/sanitize-error";
@@ -256,14 +256,38 @@ export default function Feed() {
     }
   };
 
+  const likingRef = useRef<Set<string>>(new Set());
+  const [burstingPostId, setBurstingPostId] = useState<string | null>(null);
+
   const toggleLike = async (postId: string, hasLiked: boolean) => {
-    if (!user) return;
-    if (hasLiked) {
-      await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", user.id);
-    } else {
-      await supabase.from("reactions").insert({ user_id: user.id, post_id: postId, reaction_type: "like" });
+    if (!user || likingRef.current.has(postId)) return;
+    likingRef.current.add(postId);
+
+    // Optimistic update
+    setPosts((prev) => prev.map((p) =>
+      p.id === postId
+        ? { ...p, has_liked: !hasLiked, reaction_count: p.reaction_count + (hasLiked ? -1 : 1) }
+        : p
+    ));
+
+    if (!hasLiked) setBurstingPostId(postId);
+
+    try {
+      if (hasLiked) {
+        await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", user.id).eq("reaction_type", "like");
+      } else {
+        await supabase.from("reactions").insert({ user_id: user.id, post_id: postId, reaction_type: "like" });
+      }
+    } catch {
+      // Revert on error
+      setPosts((prev) => prev.map((p) =>
+        p.id === postId
+          ? { ...p, has_liked: hasLiked, reaction_count: p.reaction_count + (hasLiked ? 1 : -1) }
+          : p
+      ));
+    } finally {
+      likingRef.current.delete(postId);
     }
-    fetchPosts();
   };
 
   const toggleSave = async (postId: string, hasSaved: boolean) => {
@@ -579,7 +603,7 @@ export default function Feed() {
                       transition={{ type: "spring", stiffness: 400, damping: 10 }}
                       className={`relative flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
                     >
-                      <HeartBurst show={post.has_liked} />
+                      <HeartBurst show={burstingPostId === post.id} onComplete={() => setBurstingPostId(null)} />
                       <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
                       {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
                     </motion.button>
