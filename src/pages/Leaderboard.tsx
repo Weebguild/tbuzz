@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Trophy, Crown, Calendar, CalendarDays, Flame, User as UserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 import { UserHoverCard } from "@/components/ui/UserHoverCard";
 
 interface LeaderboardEntry {
