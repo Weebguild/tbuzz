@@ -334,7 +334,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   };
 
   const getUrlFromText = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urlRegex = /(https?:\/\/[^\s]+|(?:[\w-]+\.)+(?:com|org|net|io|dev|in|co|app|me|info|biz|edu|gov|xyz|ai|us|uk|de|fr|jp|ru|br|ca|au|it|es|nl|se|no|fi|dk|pl|cz|kr|tw|hk|sg|my|id|th|ph|vn|pk|bd|lk|np|ng|za|ke|eg|ar|cl|mx|co\.in|co\.uk|co\.jp|co\.kr)(?:\/[^\s]*)?)/gi;
     return text.match(urlRegex);
   };
 
