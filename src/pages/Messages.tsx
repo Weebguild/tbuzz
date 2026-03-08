@@ -344,9 +344,14 @@ export default function Messages() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-4">
-                        <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-white/40")}>
-                          {conv.last_message || "No messages yet"}
-                        </p>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {conv.unread_count > 0 && (
+                            <div className="h-2 w-2 rounded-full bg-primary shrink-0 shadow-[0_0_6px_hsl(var(--primary)/0.6)]" />
+                          )}
+                          <p className={cn("text-xs truncate flex-1", conv.unread_count > 0 ? "text-primary font-black" : "text-white/40")}>
+                            {conv.last_message || "No messages yet"}
+                          </p>
+                        </div>
                         <button
                           onClick={(e) => togglePin(e, conv.conversation_id)}
                           className="p-2 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-all text-white/20 hover:text-white"
