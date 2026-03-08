@@ -688,7 +688,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
                               {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
                             </div>
-                          ) : data.type === "file" && data.url ? (() => {
+                          ) : data.type === "file" && data.url ? (
+                            (() => {
                             const fileName = data.fileName || data.url.split("/").pop()?.split("?")[0] || "Document";
                             const displayName = fileName.replace(/^\d+\./, "");
                             const fileExt = fileName.split(".").pop()?.toUpperCase() || "FILE";
@@ -724,7 +725,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                                 </div>
                               </a>
                             );
-                          })()
+                            })()
+                          )
                           ) : data.type === "audio" && data.url ? (
                             <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
                               <button
