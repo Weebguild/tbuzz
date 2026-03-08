@@ -356,10 +356,12 @@ export default function Messages() {
                         <AvatarImage src={conv.other_user.avatar_url || ""} />
                         <AvatarFallback className="bg-muted text-base font-bold">{conv.other_user.display_name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background relative">
-                        <div className="absolute inset-0 bg-success rounded-full animate-ping opacity-25" />
-                        <div className="absolute inset-0 bg-success rounded-full" />
-                      </div>
+                      {conv.unread_count > 0 && (
+                        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background">
+                          <div className="absolute inset-0 bg-primary rounded-full animate-ping opacity-25" />
+                          <div className="absolute inset-0 bg-primary rounded-full" />
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
