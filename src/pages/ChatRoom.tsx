@@ -666,7 +666,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Flagship Input Experience */}
       <footer
         onPointerDown={(e) => e.stopPropagation()}
-        className="relative z-40 px-6 pb-10 pt-4 bg-white/[0.02] backdrop-blur-xl border-t border-white/5"
+        className="relative z-40 px-6 pb-6 pt-3 bg-transparent backdrop-blur-xl"
       >
         <AnimatePresence>
           {replyingTo && (
