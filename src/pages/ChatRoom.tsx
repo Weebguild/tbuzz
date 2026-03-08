@@ -57,6 +57,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     avatar_url: string | null;
   } | null>(null);
 
+  // Online presence tracking
+  const [isRecipientOnline, setIsRecipientOnline] = useState(false);
+
   // Media state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -88,6 +91,35 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     };
     fetchRecipient();
   }, [conversationId, user]);
+
+  // Presence channel for online status
+  useEffect(() => {
+    if (!conversationId || !user || !recipient) return;
+    const presenceChannel = supabase.channel(`presence:chat:${conversationId}`, {
+      config: { presence: { key: user.id } },
+    });
+
+    presenceChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = presenceChannel.presenceState();
+        setIsRecipientOnline(!!state[recipient.user_id]?.length);
+      })
+      .on("presence", { event: "join" }, ({ key }) => {
+        if (key === recipient.user_id) setIsRecipientOnline(true);
+      })
+      .on("presence", { event: "leave" }, ({ key }) => {
+        if (key === recipient.user_id) setIsRecipientOnline(false);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [conversationId, user, recipient]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -439,15 +471,23 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                         {recipient.display_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-background" />
+                    {isRecipientOnline && (
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-background" />
+                    )}
                   </div>
                   <div className="flex flex-col">
                     <span className="font-black text-base tracking-tight leading-none mb-1">
                       {recipient.display_name}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary/80">Online</span>
+                      {isRecipientOnline ? (
+                        <>
+                          <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-success/80">Online</span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Offline</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -607,7 +647,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                       <div className="relative group/bubble">
                         <div
                           className={cn(
-                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative",
+                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden",
                             isOwn
                               ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
                               : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
@@ -654,8 +694,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               </div>
                             </div>
                           ) : (
-                            <div>
-                              <p className="whitespace-pre-wrap">{renderMessageText(data.content || data.text || "", isOwn)}</p>
+                            <div className="overflow-hidden">
+                              <p className="whitespace-pre-wrap break-words" style={{ wordBreak: "break-word" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
                             </div>
                           )}
                         </div>
@@ -691,14 +731,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
                       {isLastInGroup && (
                         <div className={cn(
-                          "flex items-center gap-2 mt-1 px-2 opacity-30",
+                          "flex items-center gap-2 mt-1 px-2",
                           isOwn ? "flex-row-reverse" : "flex-row"
                         )}>
-                          <span className="text-[9px] font-black uppercase tracking-widest">
+                          <span className="text-[9px] font-black uppercase tracking-widest opacity-30">
                             {formatDistanceToNow(new Date(msg.created_at))}
                           </span>
                           {isOwn && (
-                            msg.is_read ? <CheckCheck className="h-3 w-3 text-primary" /> : <Check className="h-3 w-3" />
+                            msg.is_read
+                              ? <CheckCheck className="h-3.5 w-3.5 text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.4)]" />
+                              : <Check className="h-3 w-3 text-white/40" />
                           )}
                         </div>
                       )}
