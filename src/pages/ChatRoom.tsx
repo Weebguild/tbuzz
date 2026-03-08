@@ -688,6 +688,22 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
                               {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
                             </div>
+                          ) : data.type === "file" && data.url ? (
+                            <a
+                              href={data.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 py-1 px-2 min-w-[200px] hover:opacity-80 transition-opacity"
+                            >
+                              <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/20 shrink-0">
+                                <FileText className="h-6 w-6 text-red-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold truncate">{data.text || "PDF Document"}</p>
+                                <p className="text-[10px] uppercase tracking-widest opacity-50">PDF</p>
+                              </div>
+                              <Download className="h-4 w-4 opacity-40 shrink-0" />
+                            </a>
                           ) : data.type === "audio" && data.url ? (
                             <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
                               <button
