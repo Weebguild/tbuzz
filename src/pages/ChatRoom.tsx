@@ -694,8 +694,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               </div>
                             </div>
                           ) : (
-                            <div>
-                              <p className="whitespace-pre-wrap">{renderMessageText(data.content || data.text || "", isOwn)}</p>
+                            <div className="overflow-hidden">
+                              <p className="whitespace-pre-wrap break-words" style={{ wordBreak: "break-word" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
                             </div>
                           )}
                         </div>
