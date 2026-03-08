@@ -12,7 +12,7 @@ import {
   Play, Pause, Image as ImageIcon, Video as VideoIcon,
   Trash2, Volume2, ChevronLeft, Info, MoreVertical,
   Smile, Reply, Share2, Copy, ExternalLink, Link as LinkIcon,
-  Search, BellOff, Ban, Ghost
+  Search, BellOff, Ban, Ghost, Users, UserCheck, GraduationCap, CalendarDays
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -367,7 +367,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Flagship Header */}
       <header
         onPointerDown={(e) => !showChatSearch && dragControls.start(e)}
-        className="relative z-30 px-6 py-5 flex items-center justify-between bg-transparent backdrop-blur-xl shadow-[0_1px_12px_rgba(0,0,0,0.15)]"
+        className="relative z-30 px-6 py-5 flex items-center justify-between bg-transparent backdrop-blur-xl"
       >
         <div className="flex items-center gap-5 flex-1 mr-4">
           {!showChatSearch ? (
@@ -647,7 +647,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </div>
         </ScrollArea>
         {/* Gradient fade into input */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-t from-background/40 to-transparent z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none bg-gradient-to-t from-background/20 to-transparent z-10" />
         <AnimatePresence>
           {showScrollButton && (
             <motion.button
@@ -794,53 +794,96 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         {showInfo && recipient && (
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-3xl flex flex-col pt-12"
+            className="fixed inset-0 z-[100] bg-[#0A0A0A]/95 backdrop-blur-2xl flex flex-col"
           >
-            <div className="px-6 flex items-center justify-between mb-8">
-              <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.05] hover:bg-white/[0.08] transition-colors">
-                <X className="h-6 w-6" />
+            {/* Header */}
+            <div className="px-6 pt-12 pb-4 flex items-center justify-between">
+              <button onClick={() => setShowInfo(false)} className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05] hover:bg-white/[0.08] transition-colors">
+                <X className="h-5 w-5" />
               </button>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Details</h2>
-              <div className="w-12" />
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary/60">Details</h2>
+              <div className="w-10" />
             </div>
 
-            <ScrollArea className="flex-1 px-8">
-              <div className="glass-card-modern mb-10">
-                <div className="glass-card-inner flex flex-col items-center p-8">
-                  <Avatar className="h-28 w-28 ring-4 ring-primary/20 shadow-2xl mb-5">
-                    <AvatarImage src={recipient.avatar_url || ""} />
-                    <AvatarFallback className="text-4xl font-black bg-white/5">
-                      {recipient.display_name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h3 className="text-2xl font-black tracking-tighter mb-2">{recipient.display_name}</h3>
-                  <p className="text-[9px] text-primary font-black uppercase tracking-[0.3em] bg-primary/10 px-4 py-1.5 rounded-full">Mutual Connection</p>
-                </div>
-              </div>
+            <ScrollArea className="flex-1">
+              <div className="px-6 pb-12">
+                {/* ─── Profile Section ─── */}
+                <div className="flex flex-col items-center pt-4 pb-6">
+                  <div className="relative mb-5">
+                    <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 blur-sm opacity-60" />
+                    <Avatar className="relative h-24 w-24 border-2 border-[#1A1A1A] ring-2 ring-primary/30">
+                      <AvatarImage src={recipient.avatar_url || ""} className="object-cover" />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/20 text-white text-3xl font-black">
+                        {recipient.display_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
 
-              <div className="space-y-6">
-                <div className="glass-card-modern">
-                  <div className="glass-card-inner p-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 mb-5">Shared Media</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {sharedMedia.slice(0, 9).map((media, i) => (
-                        <div key={i} className="aspect-square rounded-2xl bg-white/5 overflow-hidden group cursor-pointer" onClick={() => setSelectedMedia(media.url)}>
-                          <img src={media.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        </div>
-                      ))}
-                      {sharedMedia.length === 0 && <p className="col-span-3 text-center py-6 text-muted-foreground/40 text-xs italic">No shared media yet</p>}
-                    </div>
+                  <h3 className="text-2xl font-extrabold text-white tracking-tight mb-2">{recipient.display_name}</h3>
+
+                  {/* Pills */}
+                  <div className="flex flex-wrap justify-center gap-1.5 mb-3">
+                    {(recipient as any).department && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
+                        <GraduationCap className="h-2.5 w-2.5 text-primary/70" />
+                        {(recipient as any).department}
+                      </span>
+                    )}
+                    {(recipient as any).year && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 rounded-full">
+                        <CalendarDays className="h-2.5 w-2.5 text-accent/70" />
+                        {(recipient as any).year}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                      Mutual Connection
+                    </span>
+                  </div>
+
+                  {/* Bio */}
+                  {(recipient as any).bio && (
+                    <p className="text-[12px] text-zinc-400 text-center line-clamp-2 leading-[1.6] max-w-[280px]">
+                      {(recipient as any).bio}
+                    </p>
+                  )}
+                </div>
+
+                {/* ─── Stats Bar ─── */}
+                <div className="flex justify-center gap-8 py-4 border-y border-white/[0.05] mb-6">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3 w-3 text-primary/60" />
+                    <span className="text-sm font-black text-white">—</span>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Followers</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <UserCheck className="h-3 w-3 text-accent/60" />
+                    <span className="text-sm font-black text-white">—</span>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Following</span>
                   </div>
                 </div>
 
-                <div className="glass-card-modern">
-                  <div className="glass-card-inner p-0 divide-y divide-white/[0.03]">
-                    <button className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold">
-                      <div className="flex items-center gap-4 text-foreground/60">
-                        <Share2 className="h-5 w-5" />
-                        <span>Share Profile</span>
+                {/* ─── Shared Media ─── */}
+                <div className="mb-6">
+                  <h4 className="text-[10px] font-bold text-zinc-500 mb-3 uppercase tracking-[0.15em]">Shared Media</h4>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {sharedMedia.slice(0, 9).map((media, i) => (
+                      <div key={i} className="aspect-square rounded-xl bg-white/[0.03] overflow-hidden group cursor-pointer" onClick={() => setSelectedMedia(media.url)}>
+                        <img src={media.url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       </div>
-                      <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                    ))}
+                    {sharedMedia.length === 0 && (
+                      <p className="col-span-3 text-center py-8 text-zinc-600 text-[11px]">No shared media yet</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* ─── Actions ─── */}
+                <div className="mb-4">
+                  <h4 className="text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-[0.15em]">Actions</h4>
+                  <div className="space-y-0.5">
+                    <button className="w-full flex items-center gap-4 p-3.5 rounded-xl hover:bg-white/[0.04] transition-colors text-sm font-semibold text-zinc-300">
+                      <Share2 className="h-4 w-4 text-zinc-500" />
+                      Share Profile
                     </button>
                     <button
                       onClick={() => {
@@ -850,48 +893,37 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                           toast.success("Profile link copied");
                         }
                       }}
-                      className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
+                      className="w-full flex items-center gap-4 p-3.5 rounded-xl hover:bg-white/[0.04] transition-colors text-sm font-semibold text-zinc-300"
                     >
-                      <div className="flex items-center gap-4 text-foreground/60">
-                        <Copy className="h-5 w-5" />
-                        <span>Copy Profile Link</span>
-                      </div>
-                      <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                      <Copy className="h-4 w-4 text-zinc-500" />
+                      Copy Profile Link
                     </button>
                     <button
                       onClick={handleMute}
-                      className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
+                      className="w-full flex items-center gap-4 p-3.5 rounded-xl hover:bg-white/[0.04] transition-colors text-sm font-semibold text-zinc-300"
                     >
-                      <div className="flex items-center gap-4 text-foreground/60">
-                        {isMuted ? <Volume2 className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-                        <span>{isMuted ? "Unmute Notifications" : "Mute Notifications"}</span>
-                      </div>
-                      <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                      {isMuted ? <Volume2 className="h-4 w-4 text-zinc-500" /> : <BellOff className="h-4 w-4 text-zinc-500" />}
+                      {isMuted ? "Unmute Notifications" : "Mute Notifications"}
                     </button>
                   </div>
                 </div>
 
-                <div className="glass-card-modern">
-                  <div className="glass-card-inner p-0 divide-y divide-white/[0.03]">
-                    <button
-                      onClick={handleBlock}
-                      className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Ban className="h-5 w-5" />
-                        <span>Block User</span>
-                      </div>
-                    </button>
-                    <button
-                      onClick={handleClearHistory}
-                      className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Trash2 className="h-5 w-5" />
-                        <span>Delete Conversation</span>
-                      </div>
-                    </button>
-                  </div>
+                {/* ─── Destructive Actions ─── */}
+                <div className="pt-4 border-t border-white/[0.05] space-y-0.5">
+                  <button
+                    onClick={handleBlock}
+                    className="w-full flex items-center gap-4 p-3.5 rounded-xl hover:bg-white/[0.04] transition-colors text-sm font-semibold text-destructive/70"
+                  >
+                    <Ban className="h-4 w-4" />
+                    Block User
+                  </button>
+                  <button
+                    onClick={handleClearHistory}
+                    className="w-full flex items-center gap-4 p-3.5 rounded-xl hover:bg-white/[0.04] transition-colors text-sm font-semibold text-destructive/70"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Conversation
+                  </button>
                 </div>
               </div>
             </ScrollArea>
