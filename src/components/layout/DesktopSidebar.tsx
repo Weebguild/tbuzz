@@ -79,10 +79,10 @@ export function DesktopSidebar() {
     return val - rect.y - rect.height / 2;
   });
   const searchSize = useSpring(
-    useTransform(searchDistance, [-120, 0, 120], [24, 40, 24]),
+    useTransform(searchDistance, [-120, 0, 120], [44, 56, 44]),
     { mass: 0.1, stiffness: 150, damping: 12 }
   );
-  const searchIconSize = useTransform(searchSize, (val) => val * 0.6);
+  const searchIconSize = useTransform(searchSize, (val) => val * 0.5);
 
   const isActive = (path: string) => {
     if (path === "/feed") return location.pathname === "/feed" || location.pathname === "/";

@@ -659,7 +659,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                       "flex flex-col gap-1 max-w-[80%] min-w-0",
                       isOwn ? "items-end" : "items-start"
                     )}>
-                      <div className="relative group/bubble max-w-full overflow-hidden">
+                       <div className="relative group/bubble max-w-full">
                         <div
                           className={cn(
                             "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden max-w-full",
