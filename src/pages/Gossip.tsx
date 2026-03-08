@@ -110,19 +110,10 @@ export default function Gossip() {
   const enrichGossipData = useCallback(async (data: any[], append = false) => {
     if (!user || !profile) return;
 
-    const { data: ownPosts } = await supabase
-      .from("gossip_posts")
-      .select("id, expires_at")
-      .eq("user_id", user.id);
-
     const postIds = data.map((p) => p.id);
 
-    const { data: extraData } = await supabase
-      .from("gossip_posts")
-      .select("id, expires_at, hotness_score")
-      .in("id", postIds);
-
-    const [{ data: reactions }, { data: tags }, { data: savedGossips }] = await Promise.all([
+    const [{ data: extraData }, { data: reactions }, { data: tags }, { data: savedGossips }] = await Promise.all([
+      supabase.from("gossip_posts").select("id, user_id, expires_at, hotness_score").in("id", postIds),
       supabase.from("reactions").select("gossip_post_id, user_id").in("gossip_post_id", postIds),
       supabase.from("gossip_tags").select("gossip_post_id, tagged_user_id").in("gossip_post_id", postIds),
       supabase.from("saved_gossips").select("gossip_post_id").eq("user_id", user.id).in("gossip_post_id", postIds),
