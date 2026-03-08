@@ -23,11 +23,13 @@ import {
   ArrowRight,
   Camera,
   Settings,
+  Ghost,
 } from "lucide-react";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
+import { TextScramble } from "@/components/ui/text-scramble";
 import {
   Dialog,
   DialogContent,
@@ -80,6 +82,7 @@ interface ProfileData {
   bio: string | null;
   department: string | null;
   year: string | null;
+  anonymous_alias: string | null;
 }
 
 interface PhotoPost {
@@ -710,6 +713,18 @@ export default function Profile() {
           </Avatar>
 
           <h2 className="text-2xl font-bold text-foreground mb-1">{profile.display_name}</h2>
+
+          {isOwnProfile && profile.anonymous_alias && (
+            <div className="flex items-center gap-2 mb-1">
+              <Ghost className="h-3.5 w-3.5 text-primary/60" />
+              <TextScramble
+                text={profile.anonymous_alias}
+                revealOnClick
+                className="text-xs font-bold tracking-wide text-primary/80"
+                dudClassName="text-primary/30"
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-center gap-3 text-xs font-medium text-muted-foreground/80 mb-4">
             {profile.department && (
