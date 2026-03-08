@@ -94,7 +94,7 @@ export function HaloProvider({ children }: { children: ReactNode }) {
 
   const getHaloClass = useCallback(
     (userId: string) => {
-      if (!user || userId === user.id) return "ring-1 ring-white/15";
+      if (!user || userId === user.id) return "ring-1 ring-white/20";
 
       const isMutual = followingIds.has(userId) && followerIds.has(userId);
       const isActiveDm = recentDmUserIds.has(userId);
@@ -102,15 +102,15 @@ export function HaloProvider({ children }: { children: ReactNode }) {
       const isFollower = followerIds.has(userId);
 
       if (isMutual)
-        return "ring-2 ring-emerald-400/80 shadow-[0_0_12px_rgba(52,211,153,0.35)] animate-halo-pulse";
+        return "ring-2 ring-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.45)] animate-halo-pulse";
       if (isActiveDm)
-        return "ring-2 ring-sky-400/70 shadow-[0_0_10px_rgba(56,189,248,0.3)]";
+        return "ring-2 ring-sky-400/90 shadow-[0_0_12px_rgba(56,189,248,0.4)]";
       if (isFollowing)
-        return "ring-[1.5px] ring-purple-500/60";
+        return "ring-[1.5px] ring-purple-500/80";
       if (isFollower)
-        return "ring-[1.5px] ring-amber-400/60";
+        return "ring-[1.5px] ring-amber-400/80";
 
-      return "ring-1 ring-white/15";
+      return "ring-1 ring-white/20";
     },
     [user, followingIds, followerIds, recentDmUserIds]
   );
