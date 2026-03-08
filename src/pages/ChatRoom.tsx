@@ -471,15 +471,23 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                         {recipient.display_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-background" />
+                    {isRecipientOnline && (
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-success rounded-full border-2 border-background" />
+                    )}
                   </div>
                   <div className="flex flex-col">
                     <span className="font-black text-base tracking-tight leading-none mb-1">
                       {recipient.display_name}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary/80">Online</span>
+                      {isRecipientOnline ? (
+                        <>
+                          <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-success/80">Online</span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Offline</span>
+                      )}
                     </div>
                   </div>
                 </div>
