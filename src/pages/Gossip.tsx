@@ -61,11 +61,13 @@ const PAGE_SIZE = 20;
 
 export default function Gossip() {
   const { user, profile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<GossipPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [highlightedGossipId, setHighlightedGossipId] = useState<string | null>(null);
 
 
   const [showComposer, setShowComposer] = useState(false);
