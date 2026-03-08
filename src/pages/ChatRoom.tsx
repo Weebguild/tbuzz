@@ -983,7 +983,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <UserCheck className="h-3 w-3 text-accent/60" />
-                    <span className="text-sm font-black text-white">—</span>
+                    <span className="text-sm font-black text-white">{recipientStats.following}</span>
                     <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Following</span>
                   </div>
                 </div>
