@@ -1,118 +1,56 @@
 
 
-# Real-Time Direct Messaging (DM) Feature
+## Plan: Fix Info Panel Stats, Message Overflow, Rework Reactions with Dock, Sidebar Hover Animations
 
-## Overview
-Build a full-stack 1-to-1 DM system restricted to mutual followers, with an inbox, chat room, real-time updates, and navigation integration.
+### 1. Fix Follower/Following Counts in Info Panel
+**File:** `src/pages/ChatRoom.tsx`
 
----
+The info panel (line 968-980) shows "—" because the recipient fetch (line 84-87) only selects `user_id, display_name, avatar_url` — no follower counts are fetched.
 
-## Phase 1: Database Schema & Security
+- Add a separate fetch for follower/following counts using `supabase.from("follows").select("*", { count: "exact", head: true })` (same pattern as Profile.tsx)
+- Store in state: `recipientStats: { followers: number; following: number }`
+- Display actual numbers instead of "—" in the stats bar
 
-### Migration: Create tables, functions, RLS, and realtime
+### 2. Fix Message Overflow (Still Broken)
+**File:** `src/pages/ChatRoom.tsx`
 
-**New tables:**
-- `conversations` (id uuid PK, created_at, updated_at)
-- `conversation_participants` (id uuid PK, conversation_id FK, user_id uuid, created_at) with unique constraint on (conversation_id, user_id)
-- `messages` (id uuid PK, conversation_id FK, sender_id uuid, content text, created_at, is_read boolean default false)
+The bubble container at line 648-658 has `overflow-hidden` but the parent `max-w-[80%]` at line 643 may not constrain properly. Fix:
 
-**Security definer functions:**
-- `check_mutual_follow(user_a uuid, user_b uuid)` -- returns true if both follow each other
-- `is_conversation_participant(conv_id uuid, uid uuid)` -- returns true if user is in conversation
+- Add `min-w-0` to the flex column container (line 642) to prevent flex children from overflowing
+- Add `max-w-full` and `overflow-hidden` to the bubble wrapper div (line 647, `group/bubble`)
+- Ensure the text `<p>` also has `overflow-hidden` with `word-break: break-word`
 
-**RLS policies (all restrictive):**
-- `conversations`: SELECT where user is a participant (via `is_conversation_participant`)
-- `conversation_participants`: SELECT/INSERT where user is a participant or is inserting themselves
-- `messages`: SELECT where user is participant of conversation; INSERT where sender_id = auth.uid() AND user is participant
-- `messages`: UPDATE (for is_read) where user is participant and sender_id != auth.uid()
+### 3. Rework Reactions: Remove Auto-Hover, Add Smile Icon + Drawer
+**File:** `src/pages/ChatRoom.tsx`
 
-**Realtime:** Enable realtime for `messages` table.
+Currently (lines 703-720), emoji reactions appear on hover automatically. Replace with:
 
-**Trigger:** `updated_at` on conversations auto-updates when a new message is inserted.
+- Remove the hover-triggered emoji row entirely
+- Keep the Reply button but add a **Smile icon button** next to it — both visible on hover
+- Clicking the Smile icon opens a **Drawer** (from vaul, already installed) with a grid of emojis styled in the Midnight Glass aesthetic
+- The drawer shows a curated set of emojis (🔥 ❤️ 😂 😮 👍 😢 🙏 💀 🤯 👀 💯 🎉 etc.)
+- Each emoji in the drawer uses the **Dock-style magnification hover animation** from the user's reference code — items scale up on mouse proximity using `useMotionValue` + `useTransform` + `useSpring`
+- Clicking an emoji sets the reaction and closes the drawer
 
----
+### 4. Create Dock Component for Emoji Hover
+**File:** `src/components/ui/dock.tsx`
 
-## Phase 2: Frontend -- New Files
+Create the Dock/DockItem/DockIcon/DockLabel components from the user's reference code, adapted to the Midnight Glass theme:
+- Dark background (`bg-white/[0.04]` instead of `bg-gray-50`)
+- Border styling matching glass-panel aesthetic
+- Export `Dock`, `DockItem`, `DockIcon`, `DockLabel`
 
-### `src/hooks/use-messages.ts`
-Custom hook that:
-- Fetches message history for a conversation ordered by created_at ASC
-- Subscribes to Supabase Realtime INSERT events on `messages` filtered by conversation_id
-- Returns messages array, sendMessage function, loading state
+### 5. Desktop Sidebar Dock-Style Hover Animations
+**File:** `src/components/layout/DesktopSidebar.tsx`
 
-### `src/pages/Messages.tsx` (Inbox)
-- Route: `/messages`
-- Lists all conversations for the current user
-- Shows other participant's avatar, name, last message snippet, timestamp
-- Clicking a conversation navigates to `/messages/:conversationId`
-- Sorted by `updated_at` descending
+Add the same magnetic magnification effect to sidebar nav icons:
+- Track `mouseY` position with `useMotionValue`
+- Each nav item calculates distance from mouse and scales proportionally using `useTransform` + `useSpring`
+- Icons magnify from 24px to ~40px as the cursor approaches, with neighboring icons also scaling slightly
+- Maintains existing active indicator and tooltip behavior
 
-### `src/pages/ChatRoom.tsx`
-- Route: `/messages/:conversationId`
-- Header: back button, recipient avatar + name
-- ScrollArea with message bubbles (right/primary for own, left/gray for theirs)
-- Auto-scroll to bottom on new messages
-- Input + Send button (paper plane icon) at bottom
-- Marks messages as read when viewing
-
----
-
-## Phase 3: Profile Page Update
-
-### `src/pages/Profile.tsx`
-- Add state: `isMutualFollow` (boolean)
-- In `fetchProfileData`, after checking `isFollowing`, also check if the target user follows back (query follows table for reverse direction)
-- Next to the Follow/Unfollow button, conditionally render a "Message" button:
-  - If mutual follow: enabled, clicking navigates to chat (find-or-create conversation)
-  - If not mutual: show disabled button with tooltip "You must follow each other to send messages"
-
----
-
-## Phase 4: Routing & Navigation
-
-### `src/App.tsx`
-- Import Messages and ChatRoom pages
-- Add routes inside the ProtectedRoute + AppLayout group:
-  - `/messages` -> Messages
-  - `/messages/:conversationId` -> ChatRoom
-
-### `src/components/layout/BottomNav.tsx`
-- Replace the Leaderboard (Trophy) tab with Messages (Mail icon)
-- Add unread badge: query `messages` where `is_read = false` and sender is not current user
-- Real-time subscription for unread count updates
-
-### `src/pages/Feed.tsx`
-- Add a Leaderboard (Trophy) icon button to the top-right header area alongside Activity and Create buttons
-
----
-
-## Technical Details
-
-```text
-conversations          conversation_participants         messages
-+------------+        +------------------------+      +------------------+
-| id (PK)    |<-------| conversation_id (FK)   |      | id (PK)          |
-| created_at |        | user_id                |      | conversation_id  |
-| updated_at |        | id (PK)                |      | sender_id        |
-+------------+        +------------------------+      | content          |
-                                                       | is_read          |
-                                                       | created_at       |
-                                                       +------------------+
-```
-
-### Find-or-create conversation logic (client-side):
-1. Query `conversation_participants` to find a conversation where both users participate
-2. If found, navigate to it
-3. If not, check mutual follow via client query, then insert new conversation + 2 participants, then navigate
-
-### Files to create:
-- `src/hooks/use-messages.ts`
-- `src/pages/Messages.tsx`
-- `src/pages/ChatRoom.tsx`
-
-### Files to modify:
-- `src/pages/Profile.tsx` (add Message button)
-- `src/App.tsx` (add routes)
-- `src/components/layout/BottomNav.tsx` (replace Leaderboard with Messages + badge)
-- `src/pages/Feed.tsx` (add Leaderboard button to header)
+### Files Changed
+- `src/components/ui/dock.tsx` — New Dock component
+- `src/pages/ChatRoom.tsx` — Fix stats fetch, overflow, rework reactions with Drawer + Dock emojis
+- `src/components/layout/DesktopSidebar.tsx` — Add dock-style hover magnification
 
