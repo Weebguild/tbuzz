@@ -210,7 +210,7 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground transition-all duration-300 focus:ring-2 focus:ring-primary/20"
+                    className="pl-10 h-11 rounded-xl bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground transition-all duration-300 focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
