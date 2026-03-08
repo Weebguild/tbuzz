@@ -29,9 +29,9 @@ function DockNavItem({
     return val - rect.y - rect.height / 2;
   });
 
-  const sizeTransform = useTransform(distance, [-120, 0, 120], [24, 40, 24]);
+  const sizeTransform = useTransform(distance, [-120, 0, 120], [44, 56, 44]);
   const size = useSpring(sizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
-  const iconSize = useTransform(size, (val) => val * 0.6);
+  const iconSize = useTransform(size, (val) => val * 0.5);
 
   return (
     <Tooltip>
@@ -79,10 +79,10 @@ export function DesktopSidebar() {
     return val - rect.y - rect.height / 2;
   });
   const searchSize = useSpring(
-    useTransform(searchDistance, [-120, 0, 120], [24, 40, 24]),
+    useTransform(searchDistance, [-120, 0, 120], [44, 56, 44]),
     { mass: 0.1, stiffness: 150, damping: 12 }
   );
-  const searchIconSize = useTransform(searchSize, (val) => val * 0.6);
+  const searchIconSize = useTransform(searchSize, (val) => val * 0.5);
 
   const isActive = (path: string) => {
     if (path === "/feed") return location.pathname === "/feed" || location.pathname === "/";
