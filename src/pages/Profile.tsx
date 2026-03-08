@@ -29,6 +29,7 @@ import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PostImageExpander } from "@/components/feed/PostImageExpander";
+import { TextScramble } from "@/components/ui/text-scramble";
 import {
   Dialog,
   DialogContent,
