@@ -119,7 +119,7 @@ export function DesktopChatLayout() {
     return (
         <div className="h-full w-full bg-transparent flex overflow-hidden font-sans">
             {/* COLUMN 1: ACTION BAR (Red/Yellow/White Circles in Image) */}
-            <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-6 gap-8 bg-black/40 shrink-0">
+            <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-6 gap-8 bg-white/[0.02] backdrop-blur-sm shrink-0">
                 {/* App Logo */}
                 <Link to="/feed" className="group">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)] group-hover:scale-110 transition-transform cursor-pointer relative overflow-hidden">
