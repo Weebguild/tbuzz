@@ -322,8 +322,8 @@ export default function Messages() {
                     className={cn(
                       "w-full text-left p-4 rounded-3xl transition-all flex items-center gap-4 relative group overflow-hidden border",
                       conversationId === conv.conversation_id
-                        ? "bg-white/5 border-white/10 shadow-xl"
-                        : "bg-transparent border-transparent hover:bg-white/[0.03] hover:border-white/5"
+                        ? "glass-panel border-white/10 shadow-xl"
+                        : "bg-transparent border-transparent hover:bg-white/[0.03] hover:backdrop-blur-sm hover:border-white/5"
                     )}
                   >
                     <div className="relative shrink-0">
