@@ -717,14 +717,14 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
 
                         {/* Reply + Emoji buttons on hover */}
                         <div className={cn(
-                          "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 px-2",
-                          isOwn ? "right-full mr-2" : "left-full ml-2"
+                          "absolute bottom-full mb-1 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 z-10",
+                          isOwn ? "right-0" : "left-0"
                         )}>
-                          <button onClick={() => setReplyingTo(data)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                            <Reply className="h-4 w-4" />
+                          <button onClick={() => setReplyingTo(data)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                            <Reply className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => setEmojiDrawerMsgId(msg.id)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                            <Smile className="h-4 w-4" />
+                          <button onClick={() => setEmojiDrawerMsgId(msg.id)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                            <Smile className="h-3.5 w-3.5" />
                           </button>
                         </div>
 
