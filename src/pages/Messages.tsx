@@ -385,10 +385,12 @@ export default function Messages() {
           {conversationId ? (
             <ChatRoom desktop={true} />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-20">
-              <Mail className="h-20 w-20 mb-6 stroke-[0.5px]" />
-              <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Select a Chat</h2>
-              <p className="text-xs uppercase tracking-widest mt-4">Pick a conversation to start messaging</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-30">
+              <div className="glass-panel rounded-3xl p-12 flex flex-col items-center">
+                <Mail className="h-20 w-20 mb-6 stroke-[0.5px]" />
+                <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Select a Chat</h2>
+                <p className="text-xs uppercase tracking-widest mt-4 text-muted-foreground/80">Pick a conversation to start messaging</p>
+              </div>
             </div>
           )}
         </div>
