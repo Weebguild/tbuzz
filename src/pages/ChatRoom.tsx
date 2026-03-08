@@ -1024,6 +1024,33 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating link hover preview */}
+      <AnimatePresence>
+        {linkHover && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
+            className="fixed pointer-events-none z-[9999]"
+            style={{ left: linkHover.pos.x, top: linkHover.pos.y }}
+          >
+            <div className="bg-popover/90 backdrop-blur-xl rounded-2xl p-2 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.1)]">
+              <img
+                src={`https://image.thum.io/get/width/560/crop/320/${linkHover.url}`}
+                alt="Preview"
+                className="w-[288px] h-auto rounded-xl block"
+                crossOrigin="anonymous"
+              />
+              <p className="px-2 pt-3 pb-1 text-sm font-bold text-foreground">
+                {(() => { try { return new URL(linkHover.url).hostname; } catch { return linkHover.url; } })()}
+              </p>
+              <p className="px-2 pb-2 text-xs text-muted-foreground truncate max-w-[280px]">{linkHover.url}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
