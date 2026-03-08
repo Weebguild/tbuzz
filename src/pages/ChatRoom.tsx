@@ -511,7 +511,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                         {isLastInGroup && recipient && (
                           <Avatar className="h-8 w-8 ring-1 ring-white/10 shadow-lg">
                             <AvatarImage src={recipient.avatar_url || ""} />
-                            <AvatarFallback className="text-[10px] font-bold bg-[#111]">
+                            <AvatarFallback className="text-[10px] font-bold bg-white/5">
                               {recipient.display_name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
