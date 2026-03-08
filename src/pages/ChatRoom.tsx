@@ -613,7 +613,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       {/* Messages Scroll Area */}
       <div className="flex-1 relative overflow-hidden">
         <ScrollArea
-          className="h-full px-6 py-8"
+          className="h-full px-3 sm:px-6 py-8"
           onScroll={(e) => {
             const target = e.currentTarget;
             const isBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
