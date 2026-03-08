@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Home, MessageSquare, Mail, User, Plus, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { UserSearch } from "@/components/UserSearch";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const tabs = [
   { path: "/feed", icon: Home },
