@@ -225,14 +225,14 @@ export default function Messages() {
               <motion.h1
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-5xl font-black tracking-tight uppercase leading-none"
+                className="text-5xl font-black tracking-widest uppercase leading-none drop-shadow-md"
               >
                 Messages
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.4 }}
-                className="text-[10px] font-bold tracking-[0.4em] uppercase mt-2 ml-1"
+                className="text-[10px] font-bold tracking-[0.4em] uppercase mt-2 ml-1 text-muted-foreground/80"
               >
                 Chat & Connect
               </motion.p>
