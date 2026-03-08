@@ -266,7 +266,7 @@ export function DesktopChatLayout() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     {mediaAssets.photos.slice(0, 4).map((photo, i) => (
-                                        <div key={i} className="aspect-square rounded-xl bg-white/5 border border-white/5 overflow-hidden group cursor-pointer hover:border-primary/50 transition-all">
+                                        <div key={i} className="aspect-square rounded-xl glass-panel overflow-hidden group cursor-pointer hover:border-primary/50 transition-all">
                                             <img src={photo.url} alt="Shared" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                                         </div>
                                     ))}
