@@ -251,7 +251,7 @@ export default function Messages() {
 
           <div className="relative mb-8 group">
             <div className="pointer-events-none absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-accent/30 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
-            <div className="relative flex items-center bg-[#111] border border-white/5 rounded-2xl h-14 px-5 overflow-hidden">
+            <div className="relative flex items-center glass-panel rounded-2xl h-14 px-5 overflow-hidden">
               <Search className="h-4 w-4 text-muted-foreground mr-3" />
               <input
                 type="text"
