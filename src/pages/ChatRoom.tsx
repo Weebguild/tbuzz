@@ -22,12 +22,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { Dock, DockItem, DockIcon, DockLabel } from "@/components/ui/dock";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -723,9 +718,32 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                           <button onClick={() => setReplyingTo(data)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
                             <Reply className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => setEmojiDrawerMsgId(msg.id)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                            <Smile className="h-3.5 w-3.5" />
-                          </button>
+                          <Popover open={emojiDrawerMsgId === msg.id} onOpenChange={(open) => { if (!open) setEmojiDrawerMsgId(null); }}>
+                            <PopoverTrigger asChild>
+                              <button onClick={() => setEmojiDrawerMsgId(msg.id)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                                <Smile className="h-3.5 w-3.5" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" align={isOwn ? "end" : "start"} sideOffset={8} className="w-auto p-2 bg-[#0A0A0A]/95 backdrop-blur-3xl border-white/[0.06] rounded-xl">
+                              <div className="flex gap-1 flex-wrap max-w-[280px]">
+                                {["🔥", "❤️", "😂", "😮", "👍", "😢", "🙏", "💀", "🤯", "👀", "💯", "🎉", "😍", "🥺", "💜"].map(emoji => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => {
+                                      if (emojiDrawerMsgId) {
+                                        setReactions(prev => ({ ...prev, [emojiDrawerMsgId]: emoji }));
+                                        navigator.vibrate?.(10);
+                                      }
+                                      setEmojiDrawerMsgId(null);
+                                    }}
+                                    className="text-xl p-1.5 rounded-lg hover:bg-white/10 hover:scale-125 transition-all duration-150 select-none"
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </div>
 
                         {reactions[msg.id] && (
@@ -1107,33 +1125,6 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         )}
       </AnimatePresence>
 
-      {/* Emoji Reaction Drawer */}
-      <Drawer open={!!emojiDrawerMsgId} onOpenChange={(open) => { if (!open) setEmojiDrawerMsgId(null); }}>
-        <DrawerContent className="bg-[#0A0A0A]/95 backdrop-blur-3xl border-white/[0.06]">
-          <DrawerTitle className="sr-only">Choose a reaction</DrawerTitle>
-          <div className="py-6 px-4">
-            <Dock magnification={64} distance={120} panelHeight={56} className="border-none bg-transparent">
-              {["🔥", "❤️", "😂", "😮", "👍", "😢", "🙏", "💀", "🤯", "👀", "💯", "🎉", "😍", "🥺", "💜"].map(emoji => (
-                <DockItem
-                  key={emoji}
-                  onClick={() => {
-                    if (emojiDrawerMsgId) {
-                      setReactions(prev => ({ ...prev, [emojiDrawerMsgId]: emoji }));
-                      navigator.vibrate?.(10);
-                    }
-                    setEmojiDrawerMsgId(null);
-                  }}
-                >
-                  <DockIcon>
-                    <span className="text-2xl select-none">{emoji}</span>
-                  </DockIcon>
-                  <DockLabel>{emoji}</DockLabel>
-                </DockItem>
-              ))}
-            </Dock>
-          </div>
-        </DrawerContent>
-      </Drawer>
     </motion.div>
   );
 }
