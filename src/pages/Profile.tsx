@@ -197,21 +197,15 @@ export default function Profile() {
       setIsMutualFollow(following && !!reverseFollowData);
     }
 
-    const { data: photoPosts } = await supabase
+    const { data: allPosts } = await supabase
       .from("posts")
-      .select("id, image_url")
+      .select("id, content, created_at, image_url")
       .eq("user_id", targetUserId)
-      .not("image_url", "is", null)
       .order("created_at", { ascending: false });
 
-    const { data: textPostsData } = await supabase
-      .from("posts")
-      .select("id, content, created_at")
-      .eq("user_id", targetUserId)
-      .is("image_url", null)
-      .order("created_at", { ascending: false });
-
-    const allPostIds = [...(photoPosts?.map((p) => p.id) || []), ...(textPostsData?.map((p) => p.id) || [])];
+    const photoPosts = allPosts?.filter((p) => p.image_url) || [];
+    const textPostsData = allPosts?.filter((p) => !p.image_url) || [];
+    const allPostIds = allPosts?.map((p) => p.id) || [];
 
     if (allPostIds.length > 0) {
       const [{ data: reactions }, { data: comments }] = await Promise.all([
@@ -503,37 +497,8 @@ export default function Profile() {
     fetchProfileData();
   }, [fetchProfileData]);
 
-  // ── REALTIME LIKES ──
-  useEffect(() => {
-    const reactionChannel = supabase
-      .channel("public:reactions-profile")
-      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, (payload) => {
-        if (payload.eventType === "INSERT") {
-          setTextPosts((prev) =>
-            prev.map((p) => (p.id === payload.new.post_id ? { ...p, reaction_count: p.reaction_count + 1 } : p)),
-          );
-          setPhotos((prev) =>
-            prev.map((p) => (p.id === payload.new.post_id ? { ...p, reaction_count: p.reaction_count + 1 } : p)),
-          );
-        } else if (payload.eventType === "DELETE") {
-          setTextPosts((prev) =>
-            prev.map((p) =>
-              p.id === payload.old.post_id ? { ...p, reaction_count: Math.max(0, p.reaction_count - 1) } : p,
-            ),
-          );
-          setPhotos((prev) =>
-            prev.map((p) =>
-              p.id === payload.old.post_id ? { ...p, reaction_count: Math.max(0, p.reaction_count - 1) } : p,
-            ),
-          );
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(reactionChannel);
-    };
-  }, []);
+  // Realtime reactions listener removed — toggleLike handles optimistic UI,
+  // and fetchProfileData loads fresh counts on revisit.
 
   const toggleLike = async (postId: string, hasLiked: boolean) => {
     if (!user) return;

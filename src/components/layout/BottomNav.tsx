@@ -46,11 +46,15 @@ export function BottomNav() {
     };
     fetchUnread();
 
+    let debounceTimer: ReturnType<typeof setTimeout>;
     const channel = supabase
       .channel("unread-messages-nav")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => fetchUnread())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fetchUnread, 500);
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { clearTimeout(debounceTimer); supabase.removeChannel(channel); };
   }, [user]);
 
   const isMessagesPage = location.pathname.startsWith("/messages");
