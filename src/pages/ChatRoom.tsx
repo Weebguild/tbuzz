@@ -88,7 +88,15 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           .select("user_id, display_name, avatar_url")
           .eq("user_id", participants[0].user_id)
           .single();
-        if (profile) setRecipient(profile);
+        if (profile) {
+          setRecipient(profile);
+          // Fetch follower/following counts
+          const [{ count: followers }, { count: following }] = await Promise.all([
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", profile.user_id),
+            supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", profile.user_id),
+          ]);
+          setRecipientStats({ followers: followers ?? 0, following: following ?? 0 });
+        }
       }
     };
     fetchRecipient();
