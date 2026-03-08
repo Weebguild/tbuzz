@@ -8,15 +8,15 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     const sustainTimer = setTimeout(() => {
       setPhase("sustain");
-    }, 1000);
+    }, 500);
 
     const exitTimer = setTimeout(() => {
       setPhase("exit");
-    }, 4500);
+    }, 2500);
 
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 5500);
+    }, 3000);
 
     return () => {
       clearTimeout(sustainTimer);

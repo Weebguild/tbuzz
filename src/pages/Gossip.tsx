@@ -563,13 +563,9 @@ export default function Gossip() {
               <motion.div
                 key={post.id}
                 id={`gossip-${post.id}`}
-                initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                whileHover={{ scale: 1.01, translateY: -2 }}
-                transition={{
-                  duration: 0.5,
-                  ease: [0.23, 1, 0.32, 1]
-                }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
               >
                 <SelfDestructWrapper expiresAt={post.expires_at}>
                   <div

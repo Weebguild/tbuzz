@@ -544,7 +544,7 @@ export default function Feed() {
                 id={`post-${post.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
+                transition={{ duration: 0.3, delay: Math.min(i * 0.05, 0.3) }}
               >
                 <div className={`rounded-3xl glass-panel overflow-hidden transition-all duration-500 ${highlightedPostId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : "hover:border-primary/30"}`}>
                   {/* Post header */}
