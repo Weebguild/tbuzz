@@ -123,6 +123,10 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
       : input;
 
     if ((!input.trim() && !attachment) || sending) return;
+    
+    // Haptic feedback on mobile
+    navigator.vibrate?.(10);
+    
     setSending(true);
     try {
       if (attachment) {
