@@ -92,6 +92,35 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     fetchRecipient();
   }, [conversationId, user]);
 
+  // Presence channel for online status
+  useEffect(() => {
+    if (!conversationId || !user || !recipient) return;
+    const presenceChannel = supabase.channel(`presence:chat:${conversationId}`, {
+      config: { presence: { key: user.id } },
+    });
+
+    presenceChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = presenceChannel.presenceState();
+        setIsRecipientOnline(!!state[recipient.user_id]?.length);
+      })
+      .on("presence", { event: "join" }, ({ key }) => {
+        if (key === recipient.user_id) setIsRecipientOnline(true);
+      })
+      .on("presence", { event: "leave" }, ({ key }) => {
+        if (key === recipient.user_id) setIsRecipientOnline(false);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [conversationId, user, recipient]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, attachment, isRecording]);
