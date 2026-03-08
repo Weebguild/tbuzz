@@ -186,7 +186,7 @@ export default function Auth() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.5 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 text-primary"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary"
                       >
                         <User className="h-4 w-4" />
                       </motion.div>
@@ -197,7 +197,7 @@ export default function Auth() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.5 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 text-muted-foreground"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
                       >
                         <Mail className="h-4 w-4" />
                       </motion.div>
