@@ -5,10 +5,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Loader2, MessageSquare, ArrowRight, Search, Pin, Star,
-  Plus, MoreHorizontal, Filter, Home, User, Mail,
-  Settings, LogOut, ChevronRight, Files, Image as ImageIcon,
-  Link as LinkIcon, X
+  Loader2, ArrowRight, Search, Pin, Star,
+  Plus, MoreHorizontal, Filter, Mail,
+  ChevronRight, X
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
