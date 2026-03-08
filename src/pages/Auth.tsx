@@ -232,7 +232,7 @@ export default function Auth() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="pl-10 h-11 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground"
+                    className="pl-10 h-11 rounded-xl bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
