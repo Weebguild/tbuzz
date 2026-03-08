@@ -693,18 +693,16 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               href={data.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group/pdf flex items-center gap-4 p-4 min-w-[240px] max-w-[280px] rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] hover:border-primary/30 hover:bg-white/[0.07] transition-all duration-300"
+                              className="flex items-center gap-3 py-1 px-2 min-w-[200px] hover:opacity-80 transition-opacity"
                             >
-                              <div className="h-11 w-11 flex items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-white/[0.06] shrink-0 group-hover/pdf:from-primary/30 group-hover/pdf:to-accent/30 transition-all duration-300">
-                                <FileText className="h-5 w-5 text-primary" />
+                              <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/20 shrink-0">
+                                <FileText className="h-6 w-6 text-red-400" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-semibold truncate text-foreground/90">{data.text || "PDF Document"}</p>
-                                <p className="text-[10px] font-medium text-muted-foreground/60 mt-0.5 tracking-wide">PDF • Tap to open</p>
+                                <p className="text-sm font-bold truncate">{data.text || "PDF Document"}</p>
+                                <p className="text-[10px] uppercase tracking-widest opacity-50">PDF</p>
                               </div>
-                              <div className="h-8 w-8 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 group-hover/pdf:bg-primary/20 transition-all duration-300">
-                                <Download className="h-3.5 w-3.5 text-muted-foreground group-hover/pdf:text-primary transition-colors" />
-                              </div>
+                              <Download className="h-4 w-4 opacity-40 shrink-0" />
                             </a>
                           ) : data.type === "audio" && data.url ? (
                             <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
@@ -858,14 +856,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                 {attachment.type === "image" ? (
                   <img src={attachment.preview} className="h-32 w-32 rounded-3xl object-cover border-4 border-white/5" />
                 ) : attachment.type === "file" ? (
-                  <div className="h-20 w-60 rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] text-foreground flex items-center px-4 gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-white/[0.06] flex items-center justify-center shrink-0">
-                      <FileText className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-semibold truncate block">{attachment.preview}</span>
-                      <span className="text-[10px] text-muted-foreground/60 mt-0.5 block">Ready to send</span>
-                    </div>
+                  <div className="h-20 w-56 rounded-3xl bg-white/[0.06] border border-white/10 text-white flex items-center px-4 gap-3">
+                    <FileText className="h-6 w-6 text-red-400 shrink-0" />
+                    <span className="text-xs font-bold truncate">{attachment.preview}</span>
                   </div>
                 ) : (
                   <div className="h-20 w-48 rounded-3xl bg-primary text-white flex items-center px-4 gap-3">
