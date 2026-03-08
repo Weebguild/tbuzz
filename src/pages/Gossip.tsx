@@ -144,7 +144,7 @@ export default function Gossip() {
               const p = taggedProfiles.find((tp) => tp.user_id === t.tagged_user_id);
               return { user_id: t.tagged_user_id, display_name: p?.display_name ?? "Unknown" };
             }) ?? [],
-        is_own: ownPosts?.some((op) => op.id === post.id) ?? false,
+        is_own: extra?.user_id === user.id,
       };
     }).filter(post => {
       if (!post.expires_at) return true;
