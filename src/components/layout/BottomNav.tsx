@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Home, MessageSquare, Mail, User, Plus, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { UserSearch } from "@/components/UserSearch";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const tabs = [
   { path: "/feed", icon: Home },
@@ -52,9 +53,12 @@ export function BottomNav() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  const isMobile = useIsMobile();
   const isMessagesPage = location.pathname.startsWith("/messages");
+  const isInChatRoom = isMessagesPage && location.pathname.split("/").filter(Boolean).length > 1;
 
-  if (hidden || isMessagesPage) return null;
+  // Hide when: expander open, OR desktop messages (has its own sidebar), OR mobile chat room (full screen chat)
+  if (hidden || (!isMobile && isMessagesPage) || (isMobile && isInChatRoom)) return null;
 
   return (
     <>

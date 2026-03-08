@@ -1,13 +1,20 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AppLayout() {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const isMessagesRoute = location.pathname.startsWith("/messages");
+  const isInChatRoom = isMessagesRoute && location.pathname.split("/").filter(Boolean).length > 1;
+
+  // On desktop messages or mobile chat room: full height locked layout
+  // On mobile messages list: normal scrollable layout with bottom nav space
+  const useLockedLayout = isMessagesRoute && (!isMobile || isInChatRoom);
 
   return (
-    <div className={cn("min-h-screen bg-black relative selection:bg-primary/30", isMessagesRoute && "h-[100dvh] overflow-hidden")}>
+    <div className={cn("min-h-screen bg-black relative selection:bg-primary/30", useLockedLayout && "h-[100dvh] overflow-hidden")}>
       {/* ── THE AURORA BACKGROUND ── */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         {/* Deep Purple Orb */}
@@ -22,7 +29,7 @@ export function AppLayout() {
       </div>
 
       {/* ── THE CONTENT LAYER ── */}
-      <main className={cn("relative z-10 mx-auto", isMessagesRoute ? "max-w-none pb-0 h-[100dvh] overflow-hidden" : "max-w-lg pb-24 min-h-screen")}>
+      <main className={cn("relative z-10 mx-auto", useLockedLayout ? "max-w-none pb-0 h-[100dvh] overflow-hidden" : "max-w-lg pb-24 min-h-screen")}>
         <Outlet />
       </main>
 

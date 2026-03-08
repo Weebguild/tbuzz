@@ -168,7 +168,7 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <div className="flex h-[100dvh] bg-[#050505] text-white flex-row overflow-hidden">
+      <div className={cn("flex bg-[#050505] text-white", isMobile ? "flex-col min-h-full" : "h-[100dvh] flex-row overflow-hidden")}>
         {!isMobile && (
           <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 animate-pulse">
             <div className="h-12 w-12 rounded-full bg-white/5" />
@@ -211,8 +211,8 @@ export default function Messages() {
 
   return (
     <div className={cn(
-      "h-[100dvh] bg-[#050505] text-white selection:bg-primary/30 overflow-hidden flex",
-      isMobile ? "flex-col" : "flex-row"
+      "bg-[#050505] text-white selection:bg-primary/30 flex",
+      isMobile ? "flex-col min-h-full" : "h-[100dvh] flex-row overflow-hidden"
     )}>
       {!isMobile && (
         <div className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 shrink-0">
@@ -249,7 +249,7 @@ export default function Messages() {
       {/* Conversation List Column */}
       <div className={cn(
         "flex flex-col bg-black/20 shrink-0 min-h-0 relative z-10",
-        isMobile ? "w-full h-full pb-24" : "w-[360px] border-r border-white/5"
+        isMobile ? "w-full h-full" : "w-[360px] border-r border-white/5"
       )}>
         {/* Dynamic Background (Only Mobile) */}
         {isMobile && (
