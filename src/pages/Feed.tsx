@@ -388,8 +388,9 @@ export default function Feed() {
       return;
     }
     setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+    // Optimistic comment count update + reload comments for this post only
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p));
     loadComments(postId);
-    fetchPosts();
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
