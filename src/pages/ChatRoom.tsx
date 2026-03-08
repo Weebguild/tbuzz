@@ -509,7 +509,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               {recipient && (
                 <div className="flex items-center gap-4 cursor-pointer" onClick={() => setShowInfo(true)}>
                   <div className="relative">
-                    <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-xl">
+                    <Avatar className={cn("h-12 w-12 shadow-xl", recipient ? getHaloClass(recipient.user_id) : "ring-2 ring-primary/20")}>
                       <AvatarImage src={recipient.avatar_url || ""} />
                       <AvatarFallback className="bg-white/5 text-xs font-black">
                         {recipient.display_name.charAt(0)}
