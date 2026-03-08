@@ -68,6 +68,33 @@ export function ActivityDrawer() {
     fetchNotifications();
   }, [user]);
 
+  // Real-time subscription for new notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => {
+          setUnreadCount((prev) => prev + 1);
+          // If drawer is open, refresh the full list
+          if (isOpen) fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isOpen]);
+
   const markAsRead = async () => {
     if (!user || unreadCount === 0) return;
     await supabase.from("notifications").update({ is_read: true }).eq("recipient_id", user.id).eq("is_read", false);
