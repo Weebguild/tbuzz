@@ -281,7 +281,7 @@ export function DesktopChatLayout() {
                                 </div>
                                 <div className="space-y-2">
                                     {mediaAssets.files.slice(0, 5).map((file, i) => (
-                                        <div key={i} className="p-3 rounded-2xl bg-white/5 border border-white/5 flex items-center gap-4 hover:bg-white/10 transition-all cursor-pointer group">
+                                        <div key={i} className="p-3 rounded-2xl glass-panel flex items-center gap-4 hover:bg-white/10 transition-all cursor-pointer group">
                                             <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
                                                 {file.type === "audio" ? <Files className="h-4 w-4" /> : <Image className="h-4 w-4" />}
                                             </div>

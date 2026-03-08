@@ -313,7 +313,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         rel="noopener noreferrer"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="mt-2 block rounded-2xl bg-black/30 border border-white/10 overflow-hidden hover:bg-black/40 transition-all group/link"
+        className="mt-2 block rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/10 overflow-hidden hover:bg-white/[0.06] transition-all group/link"
       >
         <div className="flex items-center gap-3 p-3">
           <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
