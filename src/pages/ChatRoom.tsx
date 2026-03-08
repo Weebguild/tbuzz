@@ -656,14 +656,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                     )}
 
                     <div className={cn(
-                      "flex flex-col gap-1 max-w-[80%]",
+                      "flex flex-col gap-1 max-w-[80%] min-w-0",
                       isOwn ? "items-end" : "items-start"
                     )}>
-                      {/* Swipe Context Action would go here */}
-                      <div className="relative group/bubble">
+                      <div className="relative group/bubble max-w-full overflow-hidden">
                         <div
                           className={cn(
-                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden",
+                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden max-w-full",
                             isOwn
                               ? "bg-primary text-white shadow-[0_10px_40px_-10px_rgba(124,58,237,0.5)] border border-primary/20"
                               : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
@@ -710,13 +709,13 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                               </div>
                             </div>
                           ) : (
-                            <div className="overflow-hidden">
-                              <p className="whitespace-pre-wrap break-words" style={{ wordBreak: "break-word" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
+                            <div className="overflow-hidden max-w-full">
+                              <p className="whitespace-pre-wrap break-words overflow-hidden" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
                             </div>
                           )}
                         </div>
 
-                        {/* Quick Reactions Hidden by Default */}
+                        {/* Reply + Emoji buttons on hover */}
                         <div className={cn(
                           "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 px-2",
                           isOwn ? "right-full mr-2" : "left-full ml-2"
@@ -724,15 +723,9 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                           <button onClick={() => setReplyingTo(data)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
                             <Reply className="h-4 w-4" />
                           </button>
-                          {["🔥", "❤️", "😂", "😮"].map(emoji => (
-                            <button
-                              key={emoji}
-                              onClick={() => setReactions(prev => ({ ...prev, [msg.id]: emoji }))}
-                              className="p-1.5 text-sm hover:scale-125 transition-transform"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
+                          <button onClick={() => setEmojiDrawerMsgId(msg.id)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                            <Smile className="h-4 w-4" />
+                          </button>
                         </div>
 
                         {reactions[msg.id] && (
