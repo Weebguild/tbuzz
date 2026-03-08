@@ -241,7 +241,7 @@ export function DesktopChatLayout() {
                 )}
             </div>
 
-            <div className="w-[300px] border-l border-white/5 bg-black/40 flex flex-col shrink-0 min-h-0">
+            <div className="w-[300px] border-l border-white/5 bg-white/[0.02] backdrop-blur-sm flex flex-col shrink-0 min-h-0">
                 <div className="p-8 border-b border-white/5">
                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">Shared Files</h3>
                     <div className="flex gap-4">
