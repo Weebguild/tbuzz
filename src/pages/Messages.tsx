@@ -381,11 +381,6 @@ export default function Messages() {
         </div>
       )}
 
-      {/* Shared Files Right Panel (Desktop only) */}
-      {!isMobile && conversationId && (
-        <DesktopSharedPanel conversationId={conversationId} conversations={conversations} />
-      )}
-
       {/* Discovery Modal */}
       <AnimatePresence>
         {showSearchModal && (

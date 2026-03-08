@@ -794,44 +794,44 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         {showInfo && recipient && (
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-3xl flex flex-col pt-12"
+            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-2xl flex flex-col pt-12"
           >
             <div className="px-6 flex items-center justify-between mb-8">
-              <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl bg-white/5">
+              <button onClick={() => setShowInfo(false)} className="p-3 rounded-2xl glass-panel">
                 <X className="h-6 w-6" />
               </button>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Details</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Details</h2>
               <div className="w-12" />
             </div>
 
             <ScrollArea className="flex-1 px-8">
-              <div className="flex flex-col items-center mb-12">
-                <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-2xl mb-6">
+              <div className="glass-panel rounded-3xl p-8 flex flex-col items-center mb-10">
+                <Avatar className="h-28 w-28 ring-4 ring-primary/20 shadow-2xl mb-5">
                   <AvatarImage src={recipient.avatar_url || ""} />
                   <AvatarFallback className="text-4xl font-black bg-white/5">
                     {recipient.display_name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <h3 className="text-3xl font-black tracking-tighter mb-2">{recipient.display_name}</h3>
-                <p className="text-xs text-primary font-black uppercase tracking-widest bg-primary/10 px-4 py-1.5 rounded-full">Mutual Connection</p>
+                <h3 className="text-2xl font-black tracking-tighter mb-2">{recipient.display_name}</h3>
+                <p className="text-[9px] text-primary font-black uppercase tracking-[0.3em] bg-primary/10 px-4 py-1.5 rounded-full">Mutual Connection</p>
               </div>
 
-              <div className="space-y-10">
-                <section>
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-6">Shared Media</h4>
+              <div className="space-y-6">
+                <section className="glass-panel rounded-3xl p-6">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-5">Shared Media</h4>
                   <div className="grid grid-cols-3 gap-2">
                     {sharedMedia.slice(0, 9).map((media, i) => (
-                      <div key={i} className="aspect-square rounded-2xl bg-white/5 overflow-hidden group">
+                      <div key={i} className="aspect-square rounded-2xl bg-white/5 overflow-hidden group cursor-pointer" onClick={() => setSelectedMedia(media.url)}>
                         <img src={media.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
                     ))}
-                    {sharedMedia.length === 0 && <p className="col-span-3 text-center py-8 text-white/20 text-xs italic">No shared media yet</p>}
+                    {sharedMedia.length === 0 && <p className="col-span-3 text-center py-6 text-muted-foreground/40 text-xs italic">No shared media yet</p>}
                   </div>
                 </section>
 
-                <section className="space-y-4">
-                  <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold">
-                    <div className="flex items-center gap-4 text-white/60">
+                <section className="glass-panel rounded-3xl overflow-hidden divide-y divide-white/[0.05]">
+                  <button className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold">
+                    <div className="flex items-center gap-4 text-foreground/60">
                       <Share2 className="h-5 w-5" />
                       <span>Share Profile</span>
                     </div>
@@ -840,22 +840,48 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   <button
                     onClick={() => {
                       if (recipient) {
-                        navigator.clipboard.writeText(recipient.user_id);
-                        toast.success("Username copied");
+                        const link = `${window.location.origin}/profile/${recipient.user_id}`;
+                        navigator.clipboard.writeText(link);
+                        toast.success("Profile link copied");
                       }
                     }}
-                    className="w-full flex items-center justify-between p-5 rounded-3xl bg-white/5 hover:bg-white/10 transition-all font-bold"
+                    className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
                   >
-                    <div className="flex items-center gap-4 text-white/60">
+                    <div className="flex items-center gap-4 text-foreground/60">
                       <Copy className="h-5 w-5" />
-                      <span>Copy Username</span>
+                      <span>Copy Profile Link</span>
                     </div>
                     <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
                   </button>
-                  <button className="w-full flex items-center justify-between p-5 rounded-3xl bg-red-500/10 hover:bg-red-500/20 transition-all font-bold text-red-500">
+                  <button
+                    onClick={handleMute}
+                    className="w-full flex items-center justify-between p-5 hover:bg-white/[0.04] transition-all font-bold"
+                  >
+                    <div className="flex items-center gap-4 text-foreground/60">
+                      {isMuted ? <Volume2 className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+                      <span>{isMuted ? "Unmute Notifications" : "Mute Notifications"}</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 rotate-180 opacity-20" />
+                  </button>
+                </section>
+
+                <section className="glass-panel rounded-3xl overflow-hidden divide-y divide-white/[0.05]">
+                  <button
+                    onClick={handleBlock}
+                    className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Ban className="h-5 w-5" />
+                      <span>Block User</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleClearHistory}
+                    className="w-full flex items-center justify-between p-5 hover:bg-destructive/5 transition-all font-bold text-destructive"
+                  >
                     <div className="flex items-center gap-4">
                       <Trash2 className="h-5 w-5" />
-                      <span>Clear Chat History</span>
+                      <span>Delete Conversation</span>
                     </div>
                   </button>
                 </section>
