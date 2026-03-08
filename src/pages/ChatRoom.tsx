@@ -646,6 +646,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             <div ref={bottomRef} className="h-12" />
           </div>
         </ScrollArea>
+        {/* Gradient fade into input */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none bg-gradient-to-t from-background/80 to-transparent z-10" />
         <AnimatePresence>
           {showScrollButton && (
             <motion.button
