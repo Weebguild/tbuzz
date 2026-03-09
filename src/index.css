@@ -6,15 +6,15 @@
 
 @layer base {
   :root {
-    /* Pure Black Background */
-    --background: 0 0% 0%;
+    /* Premium Off-Black Background */
+    --background: 240 10% 4%;
     --foreground: 210 20% 98%;
 
-    /* Glassy base for cards */
-    --card: 0 0% 4%;
+    /* Solid base for cards to prevent GPU lag */
+    --card: 240 8% 6%;
     --card-foreground: 210 20% 98%;
 
-    --popover: 0 0% 6%;
+    --popover: 240 8% 6%;
     --popover-foreground: 210 20% 98%;
 
     /* Neon Purple */
@@ -55,9 +55,11 @@
     @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
   }
 
-  /* Make default headers use the massive display font */
+  /* Make default headers use standard font, keeping display font for explicit classes */
   h1 {
-    @apply font-display tracking-wider font-normal;
+    font-family: "Inter", sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
 
   h2,
@@ -87,8 +89,8 @@
 
   /* The core component of the Midnight Glass look */
   .glass-panel {
-    @apply bg-white/[0.02] backdrop-blur-md border border-white/[0.05];
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    @apply bg-[#0f0f12] border border-white/[0.05];
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.4);
   }
 }
 

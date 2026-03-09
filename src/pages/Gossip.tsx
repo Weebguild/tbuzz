@@ -14,6 +14,7 @@ import { SelfDestructWrapper } from "@/components/feed/SelfDestructWrapper";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { UserHoverCard } from "@/components/ui/UserHoverCard";
 import {
   DropdownMenu,
@@ -549,11 +550,24 @@ export default function Gossip() {
         ) : posts.length === 0 ? (
           <motion.div
             key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="py-20 text-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="py-24 text-center px-6 flex flex-col items-center justify-center bg-[#0a0a0c] rounded-3xl border border-white/5"
           >
-            <p className="text-muted-foreground text-sm font-medium">No gossip yet. Start the drama!</p>
+            <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mb-4 border border-accent/20 shadow-[0_0_30px_rgba(236,72,153,0.2)]">
+              <span className="text-3xl">🎭</span>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No gossip yet</h3>
+            <p className="text-muted-foreground text-sm mb-6 max-w-[240px] mx-auto">
+              Campus is quiet today. Be the first to drop some anonymous tea!
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowComposer(true)}
+              className="bg-accent text-white px-6 py-2.5 rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+            >
+              Start the Drama
+            </motion.button>
           </motion.div>
         ) : (
           <motion.div
@@ -563,14 +577,15 @@ export default function Gossip() {
             className="space-y-3"
           >
             {posts.map((post) => (
-              <motion.div
-                key={post.id}
-                id={`gossip-${post.id}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-              >
-                <SelfDestructWrapper expiresAt={post.expires_at}>
+              <ErrorBoundary key={`eb-${post.id}`}>
+                <motion.div
+                  key={post.id}
+                  id={`gossip-${post.id}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                >
+                  <SelfDestructWrapper expiresAt={post.expires_at}>
                   <div
                     className={`glass-card-modern ${post.hotness_score > 0.7
                       ? "card-heat-high"
@@ -677,7 +692,8 @@ export default function Gossip() {
                     </div>
                   </div>
                 </SelfDestructWrapper>
-              </motion.div>
+                </motion.div>
+              </ErrorBoundary>
             ))}
 
             {/* Infinite scroll sentinel */}

@@ -19,6 +19,7 @@ import { PostImageExpander } from "@/components/feed/PostImageExpander";
 import { ImagePreviewEditor } from "@/components/feed/ImagePreviewEditor";
 import { NeonSparkOverlay } from "@/components/feed/NeonSparkOverlay";
 import { ActivityDrawer } from "@/components/layout/ActivityDrawer";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { UserHoverCard } from "@/components/ui/UserHoverCard";
 import {
   DropdownMenu,
@@ -531,11 +532,24 @@ export default function Feed() {
         ) : posts.length === 0 ? (
           <motion.div
             key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="py-20 text-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="py-24 text-center px-6 flex flex-col items-center justify-center bg-[#0a0a0c] rounded-3xl border border-white/5"
           >
-            <p className="text-muted-foreground text-sm font-medium">No posts yet. Be the first!</p>
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4 border border-primary/20 shadow-[0_0_30px_rgba(124,58,237,0.2)]">
+              <MessageCircle className="w-10 h-10 text-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Your feed is quiet</h3>
+            <p className="text-muted-foreground text-sm mb-6 max-w-[240px] mx-auto">
+              Follow more people or be the first to drop some buzz on campus.
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowComposer(true)}
+              className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+            >
+              Create Post
+            </motion.button>
           </motion.div>
         ) : (
           <motion.div
@@ -545,14 +559,15 @@ export default function Feed() {
             className="space-y-4"
           >
             {posts.map((post, i) => (
-              <motion.div
-                key={post.id}
-                id={`post-${post.id}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: Math.min(i * 0.05, 0.3) }}
-              >
-                <div className={`rounded-3xl glass-panel overflow-hidden transition-all duration-500 ${highlightedPostId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : "hover:border-primary/30"}`}>
+              <ErrorBoundary key={`eb-${post.id}`}>
+                <motion.div
+                  key={post.id}
+                  id={`post-${post.id}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: Math.min(i * 0.05, 0.3) }}
+                >
+                  <div className={`rounded-3xl glass-panel overflow-hidden transition-all duration-500 ${highlightedPostId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : "hover:border-primary/30"}`}>
                   {/* Post header */}
                   <div className="px-4 pt-4 pb-2 flex items-center gap-3">
                     <button onClick={() => navigate(`/profile/${post.user_id}`)} className="shrink-0">
@@ -615,7 +630,7 @@ export default function Feed() {
                       onSingleTap={() => setExpandedImage(post)}
                     >
                       <img
-                        src={post.image_url}
+                        src={post.image_url + (post.image_url.includes('?') ? '&' : '?') + 'width=600&quality=80'}
                         alt="Post"
                         className="w-full max-h-80 object-cover pointer-events-none"
                         loading="lazy"
@@ -717,7 +732,8 @@ export default function Feed() {
                     )}
                   </AnimatePresence>
                 </div>
-              </motion.div>
+                </motion.div>
+              </ErrorBoundary>
             ))}
 
             {/* Infinite scroll sentinel */}
