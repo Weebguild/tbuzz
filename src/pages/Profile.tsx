@@ -480,7 +480,7 @@ export default function Profile() {
       setIsMutualFollow(false);
     } else {
       const status = profile?.is_private ? 'pending' : 'accepted';
-      const { error } = await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId, status });
+      const { error } = await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId, status } as any);
       if (error) {
         setFollowLoading(false);
         toast.error("Failed to follow user");
@@ -490,13 +490,14 @@ export default function Profile() {
       if (status === 'accepted') {
         setIsFollowing(true);
         // Check if they follow us back
-        const { data: reverseFollow } = await supabase
+        const { data: reverseFollow } = await (supabase
           .from("follows")
-          .select("id, status")
-          .eq("follower_user_id", targetUserId)
+          .select("id, status" as any)
+          .eq("follower_user_id", targetUserId) as any)
           .eq("following_user_id", user.id)
           .maybeSingle();
-        setIsMutualFollow(!!reverseFollow && reverseFollow.status === 'accepted');
+        const rf = reverseFollow as any;
+        setIsMutualFollow(!!rf && rf.status === 'accepted');
         setFollowersCount((c) => c + 1);
       } else {
         setFollowRequestPending(true);
