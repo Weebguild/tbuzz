@@ -381,7 +381,7 @@ export default function Profile() {
   const handleRequestAction = async (followerId: string, action: 'approve' | 'deny') => {
     if (!user) return;
     if (action === 'approve') {
-      await supabase.from("follows").update({ status: 'accepted' }).eq("follower_user_id", followerId).eq("following_user_id", user.id);
+      await (supabase.from("follows").update({ status: 'accepted' } as any).eq("follower_user_id", followerId) as any).eq("following_user_id", user.id);
       setFollowersCount(c => c + 1);
       toast.success("Follow request approved");
     } else {
