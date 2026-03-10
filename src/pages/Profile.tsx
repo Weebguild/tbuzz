@@ -433,7 +433,7 @@ export default function Profile() {
         const { data: followsData } = await supabase
           .from("follows")
           .select("following_user_id")
-          .eq("follower_user_id", user.id)
+          .eq("follower_user_id", user.id) as any)
           .eq("status", "accepted");
 
         if (followsData && followsData.length > 0) {
