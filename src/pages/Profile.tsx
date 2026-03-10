@@ -181,40 +181,54 @@ export default function Profile() {
     const { data: profileData } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).single();
 
     if (profileData) {
-      setProfile(profileData);
-      setEditName(profileData.display_name);
-      setEditBio(profileData.bio || "");
-      setEditIsPrivate(profileData.is_private || false);
+      const pd = profileData as any;
+      setProfile({
+        user_id: pd.user_id,
+        display_name: pd.display_name,
+        avatar_url: pd.avatar_url,
+        bio: pd.bio,
+        department: pd.department,
+        year: pd.year,
+        anonymous_alias: pd.anonymous_alias,
+        is_private: pd.is_private ?? false,
+      });
+      setEditName(pd.display_name);
+      setEditBio(pd.bio || "");
+      setEditIsPrivate(pd.is_private || false);
     }
 
-    const [{ count: followers }, { count: following }] = await Promise.all([
-      supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId).eq("status", "accepted"),
-      supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId).eq("status", "accepted"),
+    const [followersResult, followingResult] = await Promise.all([
+      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId) as any).eq("status", "accepted"),
+      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId) as any).eq("status", "accepted"),
     ]);
+    const { count: followersC } = followersResult;
+    const { count: followingC } = followingResult;
 
-    setFollowersCount(followers || 0);
-    setFollowingCount(following || 0);
+    setFollowersCount(followersC || 0);
+    setFollowingCount(followingC || 0);
 
     if (!isOwnProfile && user?.id) {
       const [{ data: followData }, { data: reverseFollowData }] = await Promise.all([
         supabase
           .from("follows")
-          .select("id, status")
+          .select("id, status" as any)
           .eq("follower_user_id", user.id)
           .eq("following_user_id", targetUserId)
           .maybeSingle(),
         supabase
           .from("follows")
-          .select("id, status")
+          .select("id, status" as any)
           .eq("follower_user_id", targetUserId)
           .eq("following_user_id", user.id)
           .maybeSingle(),
       ]);
-      const following = !!followData && followData.status === 'accepted';
-      const pending = !!followData && followData.status === 'pending';
-      setIsFollowing(following);
+      const fd = followData as any;
+      const rd = reverseFollowData as any;
+      const isFollowingNow = !!fd && fd.status === 'accepted';
+      const pending = !!fd && fd.status === 'pending';
+      setIsFollowing(isFollowingNow);
       setFollowRequestPending(pending);
-      setIsMutualFollow(following && !!reverseFollowData && reverseFollowData.status === 'accepted');
+      setIsMutualFollow(isFollowingNow && !!rd && rd.status === 'accepted');
     }
 
     const { data: allPosts } = await supabase
@@ -341,10 +355,10 @@ export default function Profile() {
     if (isRequestsOpen && user) {
       setLoadingRequests(true);
       const fetchRequests = async () => {
-        const { data: followsData } = await supabase
+        const { data: followsData } = await (supabase
           .from("follows")
           .select("follower_user_id")
-          .eq("following_user_id", user.id)
+          .eq("following_user_id", user.id) as any)
           .eq("status", "pending");
 
         if (followsData && followsData.length > 0) {
@@ -367,7 +381,7 @@ export default function Profile() {
   const handleRequestAction = async (followerId: string, action: 'approve' | 'deny') => {
     if (!user) return;
     if (action === 'approve') {
-      await supabase.from("follows").update({ status: 'accepted' }).eq("follower_user_id", followerId).eq("following_user_id", user.id);
+      await (supabase.from("follows").update({ status: 'accepted' } as any).eq("follower_user_id", followerId) as any).eq("following_user_id", user.id);
       setFollowersCount(c => c + 1);
       toast.success("Follow request approved");
     } else {
@@ -381,10 +395,10 @@ export default function Profile() {
     if (isFollowersListOpen && user && isOwnProfile) {
       setLoadingFollowersList(true);
       const fetchFollowers = async () => {
-        const { data: followsData } = await supabase
+        const { data: followsData } = await (supabase
           .from("follows")
           .select("follower_user_id")
-          .eq("following_user_id", user.id)
+          .eq("following_user_id", user.id) as any)
           .eq("status", "accepted");
 
         if (followsData && followsData.length > 0) {
@@ -416,10 +430,10 @@ export default function Profile() {
     if (isFollowingListOpen && user && isOwnProfile) {
       setLoadingFollowingList(true);
       const fetchFollowingList = async () => {
-        const { data: followsData } = await supabase
+        const { data: followsData } = await (supabase
           .from("follows")
           .select("following_user_id")
-          .eq("follower_user_id", user.id)
+          .eq("follower_user_id", user.id) as any)
           .eq("status", "accepted");
 
         if (followsData && followsData.length > 0) {
@@ -466,7 +480,7 @@ export default function Profile() {
       setIsMutualFollow(false);
     } else {
       const status = profile?.is_private ? 'pending' : 'accepted';
-      const { error } = await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId, status });
+      const { error } = await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId, status } as any);
       if (error) {
         setFollowLoading(false);
         toast.error("Failed to follow user");
@@ -476,13 +490,14 @@ export default function Profile() {
       if (status === 'accepted') {
         setIsFollowing(true);
         // Check if they follow us back
-        const { data: reverseFollow } = await supabase
+        const { data: reverseFollow } = await (supabase
           .from("follows")
-          .select("id, status")
-          .eq("follower_user_id", targetUserId)
+          .select("id, status" as any)
+          .eq("follower_user_id", targetUserId) as any)
           .eq("following_user_id", user.id)
           .maybeSingle();
-        setIsMutualFollow(!!reverseFollow && reverseFollow.status === 'accepted');
+        const rf = reverseFollow as any;
+        setIsMutualFollow(!!rf && rf.status === 'accepted');
         setFollowersCount((c) => c + 1);
       } else {
         setFollowRequestPending(true);
