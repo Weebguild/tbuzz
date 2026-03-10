@@ -178,7 +178,24 @@ export default function Profile() {
   const fetchProfileData = useCallback(async () => {
     if (!targetUserId) return;
     setLoading(true);
-    const { data: profileData } = await supabase.from("profiles").select("*").eq("user_id", targetUserId).single();
+
+    // Batch all independent queries in parallel
+    const [
+      { data: profileData },
+      followersResult,
+      followingResult,
+      { data: allPosts },
+      ...followCheckResults
+    ] = await Promise.all([
+      supabase.from("profiles").select("*").eq("user_id", targetUserId).single(),
+      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId) as any).eq("status", "accepted"),
+      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId) as any).eq("status", "accepted"),
+      supabase.from("posts").select("id, content, created_at, image_url").eq("user_id", targetUserId).order("created_at", { ascending: false }),
+      ...(!isOwnProfile && user?.id ? [
+        supabase.from("follows").select("id, status" as any).eq("follower_user_id", user.id).eq("following_user_id", targetUserId).maybeSingle(),
+        supabase.from("follows").select("id, status" as any).eq("follower_user_id", targetUserId).eq("following_user_id", user.id).maybeSingle(),
+      ] : []),
+    ]);
 
     if (profileData) {
       const pd = profileData as any;
@@ -197,45 +214,18 @@ export default function Profile() {
       setEditIsPrivate(pd.is_private || false);
     }
 
-    const [followersResult, followingResult] = await Promise.all([
-      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId) as any).eq("status", "accepted"),
-      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId) as any).eq("status", "accepted"),
-    ]);
-    const { count: followersC } = followersResult;
-    const { count: followingC } = followingResult;
+    setFollowersCount(followersResult?.count || 0);
+    setFollowingCount(followingResult?.count || 0);
 
-    setFollowersCount(followersC || 0);
-    setFollowingCount(followingC || 0);
-
-    if (!isOwnProfile && user?.id) {
-      const [{ data: followData }, { data: reverseFollowData }] = await Promise.all([
-        supabase
-          .from("follows")
-          .select("id, status" as any)
-          .eq("follower_user_id", user.id)
-          .eq("following_user_id", targetUserId)
-          .maybeSingle(),
-        supabase
-          .from("follows")
-          .select("id, status" as any)
-          .eq("follower_user_id", targetUserId)
-          .eq("following_user_id", user.id)
-          .maybeSingle(),
-      ]);
-      const fd = followData as any;
-      const rd = reverseFollowData as any;
+    if (!isOwnProfile && user?.id && followCheckResults.length === 2) {
+      const fd = (followCheckResults[0] as any)?.data as any;
+      const rd = (followCheckResults[1] as any)?.data as any;
       const isFollowingNow = !!fd && fd.status === 'accepted';
       const pending = !!fd && fd.status === 'pending';
       setIsFollowing(isFollowingNow);
       setFollowRequestPending(pending);
       setIsMutualFollow(isFollowingNow && !!rd && rd.status === 'accepted');
     }
-
-    const { data: allPosts } = await supabase
-      .from("posts")
-      .select("id, content, created_at, image_url")
-      .eq("user_id", targetUserId)
-      .order("created_at", { ascending: false });
 
     const photoPosts = allPosts?.filter((p) => p.image_url) || [];
     const textPostsData = allPosts?.filter((p) => !p.image_url) || [];
@@ -247,25 +237,24 @@ export default function Profile() {
         supabase.from("comments").select("post_id").in("post_id", allPostIds),
       ]);
 
-      if (photoPosts) {
-        setPhotos(
-          photoPosts.map((photo) => ({
-            ...photo,
-            reaction_count: reactions?.filter((r) => r.post_id === photo.id).length || 0,
-          })),
-        );
-      }
+      setPhotos(
+        photoPosts.map((photo) => ({
+          ...photo,
+          reaction_count: reactions?.filter((r) => r.post_id === photo.id).length || 0,
+        })),
+      );
 
-      if (textPostsData) {
-        setTextPosts(
-          textPostsData.map((post) => ({
-            ...post,
-            reaction_count: reactions?.filter((r) => r.post_id === post.id).length || 0,
-            comment_count: comments?.filter((c) => c.post_id === post.id).length || 0,
-            has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) || false,
-          })),
-        );
-      }
+      setTextPosts(
+        textPostsData.map((post) => ({
+          ...post,
+          reaction_count: reactions?.filter((r) => r.post_id === post.id).length || 0,
+          comment_count: comments?.filter((c) => c.post_id === post.id).length || 0,
+          has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) || false,
+        })),
+      );
+    } else {
+      setPhotos([]);
+      setTextPosts([]);
     }
 
     setLoading(false);
