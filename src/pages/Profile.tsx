@@ -355,10 +355,10 @@ export default function Profile() {
     if (isRequestsOpen && user) {
       setLoadingRequests(true);
       const fetchRequests = async () => {
-        const { data: followsData } = await supabase
+        const { data: followsData } = await (supabase
           .from("follows")
           .select("follower_user_id")
-          .eq("following_user_id", user.id)
+          .eq("following_user_id", user.id) as any)
           .eq("status", "pending");
 
         if (followsData && followsData.length > 0) {
