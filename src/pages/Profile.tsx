@@ -430,7 +430,7 @@ export default function Profile() {
     if (isFollowingListOpen && user && isOwnProfile) {
       setLoadingFollowingList(true);
       const fetchFollowingList = async () => {
-        const { data: followsData } = await supabase
+        const { data: followsData } = await (supabase
           .from("follows")
           .select("following_user_id")
           .eq("follower_user_id", user.id) as any)
