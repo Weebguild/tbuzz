@@ -197,10 +197,12 @@ export default function Profile() {
       setEditIsPrivate(pd.is_private || false);
     }
 
-    const [{ count: followers }, { count: following }] = await Promise.all([
-      supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId).eq("status" as any, "accepted"),
-      supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId).eq("status" as any, "accepted"),
+    const [followersResult, followingResult] = await Promise.all([
+      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId) as any).eq("status", "accepted"),
+      (supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId) as any).eq("status", "accepted"),
     ]);
+    const { count: followersC } = followersResult;
+    const { count: followingC } = followingResult;
 
     setFollowersCount(followers || 0);
     setFollowingCount(following || 0);
