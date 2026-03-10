@@ -24,6 +24,7 @@ import {
   Camera,
   Settings,
   Ghost,
+  Lock,
 } from "lucide-react";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
@@ -43,6 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Edit3 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -83,6 +85,7 @@ interface ProfileData {
   department: string | null;
   year: string | null;
   anonymous_alias: string | null;
+  is_private: boolean;
 }
 
 interface PhotoPost {
@@ -137,6 +140,7 @@ export default function Profile() {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followRequestPending, setFollowRequestPending] = useState(false);
   const [isMutualFollow, setIsMutualFollow] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -155,8 +159,15 @@ export default function Profile() {
 
   // Edit state
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isRequestsOpen, setIsRequestsOpen] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [isFollowersListOpen, setIsFollowersListOpen] = useState(false);
+  const [followersList, setFollowersList] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
+  const [loadingFollowersList, setLoadingFollowersList] = useState(false);
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
+  const [editIsPrivate, setEditIsPrivate] = useState(false);
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -170,11 +181,12 @@ export default function Profile() {
       setProfile(profileData);
       setEditName(profileData.display_name);
       setEditBio(profileData.bio || "");
+      setEditIsPrivate(profileData.is_private || false);
     }
 
     const [{ count: followers }, { count: following }] = await Promise.all([
-      supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId),
-      supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId),
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId).eq("status", "accepted"),
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId).eq("status", "accepted"),
     ]);
 
     setFollowersCount(followers || 0);
@@ -184,20 +196,22 @@ export default function Profile() {
       const [{ data: followData }, { data: reverseFollowData }] = await Promise.all([
         supabase
           .from("follows")
-          .select("id")
+          .select("id, status")
           .eq("follower_user_id", user.id)
           .eq("following_user_id", targetUserId)
           .maybeSingle(),
         supabase
           .from("follows")
-          .select("id")
+          .select("id, status")
           .eq("follower_user_id", targetUserId)
           .eq("following_user_id", user.id)
           .maybeSingle(),
       ]);
-      const following = !!followData;
+      const following = !!followData && followData.status === 'accepted';
+      const pending = !!followData && followData.status === 'pending';
       setIsFollowing(following);
-      setIsMutualFollow(following && !!reverseFollowData);
+      setFollowRequestPending(pending);
+      setIsMutualFollow(following && !!reverseFollowData && reverseFollowData.status === 'accepted');
     }
 
     const { data: allPosts } = await supabase
@@ -321,6 +335,81 @@ export default function Profile() {
   }, [user, isOwnProfile, savedSubFilter]);
 
   useEffect(() => {
+    if (isRequestsOpen && user) {
+      setLoadingRequests(true);
+      const fetchRequests = async () => {
+        const { data: followsData } = await supabase
+          .from("follows")
+          .select("follower_user_id")
+          .eq("following_user_id", user.id)
+          .eq("status", "pending");
+
+        if (followsData && followsData.length > 0) {
+          const userIds = followsData.map((f) => f.follower_user_id);
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, avatar_url")
+            .in("user_id", userIds);
+
+          setPendingRequests(profiles || []);
+        } else {
+          setPendingRequests([]);
+        }
+        setLoadingRequests(false);
+      };
+      fetchRequests();
+    }
+  }, [isRequestsOpen, user]);
+
+  const handleRequestAction = async (followerId: string, action: 'approve' | 'deny') => {
+    if (!user) return;
+    if (action === 'approve') {
+      await supabase.from("follows").update({ status: 'accepted' }).eq("follower_user_id", followerId).eq("following_user_id", user.id);
+      setFollowersCount(c => c + 1);
+      toast.success("Follow request approved");
+    } else {
+      await supabase.from("follows").delete().eq("follower_user_id", followerId).eq("following_user_id", user.id);
+      toast.success("Follow request denied");
+    }
+    setPendingRequests(prev => prev.filter(r => r.user_id !== followerId));
+  };
+
+  useEffect(() => {
+    if (isFollowersListOpen && user && isOwnProfile) {
+      setLoadingFollowersList(true);
+      const fetchFollowers = async () => {
+        const { data: followsData } = await supabase
+          .from("follows")
+          .select("follower_user_id")
+          .eq("following_user_id", user.id)
+          .eq("status", "accepted");
+
+        if (followsData && followsData.length > 0) {
+          const userIds = followsData.map((f) => f.follower_user_id);
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, avatar_url")
+            .in("user_id", userIds);
+
+          setFollowersList(profiles || []);
+        } else {
+          setFollowersList([]);
+        }
+        setLoadingFollowersList(false);
+      };
+      fetchFollowers();
+    }
+  }, [isFollowersListOpen, user, isOwnProfile]);
+
+  const handleRemoveFollower = async (followerId: string) => {
+    if (!user) return;
+    await supabase.from("follows").delete().eq("follower_user_id", followerId).eq("following_user_id", user.id);
+    setFollowersList(prev => prev.filter(r => r.user_id !== followerId));
+    setFollowersCount(c => Math.max(0, c - 1));
+    toast.success("Follower removed");
+  };
+
+  useEffect(() => {
     if (activeTab === "saved" && isOwnProfile) {
       fetchSavedItems();
     }
@@ -329,23 +418,31 @@ export default function Profile() {
   const toggleFollow = async () => {
     if (!user || !targetUserId || isOwnProfile) return;
     setFollowLoading(true);
-    if (isFollowing) {
+    if (isFollowing || followRequestPending) {
       await supabase.from("follows").delete().eq("follower_user_id", user.id).eq("following_user_id", targetUserId);
+      if (isFollowing) {
+        setFollowersCount((c) => Math.max(0, c - 1));
+      }
       setIsFollowing(false);
+      setFollowRequestPending(false);
       setIsMutualFollow(false);
-      setFollowersCount((c) => Math.max(0, c - 1));
     } else {
-      await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId });
-      setIsFollowing(true);
-      // Check if they follow us back
-      const { data: reverseFollow } = await supabase
-        .from("follows")
-        .select("id")
-        .eq("follower_user_id", targetUserId)
-        .eq("following_user_id", user.id)
-        .maybeSingle();
-      setIsMutualFollow(!!reverseFollow);
-      setFollowersCount((c) => c + 1);
+      const status = profile?.is_private ? 'pending' : 'accepted';
+      await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId, status });
+      if (status === 'accepted') {
+        setIsFollowing(true);
+        // Check if they follow us back
+        const { data: reverseFollow } = await supabase
+          .from("follows")
+          .select("id, status")
+          .eq("follower_user_id", targetUserId)
+          .eq("following_user_id", user.id)
+          .maybeSingle();
+        setIsMutualFollow(!!reverseFollow && reverseFollow.status === 'accepted');
+        setFollowersCount((c) => c + 1);
+      } else {
+        setFollowRequestPending(true);
+      }
     }
     setFollowLoading(false);
   };
@@ -455,6 +552,7 @@ export default function Profile() {
           display_name: editName.trim(),
           bio: editBio.trim(),
           avatar_url: avatarUrl,
+          is_private: editIsPrivate,
         })
         .eq("user_id", user.id);
 
@@ -467,6 +565,7 @@ export default function Profile() {
             display_name: editName.trim(),
             bio: editBio.trim(),
             avatar_url: avatarUrl,
+            is_private: editIsPrivate,
           }
           : null,
       );
@@ -493,6 +592,7 @@ export default function Profile() {
     setFollowersCount(0);
     setFollowingCount(0);
     setIsFollowing(false);
+    setFollowRequestPending(false);
     setActiveTab("posts");
     setExpandedPhoto(null);
     setSavedPosts([]);
@@ -656,6 +756,19 @@ export default function Profile() {
                             className="bg-white/5 border-white/10 rounded-xl min-h-[100px] focus:ring-primary focus:border-primary transition-all resize-none text-sm leading-relaxed"
                           />
                         </div>
+
+                        <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-4">
+                          <div className="space-y-0.5 text-left pr-4">
+                            <Label htmlFor="private-account" className="text-sm font-bold text-foreground">Private Account</Label>
+                            <p className="text-[10px] text-muted-foreground">Only approved followers can see your posts and gallery.</p>
+                          </div>
+                          <Switch
+                            id="private-account"
+                            checked={editIsPrivate}
+                            onCheckedChange={setEditIsPrivate}
+                          />
+                        </div>
+
                       </div>
                       <DialogFooter>
                         <Button
@@ -676,6 +789,50 @@ export default function Profile() {
                     </DialogContent>
                   </Dialog>
 
+                  <Dialog open={isRequestsOpen} onOpenChange={setIsRequestsOpen}>
+                    <DialogTrigger asChild>
+                      <button className="flex items-center justify-between w-full p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                            <UserCheck className="h-5 w-5" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-sm font-bold text-foreground">Follow Requests</p>
+                            <p className="text-xs text-muted-foreground">Approve or deny new followers</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="glass-panel border-white/10 bg-[#0A0A0A]/95 backdrop-blur-2xl text-foreground rounded-3xl sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold tracking-tight">Follow Requests</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-6 max-h-[70vh] overflow-y-auto no-scrollbar pr-1 space-y-4">
+                        {loadingRequests ? (
+                          <div className="flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                        ) : pendingRequests.length === 0 ? (
+                          <div className="text-center text-muted-foreground text-sm">No pending requests.</div>
+                        ) : (
+                          pendingRequests.map(req => (
+                            <div key={req.user_id} className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  {req.avatar_url ? <AvatarImage src={req.avatar_url} /> : <AvatarFallback>{req.display_name.charAt(0)}</AvatarFallback>}
+                                </Avatar>
+                                <p className="text-sm font-bold">{req.display_name}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleRequestAction(req.user_id, 'approve')} className="bg-primary hover:bg-primary/90 text-white font-bold px-3">Approve</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleRequestAction(req.user_id, 'deny')} className="border-white/10 text-foreground px-3">Deny</Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                   <button
                     onClick={() => setShowLogoutDialog(true)}
                     className="flex items-center justify-between w-full p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group"
@@ -692,13 +849,14 @@ export default function Profile() {
                   </button>
                 </div>
               </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </div>
+            </Dialog >
+          )
+          }
+        </div >
+      </div >
 
       {/* ── PROFILE INFO CARD ── */}
-      <div className="rounded-3xl glass-panel p-6 mb-6 relative overflow-hidden">
+      < div className="rounded-3xl glass-panel p-6 mb-6 relative overflow-hidden" >
         <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/20 rounded-full blur-[50px] pointer-events-none" />
 
         <div className="flex flex-col items-center text-center relative z-10">
@@ -757,6 +915,14 @@ export default function Profile() {
                   <>
                     <UserCheck className="h-4 w-4" /> Following
                   </>
+                ) : followRequestPending ? (
+                  <>
+                    <UserCheck className="h-4 w-4" /> Requested
+                  </>
+                ) : profile.is_private ? (
+                  <>
+                    <UserPlus className="h-4 w-4" /> Request
+                  </>
                 ) : (
                   <>
                     <UserPlus className="h-4 w-4" /> Follow
@@ -780,7 +946,10 @@ export default function Profile() {
 
           {/* ── FOLLOWER STATS ── */}
           <div className="flex items-center justify-center gap-8 mt-6 pt-5 border-t border-white/5 w-full">
-            <div className="flex flex-col items-center">
+            <div
+              className={cn("flex flex-col items-center", isOwnProfile ? "cursor-pointer hover:opacity-80 transition-opacity" : "")}
+              onClick={() => isOwnProfile && setIsFollowersListOpen(true)}
+            >
               <span className="text-3xl font-display text-white tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                 <AnimatedNumber value={followersCount} />
               </span>
@@ -801,270 +970,319 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* ── TABS ── */}
-      <div
-        className={`flex gap-2 mb-6 p-1 glass-panel rounded-full mx-auto ${isOwnProfile ? "max-w-[300px]" : "max-w-[200px]"
-          }`}
-      >
-        {tabs.map((tab, i) => (
-          <button
-            key={tab.key}
-            onClick={() => {
-              const currentIdx = tabs.findIndex((t) => t.key === activeTab);
-              setTabDirection(i > currentIdx ? 1 : -1);
-              setActiveTab(tab.key);
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.key
-              ? "bg-white/10 text-white shadow-md"
-              : "text-muted-foreground hover:text-white/70"
-              }`}
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── TAB CONTENT ── */}
-      <AnimatePresence mode="wait">
-        {/* TEXT POSTS FEED */}
-        {activeTab === "posts" && (
-          <motion.div
-            key="posts"
-            custom={tabDirection}
-            initial={{ opacity: 0, x: tabDirection * 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: tabDirection * -30 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-4"
-          >
-            {textPosts.length === 0 ? (
-              <div className="py-20 text-center">
-                <LayoutList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground font-medium">No text posts yet.</p>
-              </div>
-            ) : (
-              textPosts.map((post, i) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+      {
+        (!profile.is_private || isOwnProfile || isFollowing) ? (
+          <>
+            <div
+              className={`flex gap-2 mb-6 p-1 glass-panel rounded-full mx-auto ${isOwnProfile ? "max-w-[300px]" : "max-w-[200px]"
+                }`}
+            >
+              {tabs.map((tab, i) => (
+                <button
+                  key={tab.key}
+                  onClick={() => {
+                    const currentIdx = tabs.findIndex((t) => t.key === activeTab);
+                    setTabDirection(i > currentIdx ? 1 : -1);
+                    setActiveTab(tab.key);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.key
+                    ? "bg-white/10 text-white shadow-md"
+                    : "text-muted-foreground hover:text-white/70"
+                    }`}
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <Avatar className="h-9 w-9 ring-1 ring-white/10">
-                      {profile.avatar_url ? (
-                        <AvatarImage src={profile.avatar_url} />
-                      ) : (
-                        <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
-                          {profile.display_name.charAt(0)}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-sm text-foreground">{profile.display_name}</p>
-                      <p className="text-xs text-muted-foreground/80">
-                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="text-sm leading-relaxed text-foreground/90 mb-4">{post.content}</p>
-
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => toggleLike(post.id, post.has_liked)}
-                      className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
-                      {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
-                    </button>
-                    <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      <MessageCircle className="h-4 w-4" />
-                      {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
-                    </button>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </motion.div>
-        )}
-
-        {/* GALLERY GRID */}
-        {activeTab === "gallery" && (
-          <motion.div
-            key="gallery"
-            custom={tabDirection}
-            initial={{ opacity: 0, x: tabDirection * 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: tabDirection * -30 }}
-            transition={{ duration: 0.2 }}
-            className="grid grid-cols-2 gap-3"
-          >
-            {photos.length === 0 ? (
-              <div className="col-span-2 py-20 text-center">
-                <Grid className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground font-medium">No photos uploaded yet.</p>
-              </div>
-            ) : (
-              photos.map((photo, i) => {
-                const isWide = i % 3 === 0;
-                return (
-                  <motion.div
-                    key={photo.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                    className={`relative overflow-hidden rounded-3xl glass-panel group cursor-pointer border border-white/5 ${isWide ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"}`}
-                    onClick={() => setExpandedPhoto(photo)}
-                  >
-                    <img
-                      src={photo.image_url}
-                      alt="Gallery"
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                      <div className="flex items-center gap-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                        <Heart className="h-4 w-4 text-[#EC4899] fill-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
-                        <span className="text-xs font-bold text-white">{photo.reaction_count}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })
-            )}
-          </motion.div>
-        )}
-
-        {/* SAVED TAB - only own profile */}
-        {activeTab === "saved" && isOwnProfile && (
-          <motion.div
-            key="saved"
-            custom={tabDirection}
-            initial={{ opacity: 0, x: tabDirection * 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: tabDirection * -30 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-4"
-          >
-            {/* Sub-filter */}
-            <div className="flex gap-2 p-1 glass-panel rounded-full max-w-[220px] mx-auto">
-              <button
-                onClick={() => setSavedSubFilter("posts")}
-                className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "posts" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
-              >
-                Posts
-              </button>
-              <button
-                onClick={() => setSavedSubFilter("gossip")}
-                className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "gossip" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
-              >
-                Gossip
-              </button>
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
             </div>
 
-            {loadingSaved ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : savedSubFilter === "posts" ? (
-              savedPosts.length === 0 ? (
-                <div className="py-20 text-center">
-                  <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                  <p className="text-sm text-muted-foreground font-medium">No saved posts yet.</p>
-                </div>
-              ) : (
-                savedPosts.map((post, i) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
-                        {post.author_avatar ? (
-                          <AvatarImage src={post.author_avatar} />
-                        ) : (
-                          <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
-                            {post.author_name.charAt(0)}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-foreground">{post.author_name}</p>
-                        <p className="text-xs text-muted-foreground/80">
-                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                        </p>
-                      </div>
-                      <motion.button
-                        onClick={() => unsavPost(post.id)}
-                        whileTap={{ scale: 1.4 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className="text-foreground"
-                      >
-                        <Bookmark className="h-4 w-4 fill-current" />
-                      </motion.button>
+            {/* ── TAB CONTENT ── */}
+            <AnimatePresence mode="wait">
+              {/* TEXT POSTS FEED */}
+              {activeTab === "posts" && (
+                <motion.div
+                  key="posts"
+                  custom={tabDirection}
+                  initial={{ opacity: 0, x: tabDirection * 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: tabDirection * -30 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4"
+                >
+                  {textPosts.length === 0 ? (
+                    <div className="py-20 text-center">
+                      <LayoutList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-sm text-muted-foreground font-medium">No text posts yet.</p>
                     </div>
-                    {post.image_url && (
-                      <img src={post.image_url} alt="Saved post" className="w-full rounded-xl max-h-48 object-cover mb-3 border border-white/5" loading="lazy" />
-                    )}
-                    <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
-                  </motion.div>
-                ))
-              )
+                  ) : (
+                    textPosts.map((post, i) => (
+                      <motion.div
+                        key={post.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                            {profile.avatar_url ? (
+                              <AvatarImage src={profile.avatar_url} />
+                            ) : (
+                              <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                                {profile.display_name.charAt(0)}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-sm text-foreground">{profile.display_name}</p>
+                            <p className="text-xs text-muted-foreground/80">
+                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                            </p>
+                          </div>
+                        </div>
+
+                        <p className="text-sm leading-relaxed text-foreground/90 mb-4">{post.content}</p>
+
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => toggleLike(post.id, post.has_liked)}
+                            className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                          >
+                            <Heart className={`h-4 w-4 ${post.has_liked ? "fill-current" : ""}`} />
+                            {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
+                          </button>
+                          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                            <MessageCircle className="h-4 w-4" />
+                            {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </motion.div>
+              )}
+
+              {/* GALLERY GRID */}
+              {activeTab === "gallery" && (
+                <motion.div
+                  key="gallery"
+                  custom={tabDirection}
+                  initial={{ opacity: 0, x: tabDirection * 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: tabDirection * -30 }}
+                  transition={{ duration: 0.2 }}
+                  className="grid grid-cols-2 gap-3"
+                >
+                  {photos.length === 0 ? (
+                    <div className="col-span-2 py-20 text-center">
+                      <Grid className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-sm text-muted-foreground font-medium">No photos uploaded yet.</p>
+                    </div>
+                  ) : (
+                    photos.map((photo, i) => {
+                      const isWide = i % 3 === 0;
+                      return (
+                        <motion.div
+                          key={photo.id}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: i * 0.05 }}
+                          className={`relative overflow-hidden rounded-3xl glass-panel group cursor-pointer border border-white/5 ${isWide ? "col-span-2 aspect-[2/1]" : "col-span-1 aspect-square"}`}
+                          onClick={() => setExpandedPhoto(photo)}
+                        >
+                          <img
+                            src={photo.image_url}
+                            alt="Gallery"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                            <div className="flex items-center gap-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                              <Heart className="h-4 w-4 text-[#EC4899] fill-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
+                              <span className="text-xs font-bold text-white">{photo.reaction_count}</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </motion.div>
+              )}
+
+              {/* SAVED TAB - only own profile */}
+              {activeTab === "saved" && isOwnProfile && (
+                <motion.div
+                  key="saved"
+                  custom={tabDirection}
+                  initial={{ opacity: 0, x: tabDirection * 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: tabDirection * -30 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4"
+                >
+                  {/* Sub-filter */}
+                  <div className="flex gap-2 p-1 glass-panel rounded-full max-w-[220px] mx-auto">
+                    <button
+                      onClick={() => setSavedSubFilter("posts")}
+                      className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "posts" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+                    >
+                      Posts
+                    </button>
+                    <button
+                      onClick={() => setSavedSubFilter("gossip")}
+                      className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "gossip" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+                    >
+                      Gossip
+                    </button>
+                  </div>
+
+                  {loadingSaved ? (
+                    <div className="flex justify-center py-10">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : savedSubFilter === "posts" ? (
+                    savedPosts.length === 0 ? (
+                      <div className="py-20 text-center">
+                        <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                        <p className="text-sm text-muted-foreground font-medium">No saved posts yet.</p>
+                      </div>
+                    ) : (
+                      savedPosts.map((post, i) => (
+                        <motion.div
+                          key={post.id}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                              {post.author_avatar ? (
+                                <AvatarImage src={post.author_avatar} />
+                              ) : (
+                                <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                                  {post.author_name.charAt(0)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm text-foreground">{post.author_name}</p>
+                              <p className="text-xs text-muted-foreground/80">
+                                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                            <motion.button
+                              onClick={() => unsavPost(post.id)}
+                              whileTap={{ scale: 1.4 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                              className="text-foreground"
+                            >
+                              <Bookmark className="h-4 w-4 fill-current" />
+                            </motion.button>
+                          </div>
+                          {post.image_url && (
+                            <img src={post.image_url} alt="Saved post" className="w-full rounded-xl max-h-48 object-cover mb-3 border border-white/5" loading="lazy" />
+                          )}
+                          <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
+                        </motion.div>
+                      ))
+                    )
+                  ) : (
+                    savedGossips.length === 0 ? (
+                      <div className="py-20 text-center">
+                        <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                        <p className="text-sm text-muted-foreground font-medium">No saved gossip yet.</p>
+                      </div>
+                    ) : (
+                      savedGossips.map((gossip, i) => (
+                        <motion.div
+                          key={gossip.id}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                              <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
+                                {gossip.gossip_alias}
+                              </span>
+                              <p className="text-xs text-muted-foreground/80">
+                                {formatDistanceToNow(new Date(gossip.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                            <motion.button
+                              onClick={() => unsavGossip(gossip.id)}
+                              whileTap={{ scale: 1.4 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                              className="text-foreground"
+                            >
+                              <Bookmark className="h-4 w-4 fill-current" />
+                            </motion.button>
+                          </div>
+                          <p className="text-sm leading-relaxed text-foreground/90 mb-3">{gossip.content}</p>
+                          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                            <ArrowUp className="h-3.5 w-3.5" />
+                            <span className="font-bold">{gossip.upvote_count}</span>
+                          </div>
+                        </motion.div>
+                      ))
+                    )
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        ) : (
+          <div className="py-20 text-center flex flex-col items-center">
+            <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4 ring-1 ring-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+              <Lock className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2">This account is private</h3>
+            <p className="text-sm text-muted-foreground">Follow this account to see their photos and posts.</p>
+          </div>
+        )
+      }
+
+      {/* ── FOLLOWERS LIST DIALOG ── */}
+      <Dialog open={isFollowersListOpen} onOpenChange={setIsFollowersListOpen}>
+        <DialogContent className="glass-panel border-white/10 bg-[#0A0A0A]/95 backdrop-blur-2xl text-foreground rounded-3xl sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold tracking-tight">Your Followers</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 max-h-[70vh] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
+            {loadingFollowersList ? (
+              <div className="flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+            ) : followersList.length === 0 ? (
+              <div className="text-center text-muted-foreground text-sm">You have no followers yet.</div>
             ) : (
-              savedGossips.length === 0 ? (
-                <div className="py-20 text-center">
-                  <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                  <p className="text-sm text-muted-foreground font-medium">No saved gossip yet.</p>
-                </div>
-              ) : (
-                savedGossips.map((gossip, i) => (
-                  <motion.div
-                    key={gossip.id}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500"
+              followersList.map(follower => (
+                <div key={follower.user_id} className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      {follower.avatar_url ? <AvatarImage src={follower.avatar_url} /> : <AvatarFallback>{follower.display_name.charAt(0)}</AvatarFallback>}
+                    </Avatar>
+                    <p className="text-sm font-bold">{follower.display_name}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleRemoveFollower(follower.user_id)}
+                    className="border-white/10 text-foreground px-3 hover:bg-destructive hover:text-white"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <Avatar className="h-9 w-9 ring-1 ring-white/10">
-                        <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
-                          {gossip.gossip_alias}
-                        </span>
-                        <p className="text-xs text-muted-foreground/80">
-                          {formatDistanceToNow(new Date(gossip.created_at), { addSuffix: true })}
-                        </p>
-                      </div>
-                      <motion.button
-                        onClick={() => unsavGossip(gossip.id)}
-                        whileTap={{ scale: 1.4 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className="text-foreground"
-                      >
-                        <Bookmark className="h-4 w-4 fill-current" />
-                      </motion.button>
-                    </div>
-                    <p className="text-sm leading-relaxed text-foreground/90 mb-3">{gossip.content}</p>
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                      <ArrowUp className="h-3.5 w-3.5" />
-                      <span className="font-bold">{gossip.upvote_count}</span>
-                    </div>
-                  </motion.div>
-                ))
-              )
+                    Remove
+                  </Button>
+                </div>
+              ))
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── SPLIT-SCREEN IMAGE EXPANDER ── */}
       <AnimatePresence>
@@ -1110,6 +1328,6 @@ export default function Profile() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   );
 }

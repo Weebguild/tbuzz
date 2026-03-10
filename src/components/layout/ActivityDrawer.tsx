@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 
 interface Notification {
   id: string;
-  type: "follow" | "post_like" | "gossip_tag" | "gossip_upvote" | "post_comment";
+  type: "follow" | "follow_request" | "post_like" | "gossip_tag" | "gossip_upvote" | "post_comment";
   is_read: boolean;
   created_at: string;
   actor_id: string | null;
@@ -125,6 +125,17 @@ export function ActivityDrawer() {
           ),
           action: () => navigate(`/profile/${notif.actor_id}`),
         };
+      case "follow_request":
+        return {
+          icon: <UserPlus className="h-4 w-4 text-orange-500" />,
+          text: (
+            <>
+              <span className="font-bold text-foreground">{notif.actor_profile?.display_name || "Someone"}</span>{" "}
+              requested to follow you
+            </>
+          ),
+          action: () => navigate("/profile"),
+        };
       case "gossip_tag":
         return {
           icon: <Flame className="h-4 w-4 text-[#EC4899]" />,
@@ -168,7 +179,7 @@ export function ActivityDrawer() {
           action: () => navigate(notif.entity_id ? `/feed?postId=${notif.entity_id}&showComments=true` : "/feed"),
         };
       default:
-        return { icon: <Bell className="h-4 w-4" />, text: "New notification", action: () => {} };
+        return { icon: <Bell className="h-4 w-4" />, text: "New notification", action: () => { } };
     }
   };
 

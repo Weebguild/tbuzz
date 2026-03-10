@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer, Bookmark } from "lucide-react";
+import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer, Bookmark, UserCheck } from "lucide-react";
 import { BurnerTimer } from "@/components/feed/BurnerTimer";
 import { SelfDestructWrapper } from "@/components/feed/SelfDestructWrapper";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
@@ -100,6 +100,7 @@ export default function Gossip() {
     return () => clearTimeout(timer);
   }, [loading, posts.length, deepLinkGossipId]);
   const [isBurner, setIsBurner] = useState(false);
+  const [isFollowersOnly, setIsFollowersOnly] = useState(false);
 
   const getTimeRangeDate = (range: TimeRange): Date => {
     const now = new Date();
@@ -287,6 +288,7 @@ export default function Gossip() {
           gossip_alias: profile.anonymous_alias ?? "Anonymous",
           gossip_avatar: "mask",
           expires_at: isBurner ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
+          is_followers_only: isFollowersOnly,
         })
         .select("id")
         .single();
@@ -301,6 +303,7 @@ export default function Gossip() {
       setContent("");
       setSelectedTags([]);
       setIsBurner(false);
+      setIsFollowersOnly(false);
       setShowComposer(false);
       toast.success("Gossip posted!");
     } catch (error: any) {
@@ -508,17 +511,30 @@ export default function Gossip() {
               )}
 
               <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setIsBurner(!isBurner)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isBurner
-                    ? "bg-red-500/10 backdrop-blur-md text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]"
-                    : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
-                    }`}
-                >
-                  <Timer className="h-3.5 w-3.5" />
-                  24h Burner
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsBurner(!isBurner)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isBurner
+                      ? "bg-red-500/10 backdrop-blur-md text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                      : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
+                      }`}
+                  >
+                    <Timer className="h-3.5 w-3.5" />
+                    24h Burner
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsFollowersOnly(!isFollowersOnly)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isFollowersOnly
+                      ? "bg-primary/20 backdrop-blur-md text-primary border border-primary/50 shadow-[0_0_15px_rgba(124,58,237,0.4)]"
+                      : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
+                      }`}
+                  >
+                    <UserCheck className="h-3.5 w-3.5" />
+                    Followers Only
+                  </button>
+                </div>
                 <button
                   onClick={handlePost}
                   disabled={posting || !content.trim()}
@@ -586,112 +602,112 @@ export default function Gossip() {
                   transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
                 >
                   <SelfDestructWrapper expiresAt={post.expires_at}>
-                  <div
-                    className={`glass-card-modern ${post.hotness_score > 0.7
-                      ? "card-heat-high"
-                      : post.hotness_score >= 0.3
-                        ? "card-heat-medium"
-                        : ""
-                      } ${highlightedGossipId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : ""}`}
-                  >
-                    <div className="glass-card-inner">
-                      <div className="flex gap-3">
-                        <Avatar className="h-9 w-9 ring-1 ring-white/10">
-                          <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
-                                {post.gossip_alias}
-                              </span>
-                              <span className="text-[11px] text-muted-foreground/80">
-                                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                              </span>
-                              {post.expires_at && <BurnerTimer expiresAt={post.expires_at} />}
-                              {post.hotness_score > 0.7 && (
-                                <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/50">
-                                  🔥 HOT TEA
+                    <div
+                      className={`glass-card-modern ${post.hotness_score > 0.7
+                        ? "card-heat-high"
+                        : post.hotness_score >= 0.3
+                          ? "card-heat-medium"
+                          : ""
+                        } ${highlightedGossipId === post.id ? "ring-2 ring-primary/60 shadow-[0_0_20px_rgba(124,58,237,0.3)]" : ""}`}
+                    >
+                      <div className="glass-card-inner">
+                        <div className="flex gap-3">
+                          <Avatar className="h-9 w-9 ring-1 ring-white/10">
+                            <AvatarFallback className="bg-black/40 text-base">🎭</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">
+                                  {post.gossip_alias}
                                 </span>
-                              )}
-                            </div>
-                            {post.is_own && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
-                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
-                                  <DropdownMenuItem
-                                    onClick={() => setDeletePostId(post.id)}
-                                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                                  >
-                                    Delete Gossip
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
-                          <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{post.content}</p>
-                          {post.tagged_users.length > 0 && (
-                            <div className="mt-2.5 flex flex-wrap gap-1.5">
-                              {post.tagged_users.map((t) => (
-                                <UserHoverCard key={t.user_id} userId={t.user_id}>
-                                  <span
-                                    className="inline-flex px-2.5 py-0.5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 text-[10px] font-bold"
-                                  >
-                                    @{t.display_name}
+                                <span className="text-[11px] text-muted-foreground/80">
+                                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                                </span>
+                                {post.expires_at && <BurnerTimer expiresAt={post.expires_at} />}
+                                {post.hotness_score > 0.7 && (
+                                  <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/50">
+                                    🔥 HOT TEA
                                   </span>
-                                </UserHoverCard>
-                              ))}
-                            </div>
-                          )}
-                          <div className="mt-3.5 flex items-center gap-4">
-                            <button
-                              onClick={() => toggleUpvote(post.id, post.has_upvoted)}
-                              className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_upvoted ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
-                            >
-                              <ArrowUp className={`h-4 w-4 ${post.has_upvoted ? "fill-current" : ""}`} />
-                              {post.upvote_count > 0 && (
-                                <span className="text-[11px] font-bold">{post.upvote_count}</span>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => reportPost(post.id)}
-                              className="text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              Report
-                            </button>
-
-                            {/* Bookmark */}
-                            <motion.button
-                              onClick={() => toggleSaveGossip(post.id, post.has_saved)}
-                              whileTap={{ scale: 1.4 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                              className={`text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                            >
-                              <Bookmark className={`h-4 w-4 ${post.has_saved ? "fill-current" : ""}`} />
-                            </motion.button>
-
-                            {/* Visual Hotness Indicator */}
-                            <div className="flex items-center gap-2 ml-auto">
-                              <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${post.hotness_score > 0.7 ? "bg-red-500" : post.hotness_score > 0.3 ? "bg-orange-500" : "bg-primary"}`}
-                                  style={{ width: `${Math.max(post.hotness_score * 100, 5)}%` }}
-                                />
+                                )}
                               </div>
-                              <span className="text-[10px] font-bold text-muted-foreground">
-                                {(post.hotness_score * 100).toFixed(1)}°
-                              </span>
+                              {post.is_own && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors">
+                                      <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
+                                    <DropdownMenuItem
+                                      onClick={() => setDeletePostId(post.id)}
+                                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                    >
+                                      Delete Gossip
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                            <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{post.content}</p>
+                            {post.tagged_users.length > 0 && (
+                              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                {post.tagged_users.map((t) => (
+                                  <UserHoverCard key={t.user_id} userId={t.user_id}>
+                                    <span
+                                      className="inline-flex px-2.5 py-0.5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 text-[10px] font-bold"
+                                    >
+                                      @{t.display_name}
+                                    </span>
+                                  </UserHoverCard>
+                                ))}
+                              </div>
+                            )}
+                            <div className="mt-3.5 flex items-center gap-4">
+                              <button
+                                onClick={() => toggleUpvote(post.id, post.has_upvoted)}
+                                className={`flex items-center gap-1.5 text-sm transition-colors ${post.has_upvoted ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                              >
+                                <ArrowUp className={`h-4 w-4 ${post.has_upvoted ? "fill-current" : ""}`} />
+                                {post.upvote_count > 0 && (
+                                  <span className="text-[11px] font-bold">{post.upvote_count}</span>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => reportPost(post.id)}
+                                className="text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                Report
+                              </button>
+
+                              {/* Bookmark */}
+                              <motion.button
+                                onClick={() => toggleSaveGossip(post.id, post.has_saved)}
+                                whileTap={{ scale: 1.4 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                className={`text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                              >
+                                <Bookmark className={`h-4 w-4 ${post.has_saved ? "fill-current" : ""}`} />
+                              </motion.button>
+
+                              {/* Visual Hotness Indicator */}
+                              <div className="flex items-center gap-2 ml-auto">
+                                <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${post.hotness_score > 0.7 ? "bg-red-500" : post.hotness_score > 0.3 ? "bg-orange-500" : "bg-primary"}`}
+                                    style={{ width: `${Math.max(post.hotness_score * 100, 5)}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] font-bold text-muted-foreground">
+                                  {(post.hotness_score * 100).toFixed(1)}°
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </SelfDestructWrapper>
+                  </SelfDestructWrapper>
                 </motion.div>
               </ErrorBoundary>
             ))}
