@@ -153,16 +153,17 @@
   border-radius: 2rem;
 }
 
-/* ── MODERN GLASS CARD SYSTEM ── */
+/* ── MODERN GLASS CARD SYSTEM (Fake Glass) ── */
 .glass-card-modern {
   position: relative;
   border-radius: 1.5rem;
   padding: 1px;
   background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.1),
       rgba(255, 255, 255, 0.02));
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5); /* Outer depth */
 }
 
 .glass-card-inner {
@@ -170,11 +171,10 @@
   z-index: 2;
   padding: 1.25rem;
   border-radius: calc(1.5rem - 1px);
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* Fake Glass: Solid dark tint without expensive backdrop-filter */
+  background: #111115;
   height: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08); /* Inner top highlight */
 }
 
 /* ── AURORA FLOW (Medium Heat) ── */
@@ -194,12 +194,12 @@
 
 .card-heat-medium {
   background: linear-gradient(270deg,
-      rgba(124, 58, 237, 0.2),
-      rgba(236, 72, 153, 0.2),
-      rgba(124, 58, 237, 0.2));
+      rgba(124, 58, 237, 0.4),
+      rgba(236, 72, 153, 0.4),
+      rgba(124, 58, 237, 0.4));
   background-size: 200% 200%;
   animation: aurora-flow 6s ease infinite;
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.15);
 }
 
 /* ── MOLTEN PULSE (High Heat) ── */
@@ -247,7 +247,8 @@
 }
 
 .card-heat-high .glass-card-inner {
-  background: rgba(10, 10, 10, 0.7);
+  /* Solid tint instead of translucent blur */
+  background: #180a0a;
   animation: thermal-distort 3s ease-in-out infinite;
 }
 
