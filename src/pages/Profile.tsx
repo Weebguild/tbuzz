@@ -204,8 +204,8 @@ export default function Profile() {
     const { count: followersC } = followersResult;
     const { count: followingC } = followingResult;
 
-    setFollowersCount(followers || 0);
-    setFollowingCount(following || 0);
+    setFollowersCount(followersC || 0);
+    setFollowingCount(followingC || 0);
 
     if (!isOwnProfile && user?.id) {
       const [{ data: followData }, { data: reverseFollowData }] = await Promise.all([
