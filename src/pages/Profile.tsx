@@ -165,6 +165,9 @@ export default function Profile() {
   const [isFollowersListOpen, setIsFollowersListOpen] = useState(false);
   const [followersList, setFollowersList] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
   const [loadingFollowersList, setLoadingFollowersList] = useState(false);
+  const [isFollowingListOpen, setIsFollowingListOpen] = useState(false);
+  const [followingList, setFollowingList] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
+  const [loadingFollowingList, setLoadingFollowingList] = useState(false);
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editIsPrivate, setEditIsPrivate] = useState(false);
@@ -407,6 +410,41 @@ export default function Profile() {
     setFollowersList(prev => prev.filter(r => r.user_id !== followerId));
     setFollowersCount(c => Math.max(0, c - 1));
     toast.success("Follower removed");
+  };
+
+  useEffect(() => {
+    if (isFollowingListOpen && user && isOwnProfile) {
+      setLoadingFollowingList(true);
+      const fetchFollowingList = async () => {
+        const { data: followsData } = await supabase
+          .from("follows")
+          .select("following_user_id")
+          .eq("follower_user_id", user.id)
+          .eq("status", "accepted");
+
+        if (followsData && followsData.length > 0) {
+          const userIds = followsData.map((f) => f.following_user_id);
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, avatar_url")
+            .in("user_id", userIds);
+
+          setFollowingList(profiles || []);
+        } else {
+          setFollowingList([]);
+        }
+        setLoadingFollowingList(false);
+      };
+      fetchFollowingList();
+    }
+  }, [isFollowingListOpen, user, isOwnProfile]);
+
+  const handleUnfollow = async (followingId: string) => {
+    if (!user) return;
+    await supabase.from("follows").delete().eq("follower_user_id", user.id).eq("following_user_id", followingId);
+    setFollowingList(prev => prev.filter(r => r.user_id !== followingId));
+    setFollowingCount(c => Math.max(0, c - 1));
+    toast.success("Unfollowed");
   };
 
   useEffect(() => {
@@ -960,7 +998,10 @@ export default function Profile() {
 
             <div className="w-px h-8 bg-white/10" />
 
-            <div className="flex flex-col items-center">
+            <div
+              className={cn("flex flex-col items-center", isOwnProfile ? "cursor-pointer hover:opacity-80 transition-opacity" : "")}
+              onClick={() => isOwnProfile && setIsFollowingListOpen(true)}
+            >
               <span className="text-3xl font-display text-white tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                 <AnimatedNumber value={followingCount} />
               </span>
@@ -1276,6 +1317,41 @@ export default function Profile() {
                     className="border-white/10 text-foreground px-3 hover:bg-destructive hover:text-white"
                   >
                     Remove
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── FOLLOWING LIST DIALOG ── */}
+      <Dialog open={isFollowingListOpen} onOpenChange={setIsFollowingListOpen}>
+        <DialogContent className="glass-panel border-white/10 bg-[#0A0A0A]/95 backdrop-blur-2xl text-foreground rounded-3xl sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold tracking-tight">Following</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 max-h-[70vh] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
+            {loadingFollowingList ? (
+              <div className="flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+            ) : followingList.length === 0 ? (
+              <div className="text-center text-muted-foreground text-sm">You aren't following anyone yet.</div>
+            ) : (
+              followingList.map(following => (
+                <div key={following.user_id} className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      {following.avatar_url ? <AvatarImage src={following.avatar_url} /> : <AvatarFallback>{following.display_name.charAt(0)}</AvatarFallback>}
+                    </Avatar>
+                    <p className="text-sm font-bold">{following.display_name}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleUnfollow(following.user_id)}
+                    className="border-white/10 text-foreground px-3 hover:bg-destructive hover:text-white"
+                  >
+                    Unfollow
                   </Button>
                 </div>
               ))
