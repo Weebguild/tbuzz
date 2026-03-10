@@ -137,18 +137,21 @@ export type Database = {
           follower_user_id: string
           following_user_id: string
           id: string
+          status: string
         }
         Insert: {
           created_at?: string
           follower_user_id: string
           following_user_id: string
           id?: string
+          status?: string
         }
         Update: {
           created_at?: string
           follower_user_id?: string
           following_user_id?: string
           id?: string
+          status?: string
         }
         Relationships: []
       }
@@ -382,6 +385,7 @@ export type Database = {
           department: string | null
           display_name: string
           id: string
+          is_private: boolean
           stream: string | null
           university_id: string
           updated_at: string
@@ -396,6 +400,7 @@ export type Database = {
           department?: string | null
           display_name?: string
           id?: string
+          is_private?: boolean
           stream?: string | null
           university_id: string
           updated_at?: string
@@ -410,6 +415,7 @@ export type Database = {
           department?: string | null
           display_name?: string
           id?: string
+          is_private?: boolean
           stream?: string | null
           university_id?: string
           updated_at?: string
