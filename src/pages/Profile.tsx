@@ -466,7 +466,13 @@ export default function Profile() {
       setIsMutualFollow(false);
     } else {
       const status = profile?.is_private ? 'pending' : 'accepted';
-      await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId, status });
+      const { error } = await supabase.from("follows").insert({ follower_user_id: user.id, following_user_id: targetUserId, status });
+      if (error) {
+        setFollowLoading(false);
+        toast.error("Failed to follow user");
+        console.error(error);
+        return;
+      }
       if (status === 'accepted') {
         setIsFollowing(true);
         // Check if they follow us back
@@ -894,7 +900,7 @@ export default function Profile() {
       </div >
 
       {/* ── PROFILE INFO CARD ── */}
-      < div className="rounded-3xl glass-panel p-6 mb-6 relative overflow-hidden" >
+      <div className="rounded-3xl glass-panel bg-black/40 backdrop-blur-3xl p-6 mb-6 relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/20 rounded-full blur-[50px] pointer-events-none" />
 
         <div className="flex flex-col items-center text-center relative z-10">

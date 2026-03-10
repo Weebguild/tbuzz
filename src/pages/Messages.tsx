@@ -230,10 +230,10 @@ export default function Messages() {
               <div className="h-10 w-40 bg-muted/30 rounded-2xl animate-skeleton-pulse" />
               <div className="h-3 w-28 bg-muted/20 rounded-full animate-skeleton-pulse" />
             </div>
-            <div className="h-12 w-full glass-panel rounded-2xl animate-skeleton-pulse" />
+            <div className="h-12 w-full glass-panel !bg-black/40 backdrop-blur-xl rounded-2xl animate-skeleton-pulse" />
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="glass-panel rounded-3xl p-4">
+                <div key={i} className="glass-panel !bg-black/40 backdrop-blur-xl rounded-3xl p-4">
                   <div className="flex gap-4">
                     <div className="h-12 w-12 rounded-full bg-muted/20 animate-skeleton-pulse" />
                     <div className="flex-1 space-y-2">
@@ -248,7 +248,7 @@ export default function Messages() {
         </div>
         {!isMobile && (
           <div className="flex-1 flex items-center justify-center">
-            <div className="glass-panel rounded-3xl p-12 flex flex-col items-center">
+            <div className="glass-panel !bg-black/40 backdrop-blur-xl rounded-3xl p-12 flex flex-col items-center">
               <Mail className="h-20 w-20 stroke-[0.5px] text-muted-foreground animate-pulse" />
             </div>
           </div>
@@ -299,7 +299,7 @@ export default function Messages() {
 
           <div className="relative mb-6 group">
             <div className="pointer-events-none absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-accent/30 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
-            <div className="relative flex items-center glass-panel rounded-2xl h-12 px-4 overflow-hidden">
+            <div className="relative flex items-center glass-panel !bg-black/40 backdrop-blur-xl rounded-2xl h-12 px-4 overflow-hidden">
               <Search className="h-4 w-4 text-muted-foreground mr-3" />
               <input
                 type="text"
@@ -370,8 +370,8 @@ export default function Messages() {
                     className={cn(
                       "w-full text-left p-4 rounded-3xl transition-all flex items-center gap-4 relative group overflow-hidden",
                       conversationId === conv.conversation_id
-                        ? "glass-panel border-primary/20 shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
-                        : "glass-panel border-transparent hover:border-primary/20 hover:shadow-[0_0_15px_hsl(var(--primary)/0.05)]"
+                        ? "glass-panel !bg-black/40 backdrop-blur-xl border-primary/20 shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
+                        : "glass-panel !bg-black/40 backdrop-blur-xl border-transparent hover:border-primary/20 hover:shadow-[0_0_15px_hsl(var(--primary)/0.05)]"
                     )}
                   >
                     <div className="relative shrink-0">
@@ -434,7 +434,7 @@ export default function Messages() {
             <ChatRoom desktop={true} />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-              <div className="glass-panel rounded-3xl p-12 flex flex-col items-center">
+              <div className="glass-panel !bg-black/40 backdrop-blur-xl rounded-3xl p-12 flex flex-col items-center">
                 <Mail className="h-20 w-20 mb-6 stroke-[0.5px] text-muted-foreground/40" />
                 <h2 className="text-3xl font-black uppercase tracking-[0.3em] text-muted-foreground/60">Select a Chat</h2>
                 <p className="text-xs uppercase tracking-widest mt-4 text-muted-foreground/40">Pick a conversation to start messaging</p>
