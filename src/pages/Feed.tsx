@@ -58,7 +58,90 @@ interface Comment {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
+  parent_id?: string | null;
+  reaction_count?: number;
+  has_liked?: boolean;
+  replies?: Comment[];
 }
+
+const CommentItem = ({
+  comment,
+  postId,
+  currentUserId,
+  onReply,
+  onToggleLike,
+  level = 0
+}: {
+  comment: Comment;
+  postId: string;
+  currentUserId: string | null;
+  onReply: (commentId: string, displayName: string) => void;
+  onToggleLike: (commentId: string, hasLiked: boolean, postId: string) => void;
+  level?: number;
+}) => {
+  return (
+    <div className={`flex gap-2.5 ${level > 0 ? "ml-6 mt-3" : "mt-3"}`}>
+      <div className="shrink-0 mt-0.5">
+        <Avatar className="h-6 w-6 ring-1 ring-white/10">
+          {comment.avatar_url ? (
+            <AvatarImage src={comment.avatar_url} />
+          ) : (
+            <AvatarFallback className="bg-black/40 text-[10px] font-bold text-foreground">
+              {comment.display_name.charAt(0)}
+            </AvatarFallback>
+          )}
+        </Avatar>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <UserHoverCard userId={comment.user_id}>
+            <span className="text-xs font-semibold text-foreground hover:text-primary transition-colors truncate cursor-pointer">
+              {comment.display_name}
+            </span>
+          </UserHoverCard>
+          <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
+            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-foreground/80 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
+
+        {/* Actions */}
+        <div className="flex items-center gap-4 mt-1.5">
+          <button
+            onClick={() => onToggleLike(comment.id, comment.has_liked ?? false, postId)}
+            className={`flex items-center gap-1 text-[10px] transition-colors ${comment.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Heart className={`h-3 w-3 ${comment.has_liked ? "fill-current" : ""}`} />
+            {((comment.reaction_count ?? 0) > 0) && <span className="font-medium">{comment.reaction_count}</span>}
+          </button>
+          <button
+            onClick={() => onReply(comment.id, comment.display_name)}
+            className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Reply
+          </button>
+        </div>
+
+        {/* Replies */}
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="mt-2 border-l border-white/5 pl-2 relative">
+            {comment.replies.map(reply => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                postId={postId}
+                currentUserId={currentUserId}
+                onReply={onReply}
+                onToggleLike={onToggleLike}
+                level={level + 1}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 interface TrendingGossip {
   id: string;
@@ -91,6 +174,7 @@ export default function Feed() {
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [replyingTo, setReplyingTo] = useState<Record<string, { commentId: string, displayName: string } | null>>({});
   const [trendingGossip, setTrendingGossip] = useState<TrendingGossip[]>([]);
   const [expandedImage, setExpandedImage] = useState<Post | null>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
@@ -357,20 +441,47 @@ export default function Feed() {
   const loadComments = async (postId: string) => {
     const { data } = await supabase
       .from("comments")
-      .select("id, content, created_at, user_id")
+      .select("id, content, created_at, user_id, parent_id")
       .eq("post_id", postId)
       .order("created_at", { ascending: true });
     if (!data) return;
+
     const uids = [...new Set(data.map((c) => c.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, display_name, avatar_url")
-      .in("user_id", uids);
+    const commentIds = data.map((c) => c.id);
+
+    const [{ data: profiles }, { data: reactions }] = await Promise.all([
+      supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", uids),
+      supabase.from("comment_reactions").select("comment_id, user_id").in("comment_id", commentIds)
+    ]);
+
+    // Build flat enriched list
     const enriched = data.map((c) => {
       const p = profiles?.find((pr) => pr.user_id === c.user_id);
-      return { ...c, display_name: p?.display_name ?? "Unknown", avatar_url: p?.avatar_url ?? null };
+      const cReactions = reactions?.filter((r) => r.comment_id === c.id) || [];
+      return {
+        ...c,
+        display_name: p?.display_name ?? "Unknown",
+        avatar_url: p?.avatar_url ?? null,
+        reaction_count: cReactions.length,
+        has_liked: user ? cReactions.some((r) => r.user_id === user.id) : false,
+        replies: []
+      };
     });
-    setCommentsMap((prev) => ({ ...prev, [postId]: enriched }));
+
+    // Build tree
+    const commentMap = new Map<string, Comment>();
+    enriched.forEach(c => commentMap.set(c.id, c as Comment));
+
+    const rootComments: Comment[] = [];
+    enriched.forEach(c => {
+      if (c.parent_id && commentMap.has(c.parent_id)) {
+        commentMap.get(c.parent_id)!.replies!.push(commentMap.get(c.id)!);
+      } else {
+        rootComments.push(commentMap.get(c.id)!);
+      }
+    });
+
+    setCommentsMap((prev) => ({ ...prev, [postId]: rootComments }));
   };
 
   const toggleComments = (postId: string) => {
@@ -386,16 +497,64 @@ export default function Feed() {
     });
   };
 
+  const toggleCommentLike = async (commentId: string, hasLiked: boolean, postId: string) => {
+    if (!user) return;
+
+    // Optimistic update
+    setCommentsMap(prev => {
+      const updateTree = (nodes: Comment[]): Comment[] => {
+        return nodes.map(node => {
+          if (node.id === commentId) {
+            return {
+              ...node,
+              has_liked: !hasLiked,
+              reaction_count: (node.reaction_count || 0) + (hasLiked ? -1 : 1)
+            };
+          }
+          if (node.replies && node.replies.length > 0) {
+            return { ...node, replies: updateTree(node.replies) };
+          }
+          return node;
+        });
+      };
+
+      const postComments = prev[postId] || [];
+      return { ...prev, [postId]: updateTree(postComments) };
+    });
+
+    try {
+      if (hasLiked) {
+        await supabase.from("comment_reactions").delete().eq("comment_id", commentId).eq("user_id", user.id);
+      } else {
+        await supabase.from("comment_reactions").insert({ user_id: user.id, comment_id: commentId } as any);
+      }
+    } catch (e) {
+      loadComments(postId); // revert
+    }
+  };
+
   const submitComment = async (postId: string) => {
     const text = commentInputs[postId]?.trim();
     if (!text || !user) return;
-    const { error } = await supabase.from("comments").insert({ user_id: user.id, post_id: postId, content: text });
+
+    const parentId = replyingTo[postId]?.commentId || null;
+
+    const { error } = await supabase.from("comments").insert({
+      user_id: user.id,
+      post_id: postId,
+      content: text,
+      parent_id: parentId
+    } as any);
+
     if (error) {
       toast.error(sanitizeError(error));
       return;
     }
+
     setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
-    // Optimistic comment count update + reload comments for this post only
+    setReplyingTo(prev => ({ ...prev, [postId]: null }));
+
+    // Optimistic comment count update
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comment_count: p.comment_count + 1 } : p));
     loadComments(postId);
   };
@@ -684,43 +843,32 @@ export default function Feed() {
                           className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3 bg-black/20"
                         >
                           {(commentsMap[post.id] ?? []).map((c) => (
-                            <div key={c.id} className="flex gap-2.5">
-                              <button onClick={() => navigate(`/profile/${c.user_id}`)} className="shrink-0">
-                                <Avatar className={cn("h-6 w-6", getHaloClass(c.user_id))}>
-                                  {c.avatar_url ? (
-                                    <AvatarImage src={c.avatar_url} />
-                                  ) : (
-                                    <AvatarFallback className="bg-black/40 text-[10px] font-bold text-foreground">
-                                      {c.display_name.charAt(0)}
-                                    </AvatarFallback>
-                                  )}
-                                </Avatar>
-                              </button>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <UserHoverCard userId={c.user_id}>
-                                    <button
-                                      onClick={() => navigate(`/profile/${c.user_id}`)}
-                                      className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
-                                    >
-                                      {c.display_name}
-                                    </button>
-                                  </UserHoverCard>
-                                  <span className="text-[10px] text-muted-foreground/60">
-                                    {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                                  </span>
-                                </div>
-                                <p className="text-xs leading-relaxed text-foreground/80 mt-0.5">{c.content}</p>
-                              </div>
-                            </div>
+                            <CommentItem
+                              key={c.id}
+                              comment={c}
+                              postId={post.id}
+                              currentUserId={user?.id ?? null}
+                              onReply={(commentId, displayName) => {
+                                setReplyingTo(prev => ({ ...prev, [post.id]: { commentId, displayName } }));
+                              }}
+                              onToggleLike={toggleCommentLike}
+                            />
                           ))}
-                          <div className="flex gap-2 mt-2">
+                          {replyingTo[post.id] && (
+                            <div className="flex items-center justify-between bg-black/40 px-3 py-1.5 rounded-t-xl mb-[-4px] border-x border-t border-white/10 z-0 opacity-80 mt-2">
+                              <span className="text-[10px] text-muted-foreground">Replying to <span className="text-foreground font-semibold">@{replyingTo[post.id]?.displayName}</span></span>
+                              <button onClick={() => setReplyingTo(prev => ({ ...prev, [post.id]: null }))} className="text-muted-foreground hover:text-white transition-colors">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                          <div className={`flex gap-2 ${replyingTo[post.id] ? "mt-0 z-10 relative" : "mt-2"}`}>
                             <Input
-                              placeholder="Write a comment..."
+                              placeholder={replyingTo[post.id] ? "Write a reply..." : "Write a comment..."}
                               value={commentInputs[post.id] ?? ""}
                               onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
                               onKeyDown={(e) => e.key === "Enter" && submitComment(post.id)}
-                              className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-4 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                              className={`h-9 bg-black/40 border-white/10 text-xs pl-4 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50 ${replyingTo[post.id] ? "rounded-b-xl rounded-t-none border-x border-b border-t-0" : "rounded-full border"}`}
                             />
                             <button
                               onClick={() => submitComment(post.id)}
