@@ -98,6 +98,7 @@ export function DesktopSidebar() {
         onMouseMove={(e) => mouseY.set(e.clientY)}
         onMouseLeave={() => mouseY.set(Infinity)}
       >
+        <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -133,7 +134,6 @@ export function DesktopSidebar() {
             {isDating ? "Back to Tbuzz" : "Sunlit Gallery"}
           </TooltipContent>
         </Tooltip>
-        <TooltipProvider delayDuration={200}>
           <div className="flex flex-col gap-6 mt-8 items-center">
             {navItems.map((item, i) => (
               <DockNavItem
