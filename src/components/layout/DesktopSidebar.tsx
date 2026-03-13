@@ -69,9 +69,12 @@ function DockNavItem({
 
 export function DesktopSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [showSearch, setShowSearch] = useState(false);
   const mouseY = useMotionValue(Infinity);
   const navRefs = useRef(navItems.map(() => ({ current: null as HTMLDivElement | null })));
+  const searchRef = useRef<HTMLDivElement>(null);
+  const isDating = location.pathname.startsWith("/dating");
   const searchRef = useRef<HTMLDivElement>(null);
 
   const searchDistance = useTransform(mouseY, (val) => {
