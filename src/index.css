@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -387,4 +387,92 @@
     opacity: 0;
     filter: blur(4px);
   }
+}
+
+/* ============================================================================
+   SUNLIT GALLERY — Dating Ecosystem Theme
+   ============================================================================ */
+
+/* Scoped CSS custom properties for dating pages */
+.sunlit-gallery {
+  --sg-bg: 40 33% 96%;              /* Warm Ivory */
+  --sg-bg-alt: 40 20% 93%;          /* Alabaster */
+  --sg-text: 220 20% 18%;           /* Deep charcoal */
+  --sg-text-muted: 220 10% 50%;     /* Muted charcoal */
+  --sg-accent: 263 70% 50%;         /* Tbuzz purple */
+  --sg-accent-glow: 263 70% 60%;
+  --sg-border: 40 10% 88%;
+  --sg-card: 0 0% 100%;
+  --sg-shadow: 0 8px 40px -12px rgba(0,0,0,0.08);
+  --sg-shadow-lg: 0 20px 60px -20px rgba(0,0,0,0.12);
+
+  background: hsl(var(--sg-bg));
+  color: hsl(var(--sg-text));
+  font-family: 'Inter', sans-serif;
+  min-height: 100dvh;
+}
+
+.sunlit-gallery * {
+  border-color: hsl(var(--sg-border));
+}
+
+/* Editorial Serif for names and prompts */
+.font-editorial {
+  font-family: 'Instrument Serif', serif;
+}
+
+/* Sunlit card — no harsh borders, diffused shadows */
+.sg-card {
+  background: hsl(var(--sg-card));
+  border-radius: 1.5rem;
+  box-shadow: var(--sg-shadow);
+  border: none;
+}
+
+.sg-card-elevated {
+  background: hsl(var(--sg-card));
+  border-radius: 1.5rem;
+  box-shadow: var(--sg-shadow-lg);
+  border: none;
+}
+
+/* T Approved Badge Glow */
+@keyframes badge-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px hsla(263, 70%, 50%, 0.4), 0 0 20px hsla(263, 70%, 50%, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 14px hsla(263, 70%, 50%, 0.6), 0 0 30px hsla(263, 70%, 50%, 0.25);
+  }
+}
+
+.badge-t-approved {
+  animation: badge-glow 3s ease-in-out infinite;
+  background: linear-gradient(135deg, hsl(263, 70%, 50%), hsl(263, 70%, 60%));
+  color: white;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+}
+
+/* Sunlit frosted glass */
+.sg-frosted {
+  background: hsla(0, 0%, 100%, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Match reveal particles */
+@keyframes particle-float {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+.match-particle {
+  animation: particle-float 1s ease-out forwards;
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
 }

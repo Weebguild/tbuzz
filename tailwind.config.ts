@@ -15,7 +15,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
-        display: ["'Bebas Neue'", "sans-serif"], // Added for massive headers
+        display: ["'Bebas Neue'", "sans-serif"],
+        editorial: ["'Instrument Serif'", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
