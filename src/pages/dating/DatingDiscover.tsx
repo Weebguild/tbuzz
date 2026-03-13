@@ -150,7 +150,7 @@ export default function DatingDiscover() {
         setMatchData({
           open: true,
           matchedProfile: currentProfile,
-          conversationId: data.conversation_id
+          conversationId: (data as any).conversation_id
         });
         
         // Auto-route after 3.5s
