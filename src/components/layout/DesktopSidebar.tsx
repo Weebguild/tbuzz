@@ -99,20 +99,41 @@ export function DesktopSidebar() {
         onMouseMove={(e) => mouseY.set(e.clientY)}
         onMouseLeave={() => mouseY.set(Infinity)}
       >
-        <Link to="/feed" className="group">
-          <div className="h-12 w-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center cursor-pointer relative transition-all duration-300 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.25)]">
-            <span
-              className="text-[28px] font-black relative z-10 leading-none"
-              style={{
-                fontFamily: "'Bebas Neue', sans-serif",
-                backgroundImage: "linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.65) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >T</span>
-            <span className="absolute bottom-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-primary" />
-          </div>
-        </Link>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => navigate(isDating ? "/feed" : "/dating/onboarding")}
+              className="group"
+            >
+              <div className="h-12 w-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center cursor-pointer relative transition-all duration-300 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.25)]">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={isDating ? "heart" : "T"}
+                    initial={{ rotateY: 90, opacity: 0 }}
+                    animate={{ rotateY: 0, opacity: 1 }}
+                    exit={{ rotateY: -90, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-[28px] font-black relative z-10 leading-none"
+                    style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      backgroundImage: isDating
+                        ? "linear-gradient(180deg, #f472b6 0%, #ec4899 100%)"
+                        : "linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.65) 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    {isDating ? "♥" : "T"}
+                  </motion.span>
+                </AnimatePresence>
+                <span className="absolute bottom-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-primary" />
+              </div>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="z-[9999] bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
+            {isDating ? "Back to Tbuzz" : "Sunlit Gallery"}
+          </TooltipContent>
+        </Tooltip>
         <TooltipProvider delayDuration={200}>
           <div className="flex flex-col gap-6 mt-8 items-center">
             {navItems.map((item, i) => (
