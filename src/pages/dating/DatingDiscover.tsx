@@ -155,7 +155,7 @@ export default function DatingDiscover() {
         
         // Auto-route after 3.5s
         setTimeout(() => {
-          navigate(`/messages/${data.conversation_id}`);
+          navigate(`/messages/${(data as any).conversation_id}`);
         }, 3500);
       } else {
         toast.success("Like sent into the ether.");
