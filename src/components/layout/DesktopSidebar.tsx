@@ -75,7 +75,6 @@ export function DesktopSidebar() {
   const navRefs = useRef(navItems.map(() => ({ current: null as HTMLDivElement | null })));
   const searchRef = useRef<HTMLDivElement>(null);
   const isDating = location.pathname.startsWith("/dating");
-  const searchRef = useRef<HTMLDivElement>(null);
 
   const searchDistance = useTransform(mouseY, (val) => {
     const rect = searchRef.current?.getBoundingClientRect() ?? { y: 0, height: 0 };
