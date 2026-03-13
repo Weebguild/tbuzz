@@ -91,6 +91,8 @@ export function DatingLayout() {
                   />
                 )}
                 <span className="relative z-10 flex items-center gap-2">
+                  <tab.icon className="w-4 h-4" />
+                  {isActive && (
                     <motion.span
                       initial={{ width: 0, opacity: 0 }}
                       animate={{ width: "auto", opacity: 1 }}

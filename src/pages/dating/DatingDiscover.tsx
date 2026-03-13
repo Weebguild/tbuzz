@@ -146,16 +146,16 @@ export default function DatingDiscover() {
       setIcebreaker(null);
       setIcebreakerComment("");
 
-      if (data && data.is_match) {
+      if (data && (data as any).is_match) {
         setMatchData({
           open: true,
           matchedProfile: currentProfile,
-          conversationId: data.conversation_id
+          conversationId: (data as any).conversation_id
         });
         
         // Auto-route after 3.5s
         setTimeout(() => {
-          navigate(`/messages/${data.conversation_id}`);
+          navigate(`/messages/${(data as any).conversation_id}`);
         }, 3500);
       } else {
         toast.success("Like sent into the ether.");
@@ -453,8 +453,8 @@ function SecretCrushDrawer({ open, onClose, onMatch }: { open: boolean, onClose:
       if (error) throw error;
       
       setCrushUsername("");
-      if (data && data.is_match) {
-        onMatch(data, crushUsername.trim());
+      if (data && (data as any).is_match) {
+        onMatch(data as any, crushUsername.trim());
       } else {
         toast.success("Secret crush saved. We won't tell.");
         onClose();
@@ -516,7 +516,7 @@ function MatchReveal({ data, myProfile }: { data: any, myProfile: any }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-3xl overflow-hidden">
-      <NeonSparkOverlay>
+      <NeonSparkOverlay onDoubleTap={() => {}}>
         <div className="relative w-full max-w-lg mx-auto flex flex-col items-center justify-center p-6 min-h-screen">
           
           <motion.div
