@@ -453,8 +453,8 @@ function SecretCrushDrawer({ open, onClose, onMatch }: { open: boolean, onClose:
       if (error) throw error;
       
       setCrushUsername("");
-      if (data && data.is_match) {
-        onMatch(data, crushUsername.trim());
+      if (data && (data as any).is_match) {
+        onMatch(data as any, crushUsername.trim());
       } else {
         toast.success("Secret crush saved. We won't tell.");
         onClose();
