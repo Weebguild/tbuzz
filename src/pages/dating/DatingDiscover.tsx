@@ -146,7 +146,7 @@ export default function DatingDiscover() {
       setIcebreaker(null);
       setIcebreakerComment("");
 
-      if (data && data.is_match) {
+      if (data && (data as any).is_match) {
         setMatchData({
           open: true,
           matchedProfile: currentProfile,
