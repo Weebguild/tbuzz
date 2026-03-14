@@ -91,13 +91,13 @@ export function BottomNav() {
               return (
                 <div key="center" className="relative flex-1 flex justify-center items-center h-full">
                   {/* Dating heart — the elevated center CTA */}
-                  <motion.button
+                    <motion.button
                     onClick={enterDating}
                     whileTap={{ scale: 0.88 }}
                     className="absolute -top-5 flex h-[56px] w-[56px] items-center justify-center rounded-full border-[4px] border-[#000000] transition-transform hover:scale-105 active:scale-90"
                     style={{
-                      background: "linear-gradient(135deg, hsl(340,75%,58%), hsl(340,65%,44%))",
-                      boxShadow: "0 8px 28px hsla(340,75%,55%,0.55)",
+                      background: "linear-gradient(135deg, hsl(25,100%,50%), hsl(20,100%,45%))",
+                      boxShadow: "0 8px 28px hsla(25,100%,50%,0.5)",
                     }}
                   >
                     <Heart className="w-6 h-6 text-white drop-shadow-md" fill="white" />

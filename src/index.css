@@ -400,240 +400,165 @@ body:has(.dating-world) {
    ============================================================================ */
 
 .dating-world {
-  /* ── Design tokens ── */
-  --dw-bg: 32 28% 96%;
-  --dw-bg-alt: 36 22% 92%;
-  --dw-bg-card: 0 0% 100%;
-  --dw-text: 218 20% 15%;
-  --dw-text-muted: 218 10% 48%;
-  --dw-text-soft: 218 8% 65%;
-  --dw-accent: 340 72% 52%;
-  --dw-accent-warm: 13 80% 60%;
-  --dw-accent-alt: 263 60% 52%;
-  --dw-accent-gold: 40 88% 58%;
-  --dw-border: 32 18% 86%;
-  --dw-border-soft: 32 15% 91%;
-  --dw-shadow: 0 4px 32px -8px rgba(100, 40, 40, 0.08);
-  --dw-shadow-lg: 0 16px 56px -16px rgba(100, 40, 40, 0.12);
-  --dw-shadow-xl: 0 28px 72px -20px rgba(100, 40, 40, 0.16);
+  /* ── Design tokens (Liquid Ember V1) ── */
+  --dw-bg: 0 0% 3%;      /* Deep Obsidian */
+  --dw-bg-alt: 0 0% 6%;
+  --dw-bg-card: 0 0% 8%;
+  --dw-text: 0 0% 98%;
+  --dw-text-muted: 240 5% 70%;
+  --dw-text-soft: 240 4% 50%;
+  --dw-accent: 25 100% 50%;       /* Molten Amber */
+  --dw-accent-glow: 20 100% 60%;  /* Ember Red */
+  --dw-accent-alt: 340 75% 55%;   /* Pink highlight (TBuzz Bridge) */
+  --dw-accent-purple: 263 70% 50%; /* Purple bridge */
+  --dw-border: 0 0% 15%;
+  --dw-border-soft: 0 0% 10%;
+  --dw-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --dw-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.6);
 
-  /* ── Rich multi-layer warm background ── */
-  background:
-    radial-gradient(ellipse 80% 60% at 15% -10%, hsla(340, 80%, 85%, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 90% 20%, hsla(38, 90%, 80%, 0.22) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 70% at 70% 100%, hsla(263, 60%, 80%, 0.15) 0%, transparent 55%),
-    radial-gradient(ellipse 90% 80% at 0% 80%, hsla(20, 60%, 88%, 0.2) 0%, transparent 60%),
-    linear-gradient(160deg, hsl(32, 34%, 96%) 0%, hsl(36, 28%, 93%) 45%, hsl(20, 24%, 95%) 100%);
+  /* ── Liquid Obsidian Background ── */
+  background: 
+    radial-gradient(circle at 50% -20%, hsla(25, 100%, 50%, 0.08), transparent 50%),
+    radial-gradient(circle at 0% 100%, hsla(263, 70%, 50%, 0.05), transparent 40%),
+    #080808;
 
   color: hsl(var(--dw-text));
-  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   min-height: 100dvh;
   position: relative;
   isolation: isolate;
 }
 
-/* Subtle grain overlay — editorial paper texture */
+/* Subtle refractive grain (Liquid Glass texture) */
 .dating-world::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
+  opacity: 0.15;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 250px 250px;
+  mix-blend-mode: overlay;
 }
 
-/* Animate ambient blobs in fixed position */
+/* Moving Liquid Reflections */
 .dating-world::after {
   content: '';
   position: fixed;
-  inset: 0;
+  inset: -100%;
   z-index: 0;
+  padding-bottom: 80px;
   pointer-events: none;
-  background:
-    radial-gradient(circle 280px at 80% 12%, hsla(340, 70%, 80%, 0.14) 0%, transparent 70%),
-    radial-gradient(circle 220px at 8% 88%, hsla(30, 80%, 78%, 0.12) 0%, transparent 70%);
-  animation: dw-blobs 14s ease-in-out infinite alternate;
+  background: 
+    radial-gradient(circle 40vw at 20% 30%, hsla(25, 100%, 60%, 0.03) 0%, transparent 100%),
+    radial-gradient(circle 50vw at 80% 70%, hsla(263, 70%, 50%, 0.02) 0%, transparent 100%);
+  animation: liquid-drift 20s linear infinite;
 }
 
-@keyframes dw-blobs {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(18px, -12px) scale(1.03); }
-  100% { transform: translate(-8px, 8px) scale(0.98); }
+@keyframes liquid-drift {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
-/* All direct children stack above grain/blobs */
 .dating-world > * { position: relative; z-index: 1; }
 
-/* Editorial Serif — names, prompts, headings */
 .font-editorial {
-  font-family: 'Playfair Display', 'Instrument Serif', 'Georgia', serif;
+  font-family: 'Playfair Display', serif;
   font-style: italic;
+  letter-spacing: -0.01em;
 }
 
-/* ── GLASSMORPHISM UTILITIES (used sparingly) ── */
-/* Primary glass — headers, nav, floating panels */
-.dw-glass {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.75);
+/* ── NEW LIQUID GLASS SYSTEM ── */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Stronger glass — modals, drawers, overlaid cards */
-.dw-glass-strong {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(28px) saturate(1.6);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+.liquid-glass-accent {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.1), rgba(255, 69, 0, 0.05));
+  border: 1px solid rgba(255, 140, 0, 0.2);
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.1);
 }
 
-/* Tinted rose glass — match reveal, special moments */
-.dw-glass-rose {
-  background: rgba(255, 240, 243, 0.75);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border: 1px solid rgba(255, 200, 210, 0.5);
+/* ── BENTO GRID UTILITIES ── */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
-/* ── DATING CARD SYSTEM ── */
-.dw-card {
-  background: hsl(var(--dw-bg-card));
-  border-radius: 1.5rem;
-  box-shadow: var(--dw-shadow);
-  border: 1px solid hsl(var(--dw-border-soft));
+.bento-item {
+  @apply liquid-glass rounded-2xl p-4 flex flex-col gap-2;
+  transition: all 0.3s ease;
 }
 
-.dw-card-elevated {
-  background: hsl(var(--dw-bg-card));
-  border-radius: 1.5rem;
-  box-shadow: var(--dw-shadow-xl);
-  border: 1px solid hsl(var(--dw-border));
+.bento-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
-/* ── TRANSITION ANIMATIONS ── */
-
-/* Entry: warm bloom from center */
-@keyframes dw-bloom {
-  0% { width: 0; height: 0; opacity: 0.9; }
-  100% { width: 220vmax; height: 220vmax; opacity: 1; }
+/* ── REFINED BUTTONS ── */
+.dw-btn-liquid {
+  @apply relative overflow-hidden rounded-full font-bold transition-all active:scale-95;
+  background: linear-gradient(135deg, hsl(var(--dw-accent)), hsl(var(--dw-accent-glow)));
+  color: white;
+  box-shadow: 0 8px 24px hsla(25, 100%, 50%, 0.3);
 }
 
-/* Exit: fade-scale out */
-@keyframes dw-curtain-out {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.04); filter: blur(8px); }
+.dw-btn-liquid::after {
+  content: '';
+  @apply absolute inset-0 opacity-0 transition-opacity;
+  background: linear-gradient(rgba(255,255,255,0.2), transparent);
 }
 
-/* Petal drift — used in match reveal */
-@keyframes petal-drift {
-  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0.9; }
-  100% { transform: translate(var(--px), var(--py)) rotate(var(--pr)) scale(0.4); opacity: 0; }
+.dw-btn-liquid:hover::after {
+  @apply opacity-100;
 }
 
-.dw-petal {
-  animation: petal-drift 1.8s ease-out forwards;
-  position: absolute;
-  pointer-events: none;
-  border-radius: 50% 10% 50% 10%;
+/* ── ACTION BUTTONS AREA ── */
+.action-glass-bar {
+  @apply fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 px-8 py-4 rounded-full;
+  background: rgba(15, 15, 15, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  z-index: 100;
 }
 
-/* Match reveal particles */
-@keyframes particle-float {
-  0% { transform: translate(0, 0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+/* ── TRANSITIONS ── */
+.dw-ignite { animation: dw-ignite 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+
+@keyframes dw-ignite {
+  0% { transform: scale(1.1); opacity: 0; filter: blur(20px) contrast(1.5); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0) contrast(1); }
 }
 
-.match-particle {
-  animation: particle-float 1s ease-out forwards;
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-/* ── LIKE / PASS ACTION BUTTONS ── */
-@keyframes dw-like-burst {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.35); }
-  70% { transform: scale(0.92); }
-  100% { transform: scale(1); }
-}
-
-.dw-like-pressed {
-  animation: dw-like-burst 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* ── PROMPT CARD STYLE ── */
-.dw-prompt-card {
-  background: linear-gradient(145deg, hsl(30, 30%, 98%), hsl(35, 20%, 95%));
-  border: 1px solid hsl(var(--dw-border));
-  border-radius: 1.25rem;
-}
-
-/* ── CHIP SELECT ── */
 .dw-chip {
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
-  border: 1.5px solid hsl(var(--dw-border));
-  background: hsl(var(--dw-bg-card));
-  color: hsl(var(--dw-text-muted));
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
+  @apply liquid-glass px-4 py-2 rounded-full text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-all border-white/5;
 }
 
 .dw-chip-active {
-  border-color: hsl(var(--dw-accent));
-  background: hsl(340 75% 55% / 0.08);
+  background: hsla(25, 100%, 50%, 0.2);
+  border-color: hsla(25, 100%, 50%, 0.4);
   color: hsl(var(--dw-accent));
 }
 
-/* ── ACCENT BUTTON ── */
-.dw-btn-primary {
-  background: linear-gradient(135deg, hsl(340, 75%, 55%), hsl(340, 70%, 48%));
-  color: white;
-  border-radius: 999px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  box-shadow: 0 8px 28px -6px hsla(340, 75%, 55%, 0.42);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.dw-btn-primary:hover {
-  transform: translateY(-1px) scale(1.015);
-  box-shadow: 0 12px 32px -6px hsla(340, 75%, 55%, 0.5);
-}
-
-.dw-btn-primary:active {
-  transform: scale(0.97);
-}
-
-/* ── BADGE ── */
-@keyframes badge-glow {
-  0%, 100% { box-shadow: 0 0 8px hsla(263, 70%, 50%, 0.4), 0 0 20px hsla(263, 70%, 50%, 0.15); }
-  50% { box-shadow: 0 0 14px hsla(263, 70%, 50%, 0.6), 0 0 30px hsla(263, 70%, 50%, 0.25); }
-}
-
-.badge-t-approved {
-  animation: badge-glow 3s ease-in-out infinite;
-  background: linear-gradient(135deg, hsl(263, 70%, 50%), hsl(263, 70%, 60%));
-  color: white;
-  font-weight: 700;
-  font-size: 0.65rem;
-  letter-spacing: 0.05em;
-  padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
-}
-
-/* ── ONBOARDING STEP PROGRESS ── */
+/* Step/Progress Dots */
 .dw-step-dot {
-  width: 6px; height: 6px;
-  border-radius: 999px;
-  background: hsl(var(--dw-border));
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @apply w-1.5 h-1.5 rounded-full bg-white/10 transition-all duration-500;
+}
+
+.dw-step-dot-active {
+  @apply w-6 bg-accent;
+  background: linear-gradient(90deg, hsl(var(--dw-accent)), hsl(var(--dw-accent-glow)));
 }
 
 .dw-step-dot-active {

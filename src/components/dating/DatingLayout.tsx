@@ -29,41 +29,36 @@ export function DatingLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* ── BALANCED HEADER ── */}
-        <header className="sticky top-0 z-30 dw-glass border-b border-white/40">
-          <div className="max-w-lg mx-auto flex items-center justify-between px-4 h-14">
+        {/* ── REFINED LIQUID HEADER ── */}
+        <header className="sticky top-0 z-30 liquid-glass border-b border-white/5">
+          <div className="max-w-lg mx-auto flex items-center justify-between px-6 h-16">
 
-            {/* LEFT — back chevron only (clean, minimal weight) */}
+            {/* LEFT — back chevron */}
             <button
               onClick={handleExit}
-              className="flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-black/[0.05] active:scale-90"
+              className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-white/5 active:scale-90"
               style={{ color: "hsl(var(--dw-text-muted))" }}
               aria-label="Back to Tbuzz"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-6 w-6" />
             </button>
 
-            {/* CENTER — cherry blossom T logo (the dating-world identity mark) */}
+            {/* CENTER — Logo */}
             <button
               onClick={handleExit}
-              className="flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+              className="flex items-center justify-center transition-all hover:scale-110 active:scale-95"
               aria-label="Home"
             >
-              <CherryBlossomLogo size={36} />
+              <CherryBlossomLogo size={40} />
             </button>
 
-            {/* RIGHT — Secret Crush pill */}
+            {/* RIGHT — Secret Crush Pill */}
             <button
               onClick={() => setShowCrushDrawer(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:opacity-80 active:scale-95"
-              style={{
-                background: "hsl(340 75% 55% / 0.1)",
-                color: "hsl(var(--dw-accent))",
-                border: "1px solid hsl(340 75% 55% / 0.2)",
-              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold tracking-tight transition-all liquid-glass-accent animate-pulse"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Crush</span>
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-white/90">Crushes</span>
             </button>
           </div>
         </header>

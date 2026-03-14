@@ -87,9 +87,9 @@ export default function DatingProfile() {
   return (
     <div className="pb-8">
       {/* ── HEADER ACTIONS ── */}
-      <div className="sticky top-0 z-10 dw-glass border-b border-white/40 px-5 py-3">
+      <div className="sticky top-0 z-10 liquid-glass border-b border-white/5 px-5 py-4">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <p className="text-sm font-semibold" style={{ color: "hsl(var(--dw-text))" }}>
+          <p className="font-editorial text-lg text-white">
             My Profile
           </p>
           <div className="flex items-center gap-3">
@@ -97,14 +97,14 @@ export default function DatingProfile() {
             <button
               onClick={toggleActive}
               disabled={togglingActive}
-              className="flex items-center gap-2 text-xs font-medium transition-all"
-              style={{ color: profile.is_active ? "hsl(var(--dw-accent))" : "hsl(var(--dw-text-soft))" }}
+              className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all"
+              style={{ color: profile.is_active ? "hsl(var(--dw-accent))" : "white/30" }}
             >
               {togglingActive
                 ? <Loader2 className="w-4 h-4 animate-spin" />
                 : profile.is_active
-                ? <ToggleRight className="w-5 h-5" />
-                : <ToggleLeft className="w-5 h-5" />
+                ? <ToggleRight className="w-6 h-6" />
+                : <ToggleLeft className="w-6 h-6 opacity-30" />
               }
               <span>{profile.is_active ? "Live" : "Paused"}</span>
             </button>
@@ -112,12 +112,7 @@ export default function DatingProfile() {
             {/* Edit button */}
             <button
               onClick={() => navigate("/dating/onboarding")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={{
-                background: "hsl(340 75% 55% / 0.1)",
-                color: "hsl(var(--dw-accent))",
-                border: "1px solid hsl(340 75% 55% / 0.2)",
-              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all liquid-glass-accent"
             >
               <Pencil className="w-3.5 h-3.5" />
               Edit

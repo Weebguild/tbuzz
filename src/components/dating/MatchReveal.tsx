@@ -89,13 +89,14 @@ export function MatchReveal({ matchedUser, currentUser, conversationId, onDismis
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      {/* Background — warm cream bloom */}
+      /* Background — Deep Liquid Obsidian */
       <motion.div
         className="absolute inset-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        style={{ background: "linear-gradient(135deg, hsl(30,30%,98%) 0%, hsl(340,40%,97%) 50%, hsl(25,25%,96%) 100%)" }}
+        style={{ background: "#080808", backgroundSize: "cover" }}
       />
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-purple-500/5" />
 
       {/* Particle burst */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
@@ -214,20 +215,20 @@ export function MatchReveal({ matchedUser, currentUser, conversationId, onDismis
             >
               <h2
                 className="font-editorial mb-2"
-                style={{ fontSize: "clamp(2rem, 8vw, 3rem)", color: "hsl(var(--dw-text, 220 22% 16%))" }}
+                style={{ fontSize: "clamp(2rem, 8vw, 3rem)", color: "white" }}
               >
                 It's a Match
               </h2>
-              <p className="text-sm" style={{ color: "hsl(220, 8%, 50%)" }}>
+              <p className="text-sm" style={{ color: "white/60" }}>
                 You and{" "}
-                <span className="font-semibold" style={{ color: "hsl(340, 75%, 52%)" }}>
+                <span className="font-semibold" style={{ color: "hsl(var(--dw-accent))" }}>
                   {matchedUser.display_name}
                 </span>{" "}
                 liked each other
               </p>
             </motion.div>
 
-            {/* Action buttons — user in full control, no auto-redirect */}
+            {/* Action buttons */}
             <motion.div
               className="flex flex-col gap-3 w-full"
               initial={{ opacity: 0, y: 16 }}
@@ -236,16 +237,15 @@ export function MatchReveal({ matchedUser, currentUser, conversationId, onDismis
             >
               <button
                 onClick={goToMessages}
-                className="dw-btn-primary h-13 py-4 flex items-center justify-center gap-2 text-sm font-semibold rounded-full"
+                className="dw-btn-liquid h-14 flex items-center justify-center gap-2 text-sm font-bold rounded-full"
               >
-                <MessageCircle className="w-4 h-4" />
+                <MessageCircle className="w-5 h-5" />
                 Send a Message
-                <ChevronRight className="w-4 h-4" />
               </button>
               <button
                 onClick={onDismiss}
-                className="h-12 rounded-full font-medium text-sm transition-all hover:opacity-70"
-                style={{ color: "hsl(220, 8%, 52%)" }}
+                className="h-12 rounded-full font-medium text-sm transition-all hover:bg-white/5"
+                style={{ color: "white/50" }}
               >
                 Keep Browsing
               </button>
