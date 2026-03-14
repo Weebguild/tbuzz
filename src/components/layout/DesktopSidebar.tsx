@@ -85,12 +85,12 @@ export function DesktopSidebar() {
   const location = useLocation();
   const [showSearch, setShowSearch] = useState(false);
   const mouseY = useMotionValue(Infinity);
+  const isDating = location.pathname.startsWith("/dating");
+  const { transitioning, enterDating, exitDating } = useDatingTransition();
   
   const currentNavItems = isDating ? datingNavItems : navItems;
   const navRefs = useRef([...Array(Math.max(navItems.length, datingNavItems.length))].map(() => ({ current: null as HTMLDivElement | null })));
   const searchRef = useRef<HTMLDivElement>(null);
-  const isDating = location.pathname.startsWith("/dating");
-  const { transitioning, enterDating, exitDating } = useDatingTransition();
 
   const searchDistance = useTransform(mouseY, (val) => {
     const rect = searchRef.current?.getBoundingClientRect() ?? { y: 0, height: 0 };
