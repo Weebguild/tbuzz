@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart } from "lucide-react";
+import { Flame } from "lucide-react";
 
 export function DatingEntryCard() {
   const navigate = useNavigate();
@@ -31,29 +31,29 @@ export function DatingEntryCard() {
           <div
             className="h-11 w-11 rounded-full flex items-center justify-center shrink-0"
             style={{
-              background: "linear-gradient(135deg, hsl(263, 70%, 50%), hsl(330, 81%, 60%))",
-              boxShadow: "0 4px 16px hsla(263, 70%, 50%, 0.3)",
+              background: "linear-gradient(135deg, hsl(25, 90%, 55%), hsl(340, 75%, 55%))",
+              boxShadow: "0 4px 16px hsla(25, 90%, 50%, 0.3)",
             }}
           >
-            <Heart className="h-5 w-5 text-white" fill="white" />
+            <Flame className="h-5 w-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <p
               className="font-editorial text-lg leading-tight"
               style={{ color: "hsl(220, 20%, 18%)" }}
             >
-              Sunlit Gallery
+              Spark
             </p>
             <p
               className="text-xs mt-0.5"
               style={{ color: "hsl(220, 10%, 50%)" }}
             >
-              The dating side of campus. Tap to enter.
+              Campus dating, reimagined. Tap to enter.
             </p>
           </div>
           <div
             className="h-8 px-4 rounded-full flex items-center text-xs font-semibold text-white shrink-0"
-            style={{ background: "hsl(263, 70%, 50%)" }}
+            style={{ background: "linear-gradient(135deg, hsl(25, 90%, 55%), hsl(340, 75%, 55%))" }}
           >
             Open
           </div>
@@ -76,13 +76,13 @@ export function DatingEntryCard() {
               animate={{ backdropFilter: "blur(20px)" }}
               transition={{ duration: 0.5 }}
             />
-            {/* Ivory bloom expanding from center */}
+            {/* Warm ember glow */}
             <motion.div
               className="absolute rounded-full"
-              style={{ background: "hsl(40, 33%, 96%)" }}
+              style={{ background: "radial-gradient(circle, hsl(40, 100%, 75%) 0%, hsl(25, 95%, 55%) 40%, transparent 70%)" }}
               initial={{ width: 0, height: 0, opacity: 0.9 }}
               animate={{ width: "250vmax", height: "250vmax", opacity: 1 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
             />
             {/* Centered branding */}
             <motion.div
@@ -91,16 +91,15 @@ export function DatingEntryCard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
             >
-              <Heart
+              <Flame
                 className="h-8 w-8"
-                style={{ color: "hsl(263, 70%, 50%)" }}
-                fill="hsl(263, 70%, 50%)"
+                style={{ color: "hsl(25, 90%, 55%)" }}
               />
               <span
                 className="font-editorial text-2xl tracking-tight"
-                style={{ color: "hsl(220, 20%, 18%)" }}
+                style={{ color: "hsl(15, 20%, 20%)" }}
               >
-                Sunlit Gallery
+                Spark
               </span>
             </motion.div>
           </motion.div>

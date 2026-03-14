@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart } from "lucide-react";
+import { Flame } from "lucide-react";
 
 interface DatingGatewayProps {
   children: React.ReactNode;
@@ -44,7 +44,7 @@ export function DatingGateway({ children }: DatingGatewayProps) {
             {/* The "bloom" — warm ivory circle expanding */}
             <motion.div
               className="absolute rounded-full"
-              style={{ background: "hsl(40, 33%, 96%)" }}
+              style={{ background: "radial-gradient(circle, hsl(40, 100%, 75%) 0%, hsl(25, 95%, 55%) 40%, transparent 70%)" }}
               initial={{ width: 0, height: 0, opacity: 0.8 }}
               animate={{
                 width: "200vmax",
@@ -64,16 +64,15 @@ export function DatingGateway({ children }: DatingGatewayProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
             >
-              <Heart
+              <Flame
                 className="h-8 w-8"
-                style={{ color: "hsl(263, 70%, 50%)" }}
-                fill="hsl(263, 70%, 50%)"
+                style={{ color: "hsl(25, 90%, 55%)" }}
               />
               <span
                 className="font-editorial text-2xl tracking-tight"
-                style={{ color: "hsl(220, 20%, 18%)" }}
+                style={{ color: "hsl(15, 20%, 20%)" }}
               >
-                Sunlit Gallery
+                Spark
               </span>
             </motion.div>
           </motion.div>

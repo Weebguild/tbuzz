@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart } from "lucide-react";
+import { Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,7 +12,50 @@ interface DatingTransitionProps {
   onComplete?: () => void;
 }
 
-// The visual overlay that plays during the transition
+/* ── Ember particles for the entry ignite effect ── */
+function EmberParticles() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {[...Array(18)].map((_, i) => {
+        const x = 50 + (Math.random() - 0.5) * 40;
+        const y = 50 + (Math.random() - 0.5) * 40;
+        const size = 3 + Math.random() * 5;
+        const delay = 0.1 + Math.random() * 0.4;
+        const duration = 0.6 + Math.random() * 0.8;
+        const driftX = (Math.random() - 0.5) * 120;
+        const driftY = -(40 + Math.random() * 100);
+
+        return (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              width: size,
+              height: size,
+              background: i % 3 === 0
+                ? "hsl(25, 95%, 60%)"
+                : i % 3 === 1
+                ? "hsl(35, 100%, 65%)"
+                : "hsl(15, 90%, 55%)",
+              boxShadow: `0 0 ${size * 2}px hsl(25, 95%, 55%)`,
+            }}
+            initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+            animate={{
+              opacity: [0, 1, 0.8, 0],
+              scale: [0, 1.2, 0.8, 0],
+              x: driftX,
+              y: driftY,
+            }}
+            transition={{ delay, duration, ease: "easeOut" }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export function DatingTransitionOverlay({ direction, onComplete }: DatingTransitionProps) {
   const isEntering = direction === "enter";
 
@@ -22,112 +65,139 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.15 }}
       onAnimationComplete={onComplete}
     >
-      {/* ── BACKGROUND LAYER ── */}
       {isEntering ? (
-        // Entry: warm cream bloom expanding from center
-        <motion.div
-          className="absolute rounded-full"
-          style={{ background: "linear-gradient(135deg, hsl(30, 30%, 98%) 0%, hsl(25, 25%, 95%) 100%)" }}
-          initial={{ width: 0, height: 0, opacity: 0.8 }}
-          animate={{ width: "240vmax", height: "240vmax", opacity: 1 }}
-          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-        />
-      ) : (
-        // Exit: dark Tbuzz world reasserting
+        /* ═══ EMBER IGNITE ENTRY ═══ */
         <>
+          {/* Dark backdrop that quickly appears */}
           <motion.div
-            className="absolute inset-0 bg-[#050508]"
+            className="absolute inset-0"
+            style={{ background: "hsl(15, 10%, 6%)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+          />
+
+          {/* Central spark strike — a bright point that ignites */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              background: "radial-gradient(circle, hsl(40, 100%, 75%) 0%, hsl(25, 95%, 55%) 40%, transparent 70%)",
+            }}
+            initial={{ width: 0, height: 0, opacity: 1 }}
+            animate={{ width: "280vmax", height: "280vmax", opacity: 0.9 }}
+            transition={{ delay: 0.1, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          />
+
+          {/* Warm amber wash that fills the screen */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(circle at center, hsl(35, 60%, 95%) 0%, hsl(30, 40%, 92%) 60%, hsl(25, 30%, 88%) 100%)",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35, duration: 0.4, ease: "easeOut" }}
+          />
+
+          {/* Ember particles flying upward */}
+          <EmberParticles />
+
+          {/* Center logo — Spark branding */}
+          <motion.div
+            className="relative z-10 flex flex-col items-center gap-3"
+            initial={{ opacity: 0, scale: 0.5, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <motion.div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center"
+              style={{
+                background: "linear-gradient(135deg, hsl(25, 90%, 55%), hsl(340, 75%, 55%))",
+                boxShadow: "0 8px 32px hsla(25, 90%, 50%, 0.5), 0 0 60px hsla(25, 90%, 55%, 0.3)",
+              }}
+              animate={{
+                boxShadow: [
+                  "0 8px 32px hsla(25, 90%, 50%, 0.5), 0 0 60px hsla(25, 90%, 55%, 0.3)",
+                  "0 8px 40px hsla(25, 90%, 50%, 0.7), 0 0 80px hsla(25, 90%, 55%, 0.5)",
+                  "0 8px 32px hsla(25, 90%, 50%, 0.5), 0 0 60px hsla(25, 90%, 55%, 0.3)",
+                ],
+              }}
+              transition={{ delay: 0.3, duration: 1.2, ease: "easeInOut" }}
+            >
+              <Flame className="w-7 h-7 text-white" />
+            </motion.div>
+            <motion.span
+              className="font-editorial text-xl tracking-wide font-semibold"
+              style={{ color: "hsl(15, 20%, 20%)" }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+            >
+              Spark
+            </motion.span>
+          </motion.div>
+        </>
+      ) : (
+        /* ═══ INK BLEED EXIT ═══ */
+        <>
+          {/* Ink bleeding in from all edges */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(ellipse at center, transparent 0%, hsl(240, 10%, 6%) 100%)",
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
           />
-          {/* Dark neon ripple on exit */}
+
+          {/* Second ink layer — from edges inward, consuming warmth */}
+          <motion.div
+            className="absolute inset-0"
+            style={{ background: "hsl(240, 10%, 4%)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4, ease: "easeIn" }}
+          />
+
+          {/* Fading warm light in center — last ember dying */}
           <motion.div
             className="absolute rounded-full"
-            style={{ background: "radial-gradient(circle, hsla(263,70%,50%,0.15) 0%, transparent 70%)" }}
-            initial={{ width: 0, height: 0 }}
-            animate={{ width: "200vmax", height: "200vmax" }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              background: "radial-gradient(circle, hsla(30, 80%, 70%, 0.3) 0%, transparent 60%)",
+              width: "40vmin",
+              height: "40vmin",
+            }}
+            initial={{ opacity: 1, scale: 1 }}
+            animate={{ opacity: 0, scale: 0.5 }}
+            transition={{ delay: 0.1, duration: 0.5, ease: "easeIn" }}
           />
+
+          {/* T logo emerging from darkness */}
+          <motion.div
+            className="relative z-10 flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.35, duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <span
+              className="text-[56px] font-black leading-none"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                backgroundImage: "linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsla(0, 0%, 100%, 0.6) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                filter: "drop-shadow(0 0 20px hsla(263, 70%, 50%, 0.4))",
+              }}
+            >
+              T
+            </span>
+          </motion.div>
         </>
       )}
-
-      {/* ── FLOATING PETALS (entry only) ── */}
-      {isEntering && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(14)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute dw-petal"
-              style={{
-                left: `${20 + Math.random() * 60}%`,
-                top: `${Math.random() * 100}%`,
-                width: `${10 + Math.random() * 18}px`,
-                height: `${8 + Math.random() * 14}px`,
-                background: i % 3 === 0
-                  ? "hsla(340, 75%, 75%, 0.5)"
-                  : i % 3 === 1
-                  ? "hsla(30, 60%, 80%, 0.5)"
-                  : "hsla(300, 40%, 85%, 0.4)",
-                ["--px" as string]: `${(Math.random() - 0.5) * 300}px`,
-                ["--py" as string]: `${(Math.random() - 0.5) * 300}px`,
-                ["--pr" as string]: `${(Math.random() - 0.5) * 360}deg`,
-              }}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 + i * 0.04, duration: 0.4 }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* ── CENTER LOGO ── */}
-      <motion.div
-        className="relative z-10 flex flex-col items-center gap-3"
-        initial={{ opacity: 0, scale: 0.7, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.8, y: -10 }}
-        transition={{ delay: 0.25, duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
-      >
-        {isEntering ? (
-          // Entry: heart emblem
-          <>
-            <motion.div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{
-                background: "linear-gradient(135deg, hsl(340, 75%, 58%), hsl(340, 70%, 48%))",
-                boxShadow: "0 8px 32px hsla(340, 75%, 55%, 0.4)",
-              }}
-              animate={{ rotate: [0, -8, 8, -4, 4, 0] }}
-              transition={{ delay: 0.4, duration: 0.9, ease: "easeInOut" }}
-            >
-              <Heart className="w-7 h-7 text-white" fill="white" />
-            </motion.div>
-            <motion.span
-              className="font-editorial text-xl tracking-wide"
-              style={{ color: "hsl(220, 22%, 18%)" }}
-            >
-              dating
-            </motion.span>
-          </>
-        ) : (
-          // Exit: Tbuzz T logo
-          <span
-            className="text-[52px] font-black leading-none"
-            style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              backgroundImage: "linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.65) 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            T
-          </span>
-        )}
-      </motion.div>
     </motion.div>
   );
 }
@@ -142,7 +212,6 @@ export function useDatingTransition() {
     if (transitioning) return;
     setTransitioning("enter");
 
-    // Check if they've completed onboarding
     let target = "/dating/discover";
     try {
       if (user) {
@@ -151,10 +220,10 @@ export function useDatingTransition() {
           .select("id, media, prompts")
           .eq("id", user.id)
           .maybeSingle();
-        
+
         const hasMedia = data && Array.isArray(data.media) && (data.media as string[]).length > 0;
         const hasPrompts = data && data.prompts && Object.keys(data.prompts).length > 0;
-        
+
         if (!hasMedia || !hasPrompts) {
           target = "/dating/onboarding";
         }
