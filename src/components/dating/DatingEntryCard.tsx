@@ -48,7 +48,7 @@ export function DatingEntryCard() {
               className="text-xs mt-0.5"
               style={{ color: "hsl(220, 10%, 50%)" }}
             >
-              The dating side of campus. Tap to enter.
+              Campus dating, reimagined. Tap to enter.
             </p>
           </div>
           <div
