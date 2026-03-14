@@ -31,11 +31,11 @@ export function DatingEntryCard() {
           <div
             className="h-11 w-11 rounded-full flex items-center justify-center shrink-0"
             style={{
-              background: "linear-gradient(135deg, hsl(263, 70%, 50%), hsl(330, 81%, 60%))",
-              boxShadow: "0 4px 16px hsla(263, 70%, 50%, 0.3)",
+              background: "linear-gradient(135deg, hsl(25, 90%, 55%), hsl(340, 75%, 55%))",
+              boxShadow: "0 4px 16px hsla(25, 90%, 50%, 0.3)",
             }}
           >
-            <Heart className="h-5 w-5 text-white" fill="white" />
+            <Flame className="h-5 w-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <p
