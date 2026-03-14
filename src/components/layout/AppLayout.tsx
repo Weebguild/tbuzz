@@ -1,5 +1,4 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -49,8 +48,7 @@ export function AppLayout() {
         </AnimatePresence>
       </main>
 
-      {/* ── MOBILE BOTTOM NAV ── */}
-      {isMobile && <BottomNav />}
+      {/* ── MOBILE BOTTOM NAV — rendered in App.tsx outside transform context ── */}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from
 import { cn } from "@/lib/utils";
 import { UserSearch } from "@/components/UserSearch";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { DatingTransitionOverlay, useDatingTransition } from "@/components/dating/DatingTransition";
 
 const navItems = [
   { icon: Home, path: "/feed", label: "Feed" },
@@ -69,12 +70,12 @@ function DockNavItem({
 
 export function DesktopSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [showSearch, setShowSearch] = useState(false);
   const mouseY = useMotionValue(Infinity);
   const navRefs = useRef(navItems.map(() => ({ current: null as HTMLDivElement | null })));
   const searchRef = useRef<HTMLDivElement>(null);
   const isDating = location.pathname.startsWith("/dating");
+  const { transitioning, enterDating, exitDating } = useDatingTransition();
 
   const searchDistance = useTransform(mouseY, (val) => {
     const rect = searchRef.current?.getBoundingClientRect() ?? { y: 0, height: 0 };
@@ -102,7 +103,7 @@ export function DesktopSidebar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => navigate(isDating ? "/feed" : "/dating/onboarding")}
+              onClick={() => isDating ? exitDating() : enterDating()}
               className="group"
             >
               <div className="h-12 w-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center cursor-pointer relative transition-all duration-300 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.25)]">
@@ -131,7 +132,7 @@ export function DesktopSidebar() {
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" className="z-[9999] bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
-            {isDating ? "Back to Tbuzz" : "Sunlit Gallery"}
+            {isDating ? "Back to Tbuzz" : "Dating"}
           </TooltipContent>
         </Tooltip>
           <div className="flex flex-col gap-6 mt-8 items-center">
@@ -171,6 +172,9 @@ export function DesktopSidebar() {
 
       <AnimatePresence>
         {showSearch && <UserSearch onClose={() => setShowSearch(false)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {transitioning && <DatingTransitionOverlay direction={transitioning} />}
       </AnimatePresence>
     </>
   );

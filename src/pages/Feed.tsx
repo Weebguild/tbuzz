@@ -9,7 +9,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy } from "lucide-react";
+import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy, Search } from "lucide-react";
+import { UserSearch } from "@/components/UserSearch";
 import { HeartBurst } from "@/components/feed/HeartBurst";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { Input } from "@/components/ui/input";
@@ -178,6 +179,7 @@ export default function Feed() {
   const [trendingGossip, setTrendingGossip] = useState<TrendingGossip[]>([]);
   const [expandedImage, setExpandedImage] = useState<Post | null>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
 
   // Deep-link: scroll to post from notification
   const deepLinkPostId = searchParams.get("postId");
@@ -569,10 +571,21 @@ export default function Feed() {
 
   return (
     <div className="px-4 pt-6 pb-4">
+      {/* Search overlay */}
+      <AnimatePresence>
+        {showSearch && <UserSearch onClose={() => setShowSearch(false)} />}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Feed</h1>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowSearch(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <Search className="h-5 w-5" />
+          </button>
           <button
             onClick={() => navigate("/leaderboard")}
             className="flex h-10 w-10 items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"

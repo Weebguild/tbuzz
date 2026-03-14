@@ -1,307 +1,775 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Eye, EyeOff, Upload, X, Volume2, VolumeX, Plus } from "lucide-react";
+import {
+  Loader2, X, Plus, ChevronRight, ChevronLeft,
+  Volume2, VolumeX, Eye, EyeOff, Check
+} from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+/* ──────────────────────────────────────────── */
+/*  TYPES                                        */
+/* ──────────────────────────────────────────── */
+
+interface VitalField { value: string; visible: boolean }
+
 interface Vitals {
-  height: { value: string; visible: boolean };
-  gender: { value: string; visible: boolean };
-  major: { value: string; visible: boolean };
-  gradYear: { value: string; visible: boolean };
-  lifestyle: { value: string; visible: boolean };
-  intentions: { value: string; visible: boolean };
+  age: VitalField;
+  gender: VitalField;
+  pronouns: VitalField;
+  year: VitalField;
+  major: VitalField;
+  height: VitalField;
+  relationship_type: VitalField;
+  lifestyle: VitalField;
+  intentions: VitalField;
 }
+
+interface Prompt { question: string; answer: string }
+
+const ALL_PROMPTS = [
+  "The way to my heart is...",
+  "My love language is...",
+  "We'd get along if you...",
+  "I'm looking for someone who...",
+  "My guilty pleasure is...",
+  "Together we would...",
+  "I'll know it's a match when...",
+  "A green flag I look for...",
+  "Change my mind about...",
+  "Best piece of advice I've gotten...",
+  "Sunday morning means...",
+  "Unpopular opinion I stand by...",
+];
+
+/* ──────────────────────────────────────────── */
+/*  MAIN PAGE COMPONENT                          */
+/* ──────────────────────────────────────────── */
 
 export default function DatingOnboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
+  const [existingData, setExistingData] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
     const check = async () => {
       const { data } = await supabase
         .from("dating_profiles")
-        .select("id, media")
+        .select("id, media, vitals, prompts, is_active")
         .eq("id", user.id)
         .maybeSingle();
-
-      if (data && (data.media as string[])?.length === 5) {
-        navigate("/dating/discover", { replace: true });
-      } else {
-        setChecking(false);
-      }
+      
+      if (data) setExistingData(data);
+      setChecking(false);
     };
     check();
-  }, [user, navigate]);
+  }, [user]);
 
   if (checking) {
     return (
-      <div className="flex bg-[#faf8f5] items-center justify-center min-h-[100dvh]">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "hsl(var(--sg-accent))" }} />
+      <div className="dating-world flex items-center justify-center min-h-[100dvh]">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "hsl(var(--dw-accent))" }} />
       </div>
     );
   }
 
-  return <OnboardingForm userId={user?.id} />;
+  return <OnboardingForm userId={user?.id} existing={existingData} />;
 }
 
-function OnboardingForm({ userId }: { userId: string | undefined }) {
+/* ──────────────────────────────────────────── */
+/*  MULTI-STEP FORM                              */
+/* ──────────────────────────────────────────── */
+
+function OnboardingForm({ userId, existing }: { userId?: string; existing?: any }) {
   const navigate = useNavigate();
-  const [media, setMedia] = useState<{ id: string; file: File; type: "image" | "video"; preview: string }[]>([]);
+  const [step, setStep] = useState(0);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [vitals, setVitals] = useState<Vitals>({
-    height: { value: "", visible: true },
-    gender: { value: "", visible: true },
-    major: { value: "", visible: true },
-    gradYear: { value: "", visible: true },
-    lifestyle: { value: "", visible: true },
-    intentions: { value: "", visible: true },
+  // Media state
+  const [media, setMedia] = useState<{ id: string; file?: File; type: "image" | "video"; preview: string; uploaded?: string }[]>(
+    () => {
+      if (existing?.media && Array.isArray(existing.media)) {
+        return (existing.media as string[]).map((url, i) => ({
+          id: `existing-${i}`,
+          type: url.endsWith(".mp4") || url.endsWith(".mov") ? "video" : "image" as "image",
+          preview: url,
+          uploaded: url,
+        }));
+      }
+      return [];
+    }
+  );
+
+  // Vitals state
+  const [vitals, setVitals] = useState<Vitals>(() => {
+    const def: Vitals = {
+      age: { value: "", visible: true },
+      gender: { value: "", visible: true },
+      pronouns: { value: "", visible: true },
+      year: { value: "", visible: true },
+      major: { value: "", visible: true },
+      height: { value: "", visible: true },
+      relationship_type: { value: "", visible: true },
+      lifestyle: { value: "", visible: true },
+      intentions: { value: "", visible: true },
+    };
+    if (existing?.vitals) {
+      return { ...def, ...existing.vitals };
+    }
+    return def;
   });
 
-  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Prompts state
+  const [prompts, setPrompts] = useState<Prompt[]>(() => {
+    if (existing?.prompts && typeof existing.prompts === "object") {
+      return Object.entries(existing.prompts).map(([q, a]) => ({ question: q, answer: a as string }));
+    }
+    return [{ question: "", answer: "" }, { question: "", answer: "" }];
+  });
+
+  const steps = ["Gallery", "About You", "Prompts", "Review"];
+  const canNext = [
+    media.length >= 1,
+    vitals.gender.value.trim() !== "" && vitals.year.value.trim() !== "",
+    prompts.every(p => p.question && p.answer.trim().length > 0),
+    true,
+  ];
+
+  const handleNext = () => {
+    if (step < steps.length - 1) setStep(s => s + 1);
+  };
+
+  const handleBack = () => {
+    if (step > 0) setStep(s => s - 1);
+  };
+
+  const handleMediaAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
-    
     if (media.length + files.length > 5) {
-      toast.error("You can only upload up to 5 pieces of media.");
+      toast.error("Maximum 5 pieces of media.");
       return;
     }
-
-    const newMedia = files.map(file => {
-      const isVideo = file.type.startsWith("video/");
-      return {
-        id: Math.random().toString(36).substring(7),
-        file,
-        type: isVideo ? "video" as const : "image" as const,
-        preview: URL.createObjectURL(file)
-      };
-    });
-
-    setMedia(prev => [...prev, ...newMedia]);
+    const items = files.map(file => ({
+      id: Math.random().toString(36).slice(7),
+      file,
+      type: file.type.startsWith("video/") ? "video" as const : "image" as const,
+      preview: URL.createObjectURL(file),
+    }));
+    setMedia(prev => [...prev, ...items]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removeMedia = (idToRemove: string) => {
-    setMedia(prev => prev.filter((item) => item.id !== idToRemove));
-  };
+  const removeMedia = (id: string) => setMedia(prev => prev.filter(m => m.id !== id));
 
-  const handleVitalChange = (key: keyof Vitals, field: "value" | "visible", newValue: any) => {
-    setVitals(prev => ({
-      ...prev,
-      [key]: { ...prev[key], [field]: newValue }
-    }));
-  };
+  const setVital = (key: keyof Vitals, field: "value" | "visible", val: any) =>
+    setVitals(prev => ({ ...prev, [key]: { ...prev[key], [field]: val } }));
 
   const handleSubmit = async () => {
-    if (media.length !== 5) {
-      toast.error("The gallery requires exactly 5 pieces of media.");
-      return;
+    if (media.length < 1) { toast.error("Add at least 1 photo."); return; }
+    if (!prompts.every(p => p.question && p.answer.trim())) {
+      toast.error("Complete both prompts."); return;
     }
-
     setUploading(true);
     try {
+      // Upload only new files
       const mediaUrls = await Promise.all(
-        media.map(async (item) => {
-          const fileExt = item.file.name.split('.').pop() || (item.type === 'video' ? 'mp4' : 'jpg');
-          const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`;
-          const { error: uploadError } = await supabase.storage
-            .from("dating_media")
-            .upload(fileName, item.file);
-
-          if (uploadError) throw uploadError;
-          const { data: publicUrlData } = supabase.storage.from("dating_media").getPublicUrl(fileName);
-          return publicUrlData.publicUrl;
+        media.map(async item => {
+          if (item.uploaded) return item.uploaded;
+          const ext = item.file!.name.split(".").pop() || (item.type === "video" ? "mp4" : "jpg");
+          const fileName = `${userId}/${crypto.randomUUID()}.${ext}`;
+          const { error: upErr } = await supabase.storage.from("dating_media").upload(fileName, item.file!);
+          if (upErr) throw upErr;
+          const { data: pub } = supabase.storage.from("dating_media").getPublicUrl(fileName);
+          return pub.publicUrl;
         })
       );
 
+      const promptsMap = Object.fromEntries(prompts.map(p => [p.question, p.answer]));
+
       const { error } = await supabase
         .from("dating_profiles")
-        .upsert({
-          id: userId,
-          media: mediaUrls,
-          vitals: vitals as any,
-          is_active: true,
-        });
+        .upsert({ id: userId, media: mediaUrls, vitals: vitals as any, prompts: promptsMap, is_active: true });
 
       if (error) throw error;
-      
-      toast.success("Welcome to the Sunlit Gallery.");
+      toast.success("Profile live! Go find your person.");
       navigate("/dating/discover");
     } catch (err: any) {
-      toast.error(err.message || "Failed to curate profile.");
+      toast.error(err.message || "Failed to save profile.");
     } finally {
       setUploading(false);
     }
   };
 
-  const vitalsConfig = [
-    { key: "height", placeholder: "Height (e.g. 5'10\")" },
-    { key: "gender", placeholder: "Gender" },
-    { key: "major", placeholder: "Major (e.g. Architecture)" },
-    { key: "gradYear", placeholder: "Graduation Year" },
-    { key: "lifestyle", placeholder: "Lifestyle (e.g. Socially)" },
-    { key: "intentions", placeholder: "Intentions" },
-  ] as const;
-
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-[#2c2c2c] px-6 py-12 selection:bg-[#7C3AED]/20">
-      <div className="max-w-md mx-auto relative z-10">
-        
-        {/* Header */}
-        <div className="mb-10 text-center">
-          <h1 className="font-editorial text-5xl mb-3 tracking-tight">Curate Your Gallery</h1>
-          <p className="text-[#6b6b6b] font-sans text-sm tracking-wide leading-relaxed">
-            Welcome to a higher standard.<br/>
-            Please provide exactly 5 pieces of media.
-          </p>
-        </div>
-
-        {/* Media Uploader - Rule of 5 */}
-        <div className="mb-14">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-editorial text-3xl">Visuals</h2>
-            <span className={cn(
-              "text-xs font-medium px-2.5 py-1 rounded-full",
-              media.length === 5 ? "bg-[#7C3AED]/10 text-[#7C3AED]" : "bg-black/5 text-[#6b6b6b]"
-            )}>
-              {media.length} / 5
-            </span>
+    <div className="dating-world min-h-[100dvh] flex flex-col">
+      {/* ── PROGRESS HEADER ── */}
+      <div className="sticky top-0 z-20 dw-glass border-b border-white/40 px-5 py-4">
+        <div className="max-w-md mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={handleBack}
+              className={cn("transition-opacity", step === 0 ? "opacity-0 pointer-events-none" : "opacity-60 hover:opacity-100")}
+              style={{ color: "hsl(var(--dw-text))" }}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "hsl(var(--dw-text-soft))" }}>
+              {steps[step]}
+            </p>
+            <div className="w-5" />
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <AnimatePresence>
-              {media.map((item, i) => (
-                <motion.div 
-                  key={item.id} 
-                  initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
-                  layout
-                  transition={{ duration: 0.3 }}
-                  className={cn(
-                    "relative overflow-hidden rounded-xl bg-white",
-                    "shadow-[0_8px_30px_rgb(0,0,0,0.06)]",
-                    i === 0 ? "col-span-2 aspect-[4/5]" : "aspect-[3/4]"
-                  )}
-                >
-                  {item.type === "video" ? (
-                    <VideoPreview src={item.preview} />
-                  ) : (
-                    <img src={item.preview} alt={`Upload ${i}`} className="w-full h-full object-cover" />
-                  )}
-                  
-                  {/* Remove Button */}
-                  <button 
-                    onClick={() => removeMedia(item.id)}
-                    className="absolute top-3 right-3 p-1.5 rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-black/40 transition-colors shadow-sm"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            
-            {media.length < 5 && (
-              <motion.button
-                layout
-                onClick={() => fileInputRef.current?.click()}
-                className={cn(
-                  "aspect-[3/4] rounded-xl border border-black/5 border-dashed flex flex-col items-center justify-center gap-3 text-[#6b6b6b] hover:bg-black/[0.02] transition-colors shadow-[0_8px_30px_rgb(0,0,0,0.03)] bg-white/50",
-                  media.length === 0 ? "col-span-2 aspect-[4/5]" : ""
-                )}
-              >
-                <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-[#2c2c2c]" />
-                </div>
-                <span className="text-xs font-medium tracking-wide uppercase">Add Media</span>
-              </motion.button>
-            )}
-          </div>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept="image/*,video/mp4,video/quicktime" 
-            multiple 
-            onChange={handleMediaUpload} 
-          />
-          <p className="text-xs text-[#a3a3a3] mt-4 text-center">
-            Videos (max 5s) automatically loop on mute.
-          </p>
-        </div>
-
-        {/* Vitals Form */}
-        <div className="mb-16">
-          <h2 className="font-editorial text-3xl mb-5">The Vitals</h2>
-          <div className="space-y-3">
-            {vitalsConfig.map(({ key, placeholder }) => {
-              const data = vitals[key as keyof Vitals];
-              return (
-                <div key={key} className="flex items-center gap-3 group">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      placeholder={placeholder}
-                      value={data.value}
-                      onChange={(e) => handleVitalChange(key as keyof Vitals, "value", e.target.value)}
-                      className={cn(
-                        "w-full bg-white border border-black/[0.04] rounded-xl px-4 py-3.5 text-sm font-sans placeholder:text-[#a3a3a3]",
-                        "focus:outline-none focus:ring-1 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED]/30 transition-all",
-                        "shadow-[0_2px_10px_rgb(0,0,0,0.02)]",
-                        !data.visible && "text-[#8b8b8b] bg-white/60"
-                      )}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleVitalChange(key as keyof Vitals, "visible", !data.visible)}
-                    className={cn(
-                      "p-3.5 rounded-xl border transition-all duration-300 shadow-[0_2px_10px_rgb(0,0,0,0.02)]",
-                      data.visible 
-                        ? "bg-white border-black/[0.04] text-[#2c2c2c] hover:bg-[#faf8f5]" 
-                        : "bg-[#f0ece6] border-transparent text-[#8b8b8b]"
-                    )}
-                    title={data.visible ? "Visible on profile" : "Hidden, but mapped for matching"}
-                  >
-                    {data.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                  </button>
-                </div>
-              );
-            })}
+          {/* Step dots */}
+          <div className="flex items-center justify-center gap-2">
+            {steps.map((_, i) => (
+              <div
+                key={i}
+                className={cn("dw-step-dot transition-all", i === step ? "dw-step-dot-active" : i < step ? "bg-rose-200" : "")}
+              />
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Submit */}
-        <div className="pb-8">
-          <button
-            onClick={handleSubmit}
-            disabled={media.length !== 5 || uploading}
-            className={cn(
-              "w-full py-4 rounded-full font-medium tracking-wide transition-all duration-500 font-sans disabled:pointer-events-none relative overflow-hidden",
-              media.length === 5 
-                ? "bg-[#7C3AED] text-white shadow-[0_8px_30px_rgb(124,58,237,0.3)] hover:bg-[#6D28D9] hover:shadow-[0_8px_40px_rgb(124,58,237,0.4)] hover:-translate-y-0.5" 
-                : "bg-black/5 text-[#a3a3a3] shadow-none"
-            )}
-          >
-            {uploading ? (
-              <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-            ) : (
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                Complete Profile
-              </span>
-            )}
-          </button>
+      {/* ── STEP CONTENT ── */}
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="max-w-md mx-auto px-5">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {step === 0 && (
+                <GalleryStep
+                  media={media}
+                  onAdd={() => fileInputRef.current?.click()}
+                  onRemove={removeMedia}
+                />
+              )}
+              {step === 1 && (
+                <AboutStep vitals={vitals} setVital={setVital} />
+              )}
+              {step === 2 && (
+                <PromptsStep prompts={prompts} setPrompts={setPrompts} />
+              )}
+              {step === 3 && (
+                <ReviewStep media={media} vitals={vitals} prompts={prompts} />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
+      </div>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept="image/*,video/mp4,video/quicktime"
+        multiple
+        onChange={handleMediaAdd}
+      />
+
+      {/* ── BOTTOM CTA ── */}
+      <div className="fixed bottom-0 left-0 right-0 dw-glass border-t border-white/40 px-5 py-4">
+        <div className="max-w-md mx-auto">
+          {step < steps.length - 1 ? (
+            <button
+              onClick={handleNext}
+              disabled={!canNext[step]}
+              className="dw-btn-primary w-full py-4 flex items-center justify-center gap-2 font-semibold disabled:opacity-40 disabled:pointer-events-none"
+            >
+              Continue
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={uploading}
+              className="dw-btn-primary w-full py-4 flex items-center justify-center gap-2 font-semibold"
+            >
+              {uploading
+                ? <Loader2 className="w-5 h-5 animate-spin" />
+                : <><Check className="w-4 h-4" /> Go Live</>
+              }
+            </button>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+/* ──────────────────────────────────────────── */
+/*  STEP 1 — GALLERY                            */
+/* ──────────────────────────────────────────── */
+
+function GalleryStep({ media, onAdd, onRemove }: {
+  media: any[];
+  onAdd: () => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="pt-8 pb-4">
+      <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>
+        Your Gallery
+      </h1>
+      <p className="text-sm mb-8" style={{ color: "hsl(var(--dw-text-soft))" }}>
+        Up to 5 photos or short videos. Your first photo is your hero shot.
+      </p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <AnimatePresence>
+          {media.map((item, i) => (
+            <motion.div
+              key={item.id}
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ duration: 0.25 }}
+              className={cn(
+                "relative overflow-hidden rounded-2xl bg-stone-100",
+                i === 0 ? "col-span-2 aspect-[4/5]" : "aspect-[3/4]"
+              )}
+              style={{ boxShadow: "var(--dw-shadow)" }}
+            >
+              {item.type === "video"
+                ? <VideoPreview src={item.preview} />
+                : <img src={item.preview} alt="" className="w-full h-full object-cover" />
+              }
+              <button
+                onClick={() => onRemove(item.id)}
+                className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/25 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/40 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              {i === 0 && (
+                <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide text-white"
+                  style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(8px)" }}>
+                  Cover Photo
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {media.length < 5 && (
+          <motion.button
+            layout
+            onClick={onAdd}
+            whileTap={{ scale: 0.97 }}
+            className={cn(
+              "aspect-[3/4] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all hover:bg-stone-50 active:scale-97",
+              media.length === 0 ? "col-span-2 aspect-[4/5]" : ""
+            )}
+            style={{ borderColor: "hsl(var(--dw-border))", background: "hsl(var(--dw-bg-alt))" }}
+          >
+            <div className="w-11 h-11 rounded-full flex items-center justify-center"
+              style={{ background: "hsl(340 75% 55% / 0.1)" }}>
+              <Plus className="w-5 h-5" style={{ color: "hsl(var(--dw-accent))" }} />
+            </div>
+            <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: "hsl(var(--dw-text-soft))" }}>
+              Add Photo/Video
+            </span>
+          </motion.button>
+        )}
+      </div>
+
+      <p className="text-xs text-center mt-4" style={{ color: "hsl(var(--dw-text-soft))" }}>
+        Videos loop automatically on mute · tap to unmute
+      </p>
+
+      {/* Count badge */}
+      <div className="flex items-center justify-center mt-4 gap-2">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="h-1.5 rounded-full transition-all duration-300"
+            style={{
+              width: i < media.length ? "20px" : "6px",
+              background: i < media.length ? "hsl(var(--dw-accent))" : "hsl(var(--dw-border))",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────── */
+/*  STEP 2 — ABOUT YOU                          */
+/* ──────────────────────────────────────────── */
+
+const genderOptions = ["Man", "Woman", "Non-binary", "Other"];
+const pronounOptions = ["He / Him", "She / Her", "They / Them", "Ask Me"];
+const yearOptions = ["Freshman", "Sophomore", "Junior", "Senior", "Grad Student"];
+const relationshipOptions = ["Something casual", "Dating around", "Long-term", "Open to anything"];
+const lifestyleOptions = ["Homebody", "Social butterfly", "Night owl", "Early bird", "Gym rat", "Bookworm", "Foodie", "Artist", "Gamer", "Traveller"];
+const intentionOptions = ["Here to date", "Open to friendship", "Just vibing"];
+
+function AboutStep({ vitals, setVital }: {
+  vitals: Vitals;
+  setVital: (key: keyof Vitals, field: "value" | "visible", val: any) => void;
+}) {
+  const chip = (key: keyof Vitals, opt: string) => (
+    <button
+      key={opt}
+      onClick={() => setVital(key, "value", vitals[key].value === opt ? "" : opt)}
+      className={cn("dw-chip transition-all", vitals[key].value === opt && "dw-chip-active")}
+    >
+      {opt}
+    </button>
+  );
+
+  const multiChip = (key: keyof Vitals, opt: string) => {
+    const selected = vitals[key].value.split(",").map(s => s.trim()).filter(Boolean);
+    const isActive = selected.includes(opt);
+    return (
+      <button
+        key={opt}
+        onClick={() => {
+          const next = isActive
+            ? selected.filter(s => s !== opt)
+            : selected.length < 4 ? [...selected, opt] : selected;
+          setVital(key, "value", next.join(", "));
+        }}
+        className={cn("dw-chip transition-all", isActive && "dw-chip-active")}
+      >
+        {opt}
+      </button>
+    );
+  };
+
+  return (
+    <div className="pt-8 pb-4 space-y-8">
+      <div>
+        <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>About You</h1>
+        <p className="text-sm" style={{ color: "hsl(var(--dw-text-soft))" }}>Help us find your people.</p>
+      </div>
+
+      {/* Age */}
+      <Section label="Age">
+        <input
+          type="number"
+          min={18} max={30}
+          value={vitals.age.value}
+          onChange={e => setVital("age", "value", e.target.value)}
+          placeholder="Your age"
+          className="w-32 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 font-sans"
+          style={{
+            border: "1px solid hsl(var(--dw-border))",
+            color: "hsl(var(--dw-text))",
+            ["--tw-ring-color" as string]: "hsla(340,75%,55%,0.3)",
+          }}
+        />
+      </Section>
+
+      {/* Gender */}
+      <Section label="Gender" required>
+        <div className="flex flex-wrap gap-2">
+          {genderOptions.map(o => chip("gender", o))}
+        </div>
+      </Section>
+
+      {/* Pronouns */}
+      <Section label="Pronouns">
+        <div className="flex flex-wrap gap-2">
+          {pronounOptions.map(o => chip("pronouns", o))}
+        </div>
+      </Section>
+
+      {/* Year */}
+      <Section label="Year" required>
+        <div className="flex flex-wrap gap-2">
+          {yearOptions.map(o => chip("year", o))}
+        </div>
+      </Section>
+
+      {/* Major */}
+      <Section label="Major">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={vitals.major.value}
+            onChange={e => setVital("major", "value", e.target.value)}
+            placeholder="e.g. Architecture"
+            className="flex-1 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 font-sans"
+            style={{
+              border: "1px solid hsl(var(--dw-border))",
+              color: "hsl(var(--dw-text))",
+              ["--tw-ring-color" as string]: "hsla(340,75%,55%,0.3)",
+            }}
+          />
+          <VisToggle visible={vitals.major.visible} onToggle={() => setVital("major", "visible", !vitals.major.visible)} />
+        </div>
+      </Section>
+
+      {/* Height */}
+      <Section label="Height">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={vitals.height.value}
+            onChange={e => setVital("height", "value", e.target.value)}
+            placeholder={`e.g. 5'10"`}
+            className="flex-1 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 font-sans"
+            style={{
+              border: "1px solid hsl(var(--dw-border))",
+              color: "hsl(var(--dw-text))",
+              ["--tw-ring-color" as string]: "hsla(340,75%,55%,0.3)",
+            }}
+          />
+          <VisToggle visible={vitals.height.visible} onToggle={() => setVital("height", "visible", !vitals.height.visible)} />
+        </div>
+        <p className="text-[11px] mt-1.5" style={{ color: "hsl(var(--dw-text-soft))" }}>
+          Toggle to show/hide on profile
+        </p>
+      </Section>
+
+      {/* Relationship type */}
+      <Section label="Looking for">
+        <div className="flex flex-wrap gap-2">
+          {relationshipOptions.map(o => chip("relationship_type", o))}
+        </div>
+      </Section>
+
+      {/* Lifestyle */}
+      <Section label="Lifestyle" sub="Pick up to 4">
+        <div className="flex flex-wrap gap-2">
+          {lifestyleOptions.map(o => multiChip("lifestyle", o))}
+        </div>
+      </Section>
+
+      {/* Intentions */}
+      <Section label="Intentions">
+        <div className="flex flex-wrap gap-2">
+          {intentionOptions.map(o => chip("intentions", o))}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────── */
+/*  STEP 3 — PROMPTS                            */
+/* ──────────────────────────────────────────── */
+
+function PromptsStep({ prompts, setPrompts }: {
+  prompts: Prompt[];
+  setPrompts: React.Dispatch<React.SetStateAction<Prompt[]>>;
+}) {
+  const [pickingFor, setPickingFor] = useState<number | null>(null);
+
+  const chooseQuestion = (idx: number, q: string) => {
+    setPrompts(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], question: q };
+      return next;
+    });
+    setPickingFor(null);
+  };
+
+  const setAnswer = (idx: number, answer: string) => {
+    setPrompts(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], answer };
+      return next;
+    });
+  };
+
+  return (
+    <div className="pt-8 pb-4">
+      <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>Your Prompts</h1>
+      <p className="text-sm mb-8" style={{ color: "hsl(var(--dw-text-soft))" }}>
+        Two questions. Show them who you really are.
+      </p>
+
+      {prompts.map((p, i) => (
+        <motion.div
+          key={i}
+          layout
+          className="dw-card mb-5 p-5"
+        >
+          {/* Prompt selector */}
+          <button
+            onClick={() => setPickingFor(pickingFor === i ? null : i)}
+            className="w-full text-left mb-3 flex items-center justify-between group"
+          >
+            <span
+              className={cn("text-sm font-semibold", p.question ? "" : "italic")}
+              style={{ color: p.question ? "hsl(var(--dw-text))" : "hsl(var(--dw-text-soft))" }}
+            >
+              {p.question || "Choose a prompt..."}
+            </span>
+            <ChevronRight
+              className={cn("w-4 h-4 shrink-0 transition-transform", pickingFor === i ? "rotate-90" : "")}
+              style={{ color: "hsl(var(--dw-accent))" }}
+            />
+          </button>
+
+          {/* Prompt picker dropdown */}
+          <AnimatePresence>
+            {pickingFor === i && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto pr-1">
+                  {ALL_PROMPTS.map(q => {
+                    const usedByOther = prompts.some((pp, ii) => ii !== i && pp.question === q);
+                    return (
+                      <button
+                        key={q}
+                        onClick={() => !usedByOther && chooseQuestion(i, q)}
+                        disabled={usedByOther}
+                        className={cn(
+                          "text-left text-xs px-3 py-2.5 rounded-xl transition-all",
+                          usedByOther && "opacity-30 cursor-not-allowed",
+                          !usedByOther && "hover:bg-rose-50 active:bg-rose-100"
+                        )}
+                        style={{ color: "hsl(var(--dw-text))" }}
+                      >
+                        {q}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Answer textarea */}
+          {p.question && (
+            <div className="relative">
+              <textarea
+                value={p.answer}
+                onChange={e => e.target.value.length <= 150 && setAnswer(i, e.target.value)}
+                placeholder="Your answer..."
+                rows={3}
+                className="w-full bg-stone-50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 resize-none font-sans"
+                style={{
+                  border: "1px solid hsl(var(--dw-border))",
+                  color: "hsl(var(--dw-text))",
+                  ["--tw-ring-color" as string]: "hsla(340,75%,55%,0.3)",
+                }}
+              />
+              <span
+                className="absolute bottom-3 right-3 text-[10px]"
+                style={{ color: p.answer.length > 120 ? "hsl(var(--dw-accent))" : "hsl(var(--dw-text-soft))" }}
+              >
+                {p.answer.length}/150
+              </span>
+            </div>
+          )}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────── */
+/*  STEP 4 — REVIEW                             */
+/* ──────────────────────────────────────────── */
+
+function ReviewStep({ media, vitals, prompts }: { media: any[]; vitals: Vitals; prompts: Prompt[] }) {
+  const visVitals = Object.entries(vitals).filter(([_, v]) => v.visible && v.value);
+
+  return (
+    <div className="pt-8 pb-4">
+      <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>Preview</h1>
+      <p className="text-sm mb-6" style={{ color: "hsl(var(--dw-text-soft))" }}>
+        This is how others will see you.
+      </p>
+
+      {/* Hero photo */}
+      {media[0] && (
+        <div className="w-full aspect-[4/5] rounded-2xl overflow-hidden mb-4" style={{ boxShadow: "var(--dw-shadow-lg)" }}>
+          {media[0].type === "video"
+            ? <video src={media[0].preview} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+            : <img src={media[0].preview} alt="" className="w-full h-full object-cover" />
+          }
+        </div>
+      )}
+
+      {/* Vitals chips */}
+      {visVitals.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          {visVitals.map(([key, val]) => (
+            <span key={key} className="dw-chip dw-chip-active text-xs">{val.value}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Prompts */}
+      {prompts.filter(p => p.question).map((p, i) => (
+        <div key={i} className="dw-prompt-card p-5 mb-4">
+          <p className="text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: "hsl(var(--dw-text-soft))" }}>
+            {p.question}
+          </p>
+          <p className="font-editorial text-xl" style={{ color: "hsl(var(--dw-text))" }}>{p.answer}</p>
+        </div>
+      ))}
+
+      {/* Additional photos */}
+      {media.length > 1 && (
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          {media.slice(1).map(item => (
+            <div key={item.id} className="aspect-[3/4] rounded-2xl overflow-hidden">
+              {item.type === "video"
+                ? <video src={item.preview} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+                : <img src={item.preview} alt="" className="w-full h-full object-cover" />
+              }
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────── */
+/*  HELPERS                                      */
+/* ──────────────────────────────────────────── */
+
+function Section({ label, sub, required, children }: { label: string; sub?: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-baseline gap-1.5 mb-3">
+        <span className="text-sm font-bold" style={{ color: "hsl(var(--dw-text))" }}>{label}</span>
+        {required && <span className="text-xs" style={{ color: "hsl(var(--dw-accent))" }}>*</span>}
+        {sub && <span className="text-xs" style={{ color: "hsl(var(--dw-text-soft))" }}>{sub}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function VisToggle({ visible, onToggle }: { visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-10 h-10 rounded-xl border flex items-center justify-center transition-all shrink-0 hover:bg-stone-50"
+      style={{
+        borderColor: "hsl(var(--dw-border))",
+        color: visible ? "hsl(var(--dw-text))" : "hsl(var(--dw-text-soft))",
+      }}
+      title={visible ? "Visible on profile" : "Hidden from profile"}
+    >
+      {visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+    </button>
   );
 }
 
@@ -310,34 +778,29 @@ function VideoPreview({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
+    videoRef.current?.play().catch(() => {});
   }, []);
 
   return (
-    <div className="w-full h-full relative group">
-      <video 
+    <div className="w-full h-full relative">
+      <video
         ref={videoRef}
-        src={src} 
+        src={src}
         muted={muted}
-        loop 
-        playsInline 
+        loop
+        playsInline
         className="w-full h-full object-cover"
         onTimeUpdate={() => {
           if (videoRef.current && videoRef.current.currentTime >= 5.1) {
             videoRef.current.currentTime = 0;
-            videoRef.current.play().catch(()=>{});
+            videoRef.current.play().catch(() => {});
           }
         }}
       />
       <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setMuted(!muted);
-        }}
-        className="absolute bottom-3 left-3 p-2 rounded-full bg-white/20 backdrop-blur-md text-white shadow-[0_4px_12px_rgb(0,0,0,0.1)] hover:bg-white/30 transition-all z-20"
+        onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
+        className="absolute bottom-2.5 left-2.5 w-7 h-7 rounded-full flex items-center justify-center text-white transition-all"
+        style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(6px)" }}
       >
         {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
       </button>

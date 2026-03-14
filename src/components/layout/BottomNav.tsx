@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Mail, User, Plus, Search } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Home, MessageSquare, Mail, User, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { UserSearch } from "@/components/UserSearch";
-
+import { DatingTransitionOverlay, useDatingTransition } from "@/components/dating/DatingTransition";
 
 const tabs = [
   { path: "/feed", icon: Home },
   { path: "/gossip", icon: MessageSquare },
-  { path: "center", icon: Plus, isCenter: true },
+  { path: "center", isCenter: true },          // dating heart
   { path: "/messages", icon: Mail },
   { path: "/profile", icon: User },
 ];
 
 export function BottomNav() {
   const location = useLocation();
-  const navigate = useNavigate();
+  const { transitioning, enterDating } = useDatingTransition();
   const { user } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -60,8 +60,9 @@ export function BottomNav() {
   const isMessagesPage = location.pathname.startsWith("/messages");
   const isInChatRoom = isMessagesPage && location.pathname.split("/").filter(Boolean).length > 1;
 
-  // Hide when: expander open, OR inside a chat room
-  if (hidden || isInChatRoom) return null;
+  const isDating = location.pathname.startsWith("/dating");
+  // Hide when: expander open, OR inside a chat room, OR inside dating world
+  if (hidden || isInChatRoom || isDating) return null;
 
   return (
     <>
@@ -72,6 +73,11 @@ export function BottomNav() {
         )}
       </AnimatePresence>
 
+      {/* Dating Transition Overlay */}
+      <AnimatePresence>
+        {transitioning && <DatingTransitionOverlay direction={transitioning} />}
+      </AnimatePresence>
+
       {/* Floating Glass Bottom Nav Bar */}
       <div
         className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none flex justify-center px-4"
@@ -79,16 +85,22 @@ export function BottomNav() {
       >
         <nav className="relative flex items-center justify-between w-full max-w-[340px] h-[64px] pointer-events-auto bg-[#0A0A0A]/60 backdrop-blur-2xl border border-white/10 rounded-full px-2 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)]">
           {tabs.map((tab) => {
-            // Render the Center Floating Button
+            // Render the Center Floating Button (Search)
             if (tab.isCenter) {
               return (
-                <div key={tab.path} className="relative flex-1 flex justify-center items-center h-full">
-                  <button
-                    onClick={() => setShowSearch(true)}
-                    className="absolute -top-5 flex h-[56px] w-[56px] items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent shadow-[0_8px_25px_rgba(236,72,153,0.5)] transition-transform active:scale-90 hover:scale-105 border-[4px] border-[#000000]"
+                <div key="center" className="relative flex-1 flex justify-center items-center h-full">
+                  {/* Dating heart — the elevated center CTA */}
+                  <motion.button
+                    onClick={enterDating}
+                    whileTap={{ scale: 0.88 }}
+                    className="absolute -top-5 flex h-[56px] w-[56px] items-center justify-center rounded-full border-[4px] border-[#000000] transition-transform hover:scale-105 active:scale-90"
+                    style={{
+                      background: "linear-gradient(135deg, hsl(340,75%,58%), hsl(340,65%,44%))",
+                      boxShadow: "0 8px 28px hsla(340,75%,55%,0.55)",
+                    }}
                   >
-                    <Search className="h-6 w-6 text-white drop-shadow-md" />
-                  </button>
+                    <Heart className="w-6 h-6 text-white drop-shadow-md" fill="white" />
+                  </motion.button>
                 </div>
               );
             }
