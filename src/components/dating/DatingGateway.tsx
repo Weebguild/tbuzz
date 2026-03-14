@@ -44,7 +44,7 @@ export function DatingGateway({ children }: DatingGatewayProps) {
             {/* The "bloom" — warm ivory circle expanding */}
             <motion.div
               className="absolute rounded-full"
-              style={{ background: "hsl(40, 33%, 96%)" }}
+              style={{ background: "radial-gradient(circle, hsl(40, 100%, 75%) 0%, hsl(25, 95%, 55%) 40%, transparent 70%)" }}
               initial={{ width: 0, height: 0, opacity: 0.8 }}
               animate={{
                 width: "200vmax",
