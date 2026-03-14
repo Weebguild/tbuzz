@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart } from "lucide-react";
+import { Flame } from "lucide-react";
 
 export function DatingEntryCard() {
   const navigate = useNavigate();
