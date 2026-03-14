@@ -19,11 +19,13 @@ function DockNavItem({
   isActive,
   mouseY,
   itemRef,
+  isDating,
 }: {
   item: typeof navItems[0];
   isActive: boolean;
   mouseY: ReturnType<typeof useMotionValue<number>>;
   itemRef: React.RefObject<HTMLDivElement | null>;
+  isDating?: boolean;
 }) {
   const distance = useTransform(mouseY, (val) => {
     const rect = itemRef.current?.getBoundingClientRect() ?? { y: 0, height: 0 };
@@ -42,7 +44,11 @@ function DockNavItem({
             ref={itemRef}
             className={cn(
               "flex items-center justify-center rounded-2xl transition-colors duration-300 group relative",
-              isActive
+              isDating
+                ? isActive
+                  ? "bg-rose-100/80 text-rose-700"
+                  : "text-stone-500 hover:bg-rose-50 hover:text-rose-600"
+                : isActive
                 ? "bg-white/10 text-white shadow-xl"
                 : "text-muted-foreground hover:bg-white/5 hover:text-white"
             )}
@@ -54,7 +60,8 @@ function DockNavItem({
             {isActive && (
               <motion.div
                 layoutId="desktop-sidebar-active"
-                className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full"
+                className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
+                style={{ background: isDating ? "hsl(340, 72%, 52%)" : "hsl(var(--primary))" }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
@@ -95,7 +102,15 @@ export function DesktopSidebar() {
   return (
     <>
       <div
-        className="w-[80px] border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 shrink-0 h-[100dvh] sticky top-0 relative z-30 overflow-visible"
+        className="w-[80px] shrink-0 flex flex-col items-center py-8 gap-8 h-[100dvh] sticky top-0 relative z-30 overflow-visible"
+        style={isDating ? {
+          background: "rgba(255, 248, 242, 0.82)",
+          backdropFilter: "blur(20px)",
+          borderRight: "1px solid rgba(220, 180, 170, 0.3)",
+        } : {
+          background: "rgba(0,0,0,0.4)",
+          borderRight: "1px solid rgba(255,255,255,0.05)",
+        }}
         onMouseMove={(e) => mouseY.set(e.clientY)}
         onMouseLeave={() => mouseY.set(Infinity)}
       >
@@ -143,6 +158,7 @@ export function DesktopSidebar() {
                 isActive={isActive(item.path)}
                 mouseY={mouseY}
                 itemRef={navRefs.current[i] as any}
+                isDating={isDating}
               />
             ))}
           </div>

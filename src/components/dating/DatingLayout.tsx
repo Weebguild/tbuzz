@@ -7,8 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { DatingTransitionOverlay } from "./DatingTransition";
-
 import { CherryBlossomLogo } from "./CherryBlossomLogo";
+import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const tabs = [
   { path: "/dating/discover", icon: Compass, label: "Discover" },
@@ -34,8 +35,9 @@ export function DatingLayout() {
 
   return (
     <div className="dating-world relative flex min-h-[100dvh]">
-      {/* Sidebar spacer on desktop — mirrors the 80px DesktopSidebar width */}
-      <div className="hidden sm:block sm:w-20 shrink-0" />
+      {/* Actual DesktopSidebar on desktop — rendered here so dating content
+          aligns with the main app's content area (left of sidebar = 80px) */}
+      <DesktopSidebar />
 
       <div className="flex-1 flex flex-col min-w-0">
 
