@@ -52,6 +52,10 @@ function AppRoutes() {
   const { session, profile, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
   const location = useLocation();
+  const isMobile = useIsMobile();
+
+  const isDating = location.pathname.startsWith('/dating');
+  const layoutKey = isDating ? 'dating' : 'main';
 
   if (showSplash) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
@@ -66,10 +70,6 @@ function AppRoutes() {
       </div>
     );
   }
-
-  const isDating = location.pathname.startsWith('/dating');
-  const layoutKey = isDating ? 'dating' : 'main';
-  const isMobile = useIsMobile();
 
   return (
     // BottomNav MUST be outside the AnimatePresence/motion.div.
