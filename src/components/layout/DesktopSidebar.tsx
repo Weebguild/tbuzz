@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Mail, User, Search } from "lucide-react";
+import { Home, MessageSquare, Mail, User, Search, Compass, MessageCircleHeart } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { UserSearch } from "@/components/UserSearch";
@@ -12,6 +12,12 @@ const navItems = [
   { icon: MessageSquare, path: "/gossip", label: "Gossip" },
   { icon: Mail, path: "/messages", label: "Messages" },
   { icon: User, path: "/profile", label: "Profile" },
+];
+
+const datingNavItems = [
+  { icon: Compass, path: "/dating/discover", label: "Discover" },
+  { icon: MessageCircleHeart, path: "/dating/matches", label: "Matches" },
+  { icon: User, path: "/dating/profile", label: "Profile" },
 ];
 
 function DockNavItem({
@@ -79,7 +85,9 @@ export function DesktopSidebar() {
   const location = useLocation();
   const [showSearch, setShowSearch] = useState(false);
   const mouseY = useMotionValue(Infinity);
-  const navRefs = useRef(navItems.map(() => ({ current: null as HTMLDivElement | null })));
+  
+  const currentNavItems = isDating ? datingNavItems : navItems;
+  const navRefs = useRef([...Array(Math.max(navItems.length, datingNavItems.length))].map(() => ({ current: null as HTMLDivElement | null })));
   const searchRef = useRef<HTMLDivElement>(null);
   const isDating = location.pathname.startsWith("/dating");
   const { transitioning, enterDating, exitDating } = useDatingTransition();
@@ -151,7 +159,7 @@ export function DesktopSidebar() {
           </TooltipContent>
         </Tooltip>
           <div className="flex flex-col gap-6 mt-8 items-center">
-            {navItems.map((item, i) => (
+            {currentNavItems.map((item, i) => (
               <DockNavItem
                 key={item.path}
                 item={item}
@@ -169,7 +177,12 @@ export function DesktopSidebar() {
                 <button onClick={() => setShowSearch(true)}>
                   <motion.div
                     ref={searchRef}
-                    className="flex items-center justify-center rounded-2xl transition-colors duration-300 text-muted-foreground hover:bg-white/5 hover:text-white"
+                    className={cn(
+                      "flex items-center justify-center rounded-2xl transition-colors duration-300",
+                      isDating
+                        ? "text-stone-500 hover:bg-rose-50 hover:text-rose-600"
+                        : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                    )}
                     style={{ width: searchSize, height: searchSize }}
                   >
                     <motion.div style={{ width: searchIconSize, height: searchIconSize }} className="flex items-center justify-center">

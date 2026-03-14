@@ -1,21 +1,13 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Compass, MessageCircleHeart, User, Sparkles, ChevronLeft, X, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Heart, Sparkles, ChevronLeft, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { DatingTransitionOverlay } from "./DatingTransition";
 import { CherryBlossomLogo } from "./CherryBlossomLogo";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
-import { useIsMobile } from "@/hooks/use-mobile";
-
-const tabs = [
-  { path: "/dating/discover", icon: Compass, label: "Discover" },
-  { path: "/dating/matches",  icon: MessageCircleHeart, label: "Matches" },
-  { path: "/dating/profile",  icon: User, label: "Profile" },
-];
 
 export function DatingLayout() {
   const location = useLocation();
@@ -29,10 +21,6 @@ export function DatingLayout() {
     setTimeout(() => navigate("/feed"), 750);
   };
 
-  const isActive = (path: string) =>
-    location.pathname === path ||
-    (path === "/dating/discover" && location.pathname === "/dating");
-
   return (
     <div className="dating-world relative flex min-h-[100dvh]">
       {/* Actual DesktopSidebar on desktop — rendered here so dating content
@@ -41,7 +29,7 @@ export function DatingLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* ── FIX 2: BALANCED HEADER ── */}
+        {/* ── BALANCED HEADER ── */}
         <header className="sticky top-0 z-30 dw-glass border-b border-white/40">
           <div className="max-w-lg mx-auto flex items-center justify-between px-4 h-14">
 
@@ -95,60 +83,6 @@ export function DatingLayout() {
             </motion.div>
           </AnimatePresence>
         </main>
-
-        {/* ── FIX 3: FLOATING PILL BOTTOM NAV (mirrors main app pill style) ── */}
-        <div
-          className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none flex justify-center px-4 sm:pl-24"
-          style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
-        >
-          <nav
-            className="pointer-events-auto flex items-center h-[64px] rounded-full px-2 gap-1"
-            style={{
-              background: "rgba(255, 252, 249, 0.72)",
-              backdropFilter: "blur(24px) saturate(1.5)",
-              WebkitBackdropFilter: "blur(24px) saturate(1.5)",
-              border: "1px solid rgba(255,255,255,0.8)",
-              boxShadow: "0 8px 32px rgba(140,40,70,0.1), 0 2px 8px rgba(0,0,0,0.04)",
-            }}
-          >
-            {tabs.map((tab) => {
-              const active = isActive(tab.path);
-              return (
-                <button
-                  key={tab.path}
-                  onClick={() => navigate(tab.path)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-4 h-11 rounded-full transition-all duration-300 text-sm font-medium",
-                    active ? "text-white" : "hover:bg-black/[0.04]"
-                  )}
-                  style={{ color: active ? "white" : "hsl(var(--dw-text-muted))" }}
-                >
-                  {active && (
-                    <motion.div
-                      layoutId="dating-nav-pill"
-                      className="absolute inset-0 rounded-full"
-                      style={{ background: "linear-gradient(135deg, hsl(340, 72%, 52%), hsl(340, 68%, 44%))" }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <tab.icon className="w-4 h-4" />
-                    {active && (
-                      <motion.span
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: "auto", opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        className="overflow-hidden whitespace-nowrap text-xs font-semibold"
-                      >
-                        {tab.label}
-                      </motion.span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
 
       </div>{/* end flex-1 column */}
 
