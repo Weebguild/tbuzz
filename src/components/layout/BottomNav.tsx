@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { UserSearch } from "@/components/UserSearch";
-import { DatingTransitionOverlay, useDatingTransition } from "@/components/dating/DatingTransition";
+import { DatingTransitionOverlay } from "@/components/dating/DatingTransition";
+import { useDatingTransition } from "@/hooks/use-dating-transition";
 
 const tabs = [
   { path: "/feed", icon: Home },
