@@ -65,13 +65,12 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
+      transition={{ duration: isEntering ? 0.15 : 0.4 }}
       onAnimationComplete={onComplete}
     >
       {isEntering ? (
         /* ═══ EMBER IGNITE ENTRY ═══ */
         <>
-          {/* Dark backdrop that quickly appears */}
           <motion.div
             className="absolute inset-0"
             style={{ background: "hsl(15, 10%, 6%)" }}
@@ -79,8 +78,6 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
             animate={{ opacity: 1 }}
             transition={{ duration: 0.15 }}
           />
-
-          {/* Central spark strike — a bright point that ignites */}
           <motion.div
             className="absolute rounded-full"
             style={{
@@ -90,8 +87,6 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
             animate={{ width: "280vmax", height: "280vmax", opacity: 0.9 }}
             transition={{ delay: 0.1, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
           />
-
-          {/* Warm amber wash that fills the screen */}
           <motion.div
             className="absolute inset-0"
             style={{
@@ -101,11 +96,7 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
             animate={{ opacity: 1 }}
             transition={{ delay: 0.35, duration: 0.4, ease: "easeOut" }}
           />
-
-          {/* Ember particles flying upward */}
           <EmberParticles />
-
-          {/* Center logo — Spark branding */}
           <motion.div
             className="relative z-10 flex flex-col items-center gap-3"
             initial={{ opacity: 0, scale: 0.5, y: 10 }}
@@ -151,16 +142,16 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
           />
 
-          {/* Second ink layer — from edges inward, consuming warmth */}
+          {/* Solid dark layer consuming everything */}
           <motion.div
             className="absolute inset-0"
             style={{ background: "hsl(240, 10%, 4%)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.4, ease: "easeIn" }}
+            transition={{ delay: 0.15, duration: 0.35, ease: "easeIn" }}
           />
 
           {/* Fading warm light in center — last ember dying */}
@@ -173,7 +164,7 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
             }}
             initial={{ opacity: 1, scale: 1 }}
             animate={{ opacity: 0, scale: 0.5 }}
-            transition={{ delay: 0.1, duration: 0.5, ease: "easeIn" }}
+            transition={{ duration: 0.4, ease: "easeIn" }}
           />
 
           {/* T logo emerging from darkness */}
@@ -181,7 +172,7 @@ export function DatingTransitionOverlay({ direction, onComplete }: DatingTransit
             className="relative z-10 flex items-center justify-center"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.35, duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
+            transition={{ delay: 0.25, duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
           >
             <span
               className="text-[56px] font-black leading-none"
@@ -232,17 +223,21 @@ export function useDatingTransition() {
 
     setTimeout(() => {
       navigate(target);
-      setTransitioning(null);
+      // Let the overlay linger briefly after navigation so exit animation plays
+      setTimeout(() => setTransitioning(null), 300);
     }, 850);
   }, [navigate, user, transitioning]);
 
   const exitDating = useCallback(() => {
     if (transitioning) return;
     setTransitioning("exit");
+    // Navigate partway through the ink bleed, then clear after animation completes
     setTimeout(() => {
       navigate("/feed");
+    }, 500);
+    setTimeout(() => {
       setTransitioning(null);
-    }, 750);
+    }, 1000);
   }, [navigate, transitioning]);
 
   return { transitioning, enterDating, exitDating };
