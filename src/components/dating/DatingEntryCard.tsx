@@ -42,7 +42,7 @@ export function DatingEntryCard() {
               className="font-editorial text-lg leading-tight"
               style={{ color: "hsl(220, 20%, 18%)" }}
             >
-              Sunlit Gallery
+              Spark
             </p>
             <p
               className="text-xs mt-0.5"
