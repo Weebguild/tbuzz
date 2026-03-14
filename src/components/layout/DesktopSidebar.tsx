@@ -5,7 +5,8 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from
 import { cn } from "@/lib/utils";
 import { UserSearch } from "@/components/UserSearch";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { DatingTransitionOverlay, useDatingTransition } from "@/components/dating/DatingTransition";
+import { DatingTransitionOverlay } from "@/components/dating/DatingTransition";
+import { useDatingTransition } from "@/hooks/use-dating-transition";
 
 const navItems = [
   { icon: Home, path: "/feed", label: "Feed" },
