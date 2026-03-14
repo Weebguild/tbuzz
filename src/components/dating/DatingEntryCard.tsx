@@ -53,7 +53,7 @@ export function DatingEntryCard() {
           </div>
           <div
             className="h-8 px-4 rounded-full flex items-center text-xs font-semibold text-white shrink-0"
-            style={{ background: "hsl(263, 70%, 50%)" }}
+            style={{ background: "linear-gradient(135deg, hsl(25, 90%, 55%), hsl(340, 75%, 55%))" }}
           >
             Open
           </div>
