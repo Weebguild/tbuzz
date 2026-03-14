@@ -64,16 +64,15 @@ export function DatingGateway({ children }: DatingGatewayProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
             >
-              <Heart
+              <Flame
                 className="h-8 w-8"
-                style={{ color: "hsl(263, 70%, 50%)" }}
-                fill="hsl(263, 70%, 50%)"
+                style={{ color: "hsl(25, 90%, 55%)" }}
               />
               <span
                 className="font-editorial text-2xl tracking-tight"
-                style={{ color: "hsl(220, 20%, 18%)" }}
+                style={{ color: "hsl(15, 20%, 20%)" }}
               >
-                Sunlit Gallery
+                Spark
               </span>
             </motion.div>
           </motion.div>

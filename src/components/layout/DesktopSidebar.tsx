@@ -155,7 +155,7 @@ export function DesktopSidebar() {
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" className="z-[9999] bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
-            {isDating ? "Back to Tbuzz" : "Dating"}
+            {isDating ? "Back to Tbuzz" : "Spark"}
           </TooltipContent>
         </Tooltip>
           <div className="flex flex-col gap-6 mt-8 items-center">

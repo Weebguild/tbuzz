@@ -76,13 +76,13 @@ export function DatingEntryCard() {
               animate={{ backdropFilter: "blur(20px)" }}
               transition={{ duration: 0.5 }}
             />
-            {/* Ivory bloom expanding from center */}
+            {/* Warm ember glow */}
             <motion.div
               className="absolute rounded-full"
-              style={{ background: "hsl(40, 33%, 96%)" }}
+              style={{ background: "radial-gradient(circle, hsl(40, 100%, 75%) 0%, hsl(25, 95%, 55%) 40%, transparent 70%)" }}
               initial={{ width: 0, height: 0, opacity: 0.9 }}
               animate={{ width: "250vmax", height: "250vmax", opacity: 1 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
             />
             {/* Centered branding */}
             <motion.div
@@ -91,16 +91,15 @@ export function DatingEntryCard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
             >
-              <Heart
+              <Flame
                 className="h-8 w-8"
-                style={{ color: "hsl(263, 70%, 50%)" }}
-                fill="hsl(263, 70%, 50%)"
+                style={{ color: "hsl(25, 90%, 55%)" }}
               />
               <span
                 className="font-editorial text-2xl tracking-tight"
-                style={{ color: "hsl(220, 20%, 18%)" }}
+                style={{ color: "hsl(15, 20%, 20%)" }}
               >
-                Sunlit Gallery
+                Spark
               </span>
             </motion.div>
           </motion.div>

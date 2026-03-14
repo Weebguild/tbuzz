@@ -12,7 +12,7 @@ export function CherryBlossomLogo({ size = 36 }: { size?: number }) {
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="Tbuzz Dating"
+      aria-label="Spark"
     >
       <defs>
         {/* Warm sakura gradient for petals */}
