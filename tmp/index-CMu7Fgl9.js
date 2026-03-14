@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;</script>
+
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,600&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- TODO: Set the document title to the name of your application -->
+    <title>T</title>
+    <meta name="description" content="Spill The Tea">
+    <meta name="author" content="Lovable" />
+
+    <!-- TODO: Update og:title to match your application name -->
+    
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/23d55b21-4d30-491a-8e80-5c576d13f9d7?Expires=1772082395&amp;GoogleAccessId=go-api-on-aws%40gpt-engineer-390607.iam.gserviceaccount.com&amp;Signature=u%2FCEvn98heFxNHo1IBzbX%2BytwigwWA4YyJnExlwQRIYVnNf0aDGY3h2CpoAu7r9vuLzudRl4bxJ59UufF1%2FGDNUVJ9zKzlnO4d4qA4g1bBZwGi2Aa7OVvRIu1HMMyRAqdChRj0xwrICJHI9NxVliSa4bhKj7SSz%2BpgaVI6qMGKbr274%2F4nD1sY4%2BneVMT0BOh3zzlIYMfssXYmFsHcIkWojTgHesN6rJHcodwu2fe0c0hqEkciKd9Eu0Krd5DURqAX6H5%2BWxHmHgIQjJQYPiTCXuA3cOreTrQu6qVcl58Jr4jtKrjK5XoDpHbaaOV3maWJekByP3XLy4udhiIdmBRA%3D%3D">
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/23d55b21-4d30-491a-8e80-5c576d13f9d7?Expires=1772082395&amp;GoogleAccessId=go-api-on-aws%40gpt-engineer-390607.iam.gserviceaccount.com&amp;Signature=u%2FCEvn98heFxNHo1IBzbX%2BytwigwWA4YyJnExlwQRIYVnNf0aDGY3h2CpoAu7r9vuLzudRl4bxJ59UufF1%2FGDNUVJ9zKzlnO4d4qA4g1bBZwGi2Aa7OVvRIu1HMMyRAqdChRj0xwrICJHI9NxVliSa4bhKj7SSz%2BpgaVI6qMGKbr274%2F4nD1sY4%2BneVMT0BOh3zzlIYMfssXYmFsHcIkWojTgHesN6rJHcodwu2fe0c0hqEkciKd9Eu0Krd5DURqAX6H5%2BWxHmHgIQjJQYPiTCXuA3cOreTrQu6qVcl58Jr4jtKrjK5XoDpHbaaOV3maWJekByP3XLy4udhiIdmBRA%3D%3D">
+    <meta property="og:title" content="T">
+  <meta name="twitter:title" content="T">
+  <meta property="og:description" content="Spill The Tea">
+  <meta name="twitter:description" content="Spill The Tea">
+</head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx?t=1773503568441"></script>
+  </body>
+</html>
