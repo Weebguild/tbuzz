@@ -188,11 +188,11 @@ export default function DatingDiscover() {
         <AnimatePresence mode="popLayout">
           <motion.div
             key={currentProfile.id}
-            initial={{ opacity: 0, y: 60, scale: 0.97 }}
+            initial={{ opacity: 0, y: 100, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97, filter: "blur(6px)" }}
-            transition={{ type: "spring", stiffness: 280, damping: 28 }}
-            className="pb-36"
+            exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+            transition={{ type: "spring", stiffness: 200, damping: 25 }}
+            className="pb-40 w-full min-h-screen flex justify-center"
           >
             <ProfileScroll
               profile={currentProfile}
@@ -204,37 +204,37 @@ export default function DatingDiscover() {
         <EndOfFeedState />
       )}
 
-      {/* ── FLOATING ACTION BAR ── */}
+      {/* ── THE LOZENGE ACTION BAR ── */}
       {!likesExhausted && currentProfile && !matchData?.open && (
-        <div className="action-glass-bar animate-in fade-in slide-in-from-bottom-8 duration-700">
-          {/* Pass button */}
+        <div className="action-lozenge group">
+          {/* Pass action */}
           <motion.button
             whileTap={{ scale: 0.8 }}
             onClick={handlePass}
-            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+            className="w-14 h-14 rounded-full flex items-center justify-center transition-all opacity-60 hover:opacity-100 hover:bg-white/5 group-hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
           >
-            <X className="w-6 h-6 text-white/60" />
+            <X className="w-5 h-5 text-white" strokeWidth={1.5} />
           </motion.button>
 
-          {/* Core Like Button - Liquid Glow */}
+          {/* Abstract Anomaly Button (Like) */}
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.85, filter: "hue-rotate(90deg)" }}
             onClick={handleQuickLike}
             disabled={sendingLike}
-            className="w-16 h-16 rounded-full flex items-center justify-center dw-btn-liquid"
+            className="w-20 h-14 dw-btn-anomaly"
           >
             {sendingLike
-              ? <Loader2 className="w-7 h-7 animate-spin" />
-              : <Heart className="w-8 h-8" fill="white" />
+              ? <Loader2 className="w-6 h-6 animate-spin" />
+              : <div className="w-6 h-6 border-2 border-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-white rounded-full animate-pulse" /></div>
             }
           </motion.button>
 
-          {/* Spark/Super-like button placeholder/equivalent */}
+          {/* Super-like abstract */}
           <motion.button
             whileTap={{ scale: 0.8 }}
-            className="w-12 h-12 rounded-full flex items-center justify-center bg-white/5 border border-white/10"
+            className="w-14 h-14 rounded-full flex items-center justify-center transition-all opacity-60 hover:opacity-100 hover:bg-white/5"
           >
-            <Sparkles className="w-5 h-5 text-amber-500" />
+            <Sparkles className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
           </motion.button>
         </div>
       )}
@@ -311,19 +311,15 @@ export default function DatingDiscover() {
                 <button
                   onClick={handleIcebreakerSubmit}
                   disabled={sendingLike}
-                  className="flex-1 dw-btn-primary py-3.5 flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 flex items-center justify-center gap-2 dw-btn-anomaly rounded-[2rem]"
                 >
-                  {sendingLike ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Send Like</>}
+                  {sendingLike ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Transmit</>}
                 </button>
                 <button
                   onClick={handleQuickLike}
                   disabled={sendingLike}
-                  className="flex-1 py-3.5 rounded-full flex items-center justify-center gap-2 text-sm font-semibold transition-all"
-                  style={{
-                    background: "hsl(340 75% 55% / 0.08)",
-                    color: "hsl(var(--dw-accent))",
-                    border: "1px solid hsl(340 75% 55% / 0.2)",
-                  }}
+                  className="flex-1 py-3.5 rounded-[2rem] flex items-center justify-center gap-2 text-sm font-bold transition-all hyper-glass"
+                  style={{ color: "hsl(var(--dw-accent))" }}
                 >
                   <Heart className="w-4 h-4" />
                   Just Like
@@ -369,41 +365,49 @@ function ProfileScroll({ profile, onHeartClick }: {
   const promptEntries = Object.entries(profile.prompts || {});
 
   return (
-    <div className="w-full max-w-lg mx-auto overflow-hidden">
-      {/* ── HERO BLOCK (Aria Style) ── */}
-      <div className="relative w-full aspect-[3/4] sm:aspect-[4/5] overflow-hidden rounded-b-[3rem]">
-        {profile.media[0] && (
-          profile.media[0].match(/\.(mp4|mov)$/i)
-            ? <video src={profile.media[0]} autoPlay muted loop playsInline className="w-full h-full object-cover" />
-            : <img src={profile.media[0]} alt="" className="w-full h-full object-cover" />
-        )}
+    <div className="w-full max-w-md mx-auto sm:px-4 sm:pt-4">
+      {/* ── THE VOID LENS (Hero Image) ── */}
+      <div className="relative w-full aspect-[4/5] sm:rounded-[3rem] overflow-hidden group">
+        <div className="absolute inset-0 z-0">
+          {profile.media[0] && (
+            profile.media[0].match(/\.(mp4|mov)$/i)
+              ? <video src={profile.media[0]} autoPlay muted loop playsInline className="w-full h-full object-cover opacity-90 transition-transform duration-[10s] group-hover:scale-110" />
+              : <img src={profile.media[0]} alt="" className="w-full h-full object-cover opacity-90 transition-transform duration-[10s] group-hover:scale-110" />
+          )}
+        </div>
         
-        {/* Shadow-depth overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+        {/* Soft edge fade for bleeding effect */}
+        <div className="absolute inset-0 shadow-[inset_0_-100px_100px_-50px_rgba(0,0,0,1),inset_0_20px_40px_-20px_rgba(0,0,0,0.8)] z-10 pointer-events-none" />
         
-        {/* Name Overlay */}
-        <div className="absolute bottom-10 left-8">
-          <h1 className="font-editorial text-5xl md:text-6xl text-white drop-shadow-2xl mb-1">
-            {profile.user_details.display_name}, 26
+        {/* Abstract Name Plate */}
+        <div className="absolute bottom-8 left-6 right-6 z-20 hyper-glass rounded-[2rem] p-5">
+          <h1 className="font-editorial text-5xl text-white tracking-tighter leading-none mb-2">
+            {profile.user_details.display_name}
+            <span className="font-sans text-2xl font-light text-white/50 ml-2 tracking-normal">26</span>
           </h1>
-          <p className="text-white/60 text-sm font-medium flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 backdrop-blur-md border border-white/5 w-fit">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            Active today • 2 miles away
-          </p>
+          <div className="flex items-center gap-2 mt-3 text-[10px] font-mono tracking-widest text-cyan-400/80 uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(34,211,238,1)]" />
+            <span className="opacity-70">Active Now</span>
+            <span className="opacity-30 mx-1">///</span>
+            <span className="opacity-70">2.4 MI</span>
+          </div>
         </div>
 
-        {/* Heart-on-media button */}
+        {/* Hyper-Heart Btn inside main lens */}
         <HeartBtn onClick={() => onHeartClick(profile.media[0], "media")} className="top-6 right-6" />
       </div>
 
       {/* ── BENTO SECTION ── */}
-      <div className="px-6 py-12">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mb-4 ml-1">Vitals & Lifestyle</h3>
+      <div className="px-4 py-8 relative">
+        <h3 className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30 mb-6 pl-2 relative">
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-white/20 rounded-full" />
+          Metrics
+        </h3>
         <div className="bento-grid">
           {visVitals.map(([key, data], idx) => (
-            <div key={key} className={cn("bento-item", idx % 3 === 0 ? "col-span-2" : "col-span-1")}>
-               <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">{key}</span>
-               <span className="font-editorial text-xl text-amber-500/90">{data.value}</span>
+            <div key={key} className={cn("bento-item", idx % 2 === 0 ? "hyper-glass-cyan" : "hyper-glass-magenta")}>
+               <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/40 mb-1">{key}</span>
+               <span className="font-sans font-medium text-2xl tracking-tight text-white/90 drop-shadow-md">{data.value}</span>
             </div>
           ))}
         </div>
@@ -414,13 +418,14 @@ function ProfileScroll({ profile, onHeartClick }: {
 
       {/* ── MEDIA + PROMPTS INTERLEAVED ── */}
       {[1, 2].map(idx => (
-        <div key={idx}>
+        <div key={idx} className="mb-8 px-2 sm:px-0">
           {profile.media[idx] && (
-            <div className="relative w-full" style={{ minHeight: "70dvh" }}>
+            <div className="relative w-full aspect-[4/5] rounded-[2.5rem] overflow-hidden hyper-glass">
               {profile.media[idx].match(/\.(mp4|mov)$/i)
                 ? <LoopVideo src={profile.media[idx]} />
-                : <img src={profile.media[idx]} alt="" className="w-full object-cover" style={{ minHeight: "70dvh" }} />
+                : <img src={profile.media[idx]} alt="" className="w-full h-full object-cover opacity-80 mix-blend-lighten" />
               }
+              <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] pointer-events-none" />
               <HeartBtn onClick={() => onHeartClick(profile.media[idx], "media")} />
             </div>
           )}
@@ -436,11 +441,12 @@ function ProfileScroll({ profile, onHeartClick }: {
 
       {/* ── REMAINING MEDIA ── */}
       {profile.media.slice(3).map((url, i) => (
-        <div key={i} className="relative w-full" style={{ minHeight: "65dvh" }}>
+        <div key={i} className="relative w-full aspect-[4/5] rounded-[2.5rem] overflow-hidden hyper-glass mb-8 mx-2 sm:mx-0">
           {url.match(/\.(mp4|mov)$/i)
             ? <LoopVideo src={url} />
-            : <img src={url} alt="" className="w-full object-cover" style={{ minHeight: "65dvh" }} />
+            : <img src={url} alt="" className="w-full h-full object-cover opacity-80" />
           }
+          <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] pointer-events-none" />
           <HeartBtn onClick={() => onHeartClick(url, "media")} />
         </div>
       ))}
@@ -458,8 +464,7 @@ function LoopVideo({ src }: { src: string }) {
       muted
       loop
       playsInline
-      className="w-full object-cover"
-      style={{ minHeight: "65dvh" }}
+      className="w-full h-full object-cover opacity-80"
     />
   );
 }
@@ -470,39 +475,32 @@ function HeartBtn({ onClick, className }: { onClick: () => void; className?: str
     <button
       onClick={() => { setBurst(true); onClick(); setTimeout(() => setBurst(false), 500); }}
       className={cn(
-        "absolute z-10 w-12 h-12 rounded-full flex items-center justify-center transition-all",
-        burst ? "dw-like-pressed" : "",
-        className || "bottom-4 right-4"
+        "absolute z-10 w-12 h-12 rounded-full flex items-center justify-center transition-all hyper-glass group",
+        burst ? "scale-150 opacity-0" : "hover:scale-110",
+        className || "bottom-6 right-6"
       )}
-      style={{
-        background: "rgba(255,255,255,0.25)",
-        backdropFilter: "blur(10px)",
-        border: "1px solid rgba(255,255,255,0.4)",
-      }}
     >
-      <Heart className="w-5 h-5 text-white drop-shadow-md" fill="white" />
+      <Heart className="w-5 h-5 text-white/50 group-hover:text-cyan-400 group-hover:drop-shadow-[0_0_12px_rgba(34,211,238,0.8)] transition-all" />
     </button>
   );
 }
 
 function PromptBlock({ question, answer, onHeart }: { question: string; answer: string; onHeart: () => void }) {
   return (
-    <div className="relative px-8 py-20 flex flex-col items-start justify-center overflow-hidden">
-      {/* Background glow for interest */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[100px] -mr-32 -mt-32" />
-      
-      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/30 mb-6 px-1 border-l-2 border-amber-500/40 ml-1">
+    <div className="relative px-8 py-20 flex flex-col items-start justify-center overflow-hidden hyper-glass hyper-glass-magenta mx-2 sm:mx-0 my-8 rounded-[3rem]">
+      <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/40 mb-6 pl-3 border-l-[1px] border-magenta-500/50 relative">
+        <span className="absolute -left-[1px] top-0 w-[2px] h-1/3 bg-magenta-400 opacity-50 shadow-[0_0_10px_magenta]" />
         {question}
       </p>
-      <p className="font-editorial text-4xl leading-[1.15] text-white/95 relative z-10 px-1">
+      <p className="font-editorial text-4xl leading-[1.1] text-white/90 relative z-10 tracking-tight">
         "{answer}"
       </p>
       
       <button
         onClick={onHeart}
-        className="absolute top-8 right-8 w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110 liquid-glass-accent"
+        className="absolute bottom-6 right-6 w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110 hyper-glass group"
       >
-        <Heart className="w-5 h-5 text-amber-500" />
+        <Heart className="w-5 h-5 text-magenta-300 group-hover:drop-shadow-[0_0_12px_rgba(255,0,255,0.8)]" />
       </button>
     </div>
   );

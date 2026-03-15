@@ -89,8 +89,8 @@ export default function DatingProfile() {
       {/* ── HEADER ACTIONS ── */}
       <div className="sticky top-0 z-10 liquid-glass border-b border-white/5 px-5 py-4">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <p className="font-editorial text-lg text-white">
-            My Profile
+          <p className="font-editorial text-2xl text-white tracking-tighter">
+            PRO<span className="text-white/30 font-sans tracking-normal font-light">FILE</span>
           </p>
           <div className="flex items-center gap-3">
             {/* Active toggle */}
@@ -112,10 +112,10 @@ export default function DatingProfile() {
             {/* Edit button */}
             <button
               onClick={() => navigate("/dating/onboarding")}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all liquid-glass-accent"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-[2rem] text-[11px] font-bold tracking-widest uppercase transition-all hyper-glass group"
             >
-              <Pencil className="w-3.5 h-3.5" />
-              Edit
+              <Pencil className="w-3.5 h-3.5 text-cyan-400 group-hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+              <span className="text-white/80 group-hover:text-white">Edit</span>
             </button>
           </div>
         </div>
@@ -126,15 +126,12 @@ export default function DatingProfile() {
         {/* Status banner */}
         {!profile.is_active && (
           <div
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl mb-4 text-sm"
-            style={{
-              background: "hsl(40,30%,96%)",
-              border: "1px solid hsl(40,20%,88%)",
-              color: "hsl(var(--dw-text-muted))",
-            }}
+            className="flex items-center gap-3 px-5 py-4 rounded-[2rem] mb-6 text-sm hyper-glass border-amber-500/30"
           >
-            <span>⏸</span>
-            <span>Your profile is paused — others can't see you.</span>
+            <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_orange]" />
+            </span>
+            <span className="text-white/70 font-mono tracking-tight">System Halted. Not visible in void.</span>
           </div>
         )}
 
@@ -143,44 +140,48 @@ export default function DatingProfile() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full aspect-[4/5] rounded-2xl overflow-hidden mb-4"
-            style={{ boxShadow: "var(--dw-shadow-lg)" }}
+            className="w-full aspect-[4/5] rounded-[3rem] overflow-hidden mb-8 hyper-glass"
           >
             {profile.media[0].match(/\.(mp4|mov)$/i)
-              ? <video src={profile.media[0]} autoPlay muted loop playsInline className="w-full h-full object-cover" />
-              : <img src={profile.media[0]} alt="" className="w-full h-full object-cover" />
+              ? <video src={profile.media[0]} autoPlay muted loop playsInline className="w-full h-full object-cover opacity-80 mix-blend-lighten" />
+              : <img src={profile.media[0]} alt="" className="w-full h-full object-cover opacity-80 mix-blend-lighten" />
             }
+            <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] pointer-events-none" />
           </motion.div>
         )}
 
         {/* Vital chips */}
         {visVitals.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-3 mb-10">
             {visVitals.map(([key, val]) => (
-              <span key={key} className="dw-chip dw-chip-active text-xs">{val.value}</span>
+              <span key={key} className="hyper-glass px-5 py-2.5 rounded-[2rem] text-[10px] font-mono tracking-widest text-cyan-400 border-t-cyan-500/30">
+                {val.value}
+              </span>
             ))}
           </div>
         )}
 
         {/* Prompts */}
         {promptEntries.map(([q, a], i) => (
-          <div key={i} className="dw-prompt-card p-5 mb-4">
-            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "hsl(var(--dw-text-soft))" }}>
+          <div key={i} className="hyper-glass hyper-glass-magenta rounded-[3rem] p-8 mb-8 relative overflow-hidden">
+            <p className="text-[10px] font-mono uppercase tracking-[0.25em] mb-4 text-white/40 pl-3 border-l-[1px] border-magenta-500/50 relative z-10">
+              <span className="absolute -left-[1px] top-0 w-[2px] h-1/2 bg-magenta-400 opacity-50 shadow-[0_0_10px_magenta]" />
               {q}
             </p>
-            <p className="font-editorial text-xl" style={{ color: "hsl(var(--dw-text))" }}>{a}</p>
+            <p className="font-editorial text-3xl leading-[1.1] text-white/90 relative z-10 tracking-tight">"{a}"</p>
           </div>
         ))}
 
         {/* More photos */}
         {profile.media.length > 1 && (
-          <div className="grid grid-cols-2 gap-3 mt-2">
+          <div className="grid grid-cols-2 gap-4 mt-4">
             {profile.media.slice(1).map((url, i) => (
-              <div key={i} className="aspect-[3/4] rounded-2xl overflow-hidden" style={{ boxShadow: "var(--dw-shadow)" }}>
+              <div key={i} className="aspect-[3/4] rounded-[2.5rem] overflow-hidden hyper-glass relative">
                 {url.match(/\.(mp4|mov)$/i)
-                  ? <video src={url} autoPlay muted loop playsInline className="w-full h-full object-cover" />
-                  : <img src={url} alt="" className="w-full h-full object-cover" />
+                  ? <video src={url} autoPlay muted loop playsInline className="w-full h-full object-cover opacity-70 mix-blend-lighten" />
+                  : <img src={url} alt="" className="w-full h-full object-cover opacity-70 mix-blend-lighten" />
                 }
+                <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.8)] pointer-events-none" />
               </div>
             ))}
           </div>
