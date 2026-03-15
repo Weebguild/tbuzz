@@ -25,6 +25,7 @@ import {
   Settings,
   Ghost,
   Lock,
+  Archive,
 } from "lucide-react";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { formatDistanceToNow } from "date-fns";
@@ -120,7 +121,7 @@ interface SavedGossip {
   upvote_count: number;
 }
 
-type ProfileTab = "posts" | "gallery" | "saved" | "settings";
+type ProfileTab = "posts" | "gallery" | "saved" | "settings" | "archived";
 type SavedSubFilter = "posts" | "gossip";
 
 export default function Profile() {
@@ -156,6 +157,9 @@ export default function Profile() {
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
   const [savedGossips, setSavedGossips] = useState<SavedGossip[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
+
+  const [archivedPosts, setArchivedPosts] = useState<TextPost[]>([]);
+  const [loadingArchived, setLoadingArchived] = useState(false);
 
   // Edit state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -217,7 +221,7 @@ export default function Profile() {
       supabase.from("profiles").select("*").eq("user_id", targetUserId).single(),
       (supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_user_id", targetUserId) as any).eq("status", "accepted"),
       (supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_user_id", targetUserId) as any).eq("status", "accepted"),
-      supabase.from("posts").select("id, content, created_at, image_url").eq("user_id", targetUserId).order("created_at", { ascending: false }),
+      supabase.from("posts").select("id, content, created_at, image_url").eq("user_id", targetUserId).neq("is_archived", true).order("created_at", { ascending: false }),
       ...(!isOwnProfile && user?.id ? [
         supabase.from("follows").select("id, status" as any).eq("follower_user_id", user.id).eq("following_user_id", targetUserId).maybeSingle(),
         supabase.from("follows").select("id, status" as any).eq("follower_user_id", targetUserId).eq("following_user_id", user.id).maybeSingle(),
@@ -263,6 +267,7 @@ export default function Profile() {
       .from("posts")
       .select("id, content, created_at, image_url")
       .eq("user_id", targetUserId)
+      .neq("is_archived", true)
       .order("created_at", { ascending: false })
       .range(fromIndex, toIndex);
 
@@ -406,6 +411,64 @@ export default function Profile() {
 
     setLoadingSaved(false);
   }, [user, isOwnProfile, savedSubFilter]);
+
+  const fetchArchivedItems = useCallback(async () => {
+    if (!user || !isOwnProfile) return;
+    setLoadingArchived(true);
+    const { data: archived } = await supabase
+      .from("posts")
+      .select("id, content, created_at, image_url")
+      .eq("user_id", user.id)
+      .eq("is_archived", true)
+      .order("archived_at", { ascending: false });
+
+    if (archived && archived.length > 0) {
+      const postIds = archived.map((p) => p.id);
+      const [{ data: reactions }, { data: comments }] = await Promise.all([
+        supabase.from("reactions").select("post_id").in("post_id", postIds),
+        supabase.from("comments").select("post_id").in("post_id", postIds),
+      ]);
+      const enriched: TextPost[] = archived.map((p: any) => ({
+        ...p,
+        reaction_count: reactions?.filter((r) => r.post_id === p.id).length || 0,
+        comment_count: comments?.filter((c) => c.post_id === p.id).length || 0,
+        has_liked: false,
+      }));
+      setArchivedPosts(enriched);
+    } else {
+      setArchivedPosts([]);
+    }
+    setLoadingArchived(false);
+  }, [user, isOwnProfile]);
+
+  const restorePost = async (postId: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("posts")
+      .update({ is_archived: false, created_at: new Date().toISOString(), archived_at: null })
+      .eq("id", postId);
+    if (!error) {
+      toast.success("Post restored to feed");
+      setArchivedPosts((prev) => prev.filter((p) => p.id !== postId));
+      fetchProfileData(1, true);
+    } else {
+      toast.error(sanitizeError(error));
+    }
+  };
+
+  const permanentlyDeletePost = async (postId: string) => {
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
+    if (!error) {
+      toast.success("Post permanently deleted");
+      setArchivedPosts((prev) => prev.filter((p) => p.id !== postId));
+    } else {
+      toast.error(sanitizeError(error));
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "archived" && isOwnProfile) fetchArchivedItems();
+  }, [activeTab, fetchArchivedItems, isOwnProfile]);
 
   useEffect(() => {
     if (isRequestsOpen && user) {
@@ -775,6 +838,7 @@ export default function Profile() {
     { key: "posts", label: "Posts", icon: <LayoutList className="h-4 w-4" /> },
     { key: "gallery", label: "Gallery", icon: <Grid className="h-4 w-4" /> },
     ...(isOwnProfile ? [{ key: "saved" as ProfileTab, label: "Saved", icon: <Bookmark className="h-4 w-4" /> }] : []),
+    ...(isOwnProfile ? [{ key: "archived" as ProfileTab, label: "Archived", icon: <Archive className="h-4 w-4" /> }] : []),
   ];
 
   return (
@@ -1361,6 +1425,77 @@ export default function Profile() {
                         </motion.div>
                       ))
                     )
+                  )}
+                </motion.div>
+              )}
+              
+              {/* ARCHIVED TAB - only own profile */}
+              {activeTab === "archived" && isOwnProfile && (
+                <motion.div
+                  key="archived"
+                  custom={tabDirection}
+                  initial={{ opacity: 0, x: tabDirection * 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: tabDirection * -30 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4"
+                >
+                  {loadingArchived ? (
+                    <div className="flex justify-center py-10">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : archivedPosts.length === 0 ? (
+                    <div className="py-20 text-center">
+                      <Archive className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-sm text-muted-foreground font-medium">No archived posts.</p>
+                      <p className="text-xs text-muted-foreground">Posts in archive are auto-deleted after 1 year.</p>
+                    </div>
+                  ) : (
+                    archivedPosts.map((post, i) => (
+                      <motion.div
+                        key={post.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="rounded-3xl glass-panel p-4 hover:border-primary/30 transition-colors duration-500 opacity-80"
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <Avatar className="h-9 w-9 ring-1 ring-white/10 grayscale">
+                            {profile.avatar_url ? (
+                              <AvatarImage src={profile.avatar_url} />
+                            ) : (
+                              <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
+                                {profile.display_name.charAt(0)}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-foreground">{profile.display_name}</p>
+                            <p className="text-xs text-muted-foreground/80">Archived</p>
+                          </div>
+                          <div className="flex gap-2">
+                             <Button size="sm" variant="outline" onClick={() => permanentlyDeletePost(post.id)} className="h-8 border-destructive/30 text-destructive hover:bg-destructive/10 text-xs px-2">Delete</Button>
+                             <Button size="sm" onClick={() => restorePost(post.id)} className="h-8 bg-primary hover:bg-primary/90 text-white text-xs px-2">Restore</Button>
+                          </div>
+                        </div>
+
+                        {(post as any).image_url && (
+                          <img src={(post as any).image_url} alt="Archived post" className="w-full rounded-xl max-h-48 object-cover mb-3 border border-white/5 grayscale" />
+                        )}
+                        <p className="text-sm leading-relaxed text-foreground/70 mb-4 italic">{post.content}</p>
+
+                        <div className="flex items-center gap-4 opacity-70">
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <Heart className="h-4 w-4" />
+                            {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <MessageCircle className="h-4 w-4" />
+                            {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
                   )}
                 </motion.div>
               )}

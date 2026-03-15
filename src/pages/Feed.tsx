@@ -180,6 +180,7 @@ export default function Feed() {
       .from("posts")
       .select("*")
       .eq("university_id", profile.university_id)
+      .neq("is_archived", true)
       .order("created_at", { ascending: false })
       .range(0, PAGE_SIZE - 1);
     if (error) {
@@ -202,6 +203,7 @@ export default function Feed() {
       .from("posts")
       .select("*")
       .eq("university_id", profile.university_id)
+      .neq("is_archived", true)
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -348,6 +350,19 @@ export default function Feed() {
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     }
     setDeletePostId(null);
+  };
+
+  const archivePost = async (postId: string) => {
+    const { error } = await supabase
+      .from("posts")
+      .update({ is_archived: true, archived_at: new Date().toISOString() })
+      .eq("id", postId);
+    if (error) {
+      toast.error(sanitizeError(error));
+    } else {
+      toast.success("Post archived");
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    }
   };
 
   const loadComments = async (postId: string) => {
@@ -692,8 +707,14 @@ export default function Feed() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10">
                             <DropdownMenuItem
+                              onClick={() => archivePost(post.id)}
+                              className="text-foreground focus:bg-white/5 cursor-pointer"
+                            >
+                              Archive Post
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => setDeletePostId(post.id)}
-                              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                              className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
                             >
                               Delete Post
                             </DropdownMenuItem>
