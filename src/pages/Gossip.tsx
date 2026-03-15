@@ -332,8 +332,9 @@ export default function Gossip() {
       setContent("");
       setSelectedTags([]);
       setHiddenUsers([]);
-      setIsBurner(false);
+      setBurnerDuration(null);
       setIsFollowersOnly(false);
+      setActivePanel(null);
       setShowComposer(false);
       toast.success("Gossip posted!");
     } catch (error: any) {
