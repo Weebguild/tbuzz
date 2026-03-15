@@ -313,7 +313,9 @@ export default function Gossip() {
           content: content.trim(),
           gossip_alias: profile.anonymous_alias ?? "Anonymous",
           gossip_avatar: "mask",
-          expires_at: isBurner ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
+          expires_at: burnerDuration
+            ? new Date(Date.now() + ({ "12h": 12, "24h": 24, "1w": 168 }[burnerDuration]) * 3600000).toISOString()
+            : null,
           is_followers_only: isFollowersOnly,
           hidden_from_usernames: hiddenUsers.map(u => u.display_name)
         })
