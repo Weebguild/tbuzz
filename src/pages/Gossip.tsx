@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer, Bookmark, UserCheck } from "lucide-react";
+import { ArrowUp, Loader2, Plus, X, AtSign, MoreVertical, Flame, Clock, TrendingUp, Timer, Bookmark, UserCheck, Ghost } from "lucide-react";
 import { BurnerTimer } from "@/components/feed/BurnerTimer";
 import { SelfDestructWrapper } from "@/components/feed/SelfDestructWrapper";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
@@ -80,6 +80,11 @@ export default function Gossip() {
   const [tagQuery, setTagQuery] = useState("");
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [selectedTags, setSelectedTags] = useState<TagSuggestion[]>([]);
+  
+  const [hideQuery, setHideQuery] = useState("");
+  const [hideSuggestions, setHideSuggestions] = useState<TagSuggestion[]>([]);
+  const [hiddenUsers, setHiddenUsers] = useState<TagSuggestion[]>([]);
+  
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
   // Deep-link: scroll to gossip from notification
@@ -247,10 +252,16 @@ export default function Gossip() {
     return () => { supabase.removeChannel(channel); };
   }, [profile?.university_id]);
 
-  const searchTags = async (query: string) => {
-    setTagQuery(query);
+  const searchTags = async (query: string, isHideSearch = false) => {
+    if (isHideSearch) {
+      setHideQuery(query);
+    } else {
+      setTagQuery(query);
+    }
+
     if (!query.trim() || !profile) {
-      setTagSuggestions([]);
+      if (isHideSearch) setHideSuggestions([]);
+      else setTagSuggestions([]);
       return;
     }
     const { data } = await supabase
@@ -260,19 +271,33 @@ export default function Gossip() {
       .ilike("display_name", `%${query}%`)
       .neq("user_id", user?.id ?? "")
       .limit(5);
-    setTagSuggestions(data ?? []);
+
+    if (isHideSearch) setHideSuggestions(data ?? []);
+    else setTagSuggestions(data ?? []);
   };
 
-  const addTag = (s: TagSuggestion) => {
-    if (!selectedTags.find((t) => t.user_id === s.user_id)) {
-      setSelectedTags([...selectedTags, s]);
+  const addTag = (s: TagSuggestion, isHide = false) => {
+    if (isHide) {
+      if (!hiddenUsers.find((t) => t.user_id === s.user_id)) {
+        setHiddenUsers([...hiddenUsers, s]);
+      }
+      setHideQuery("");
+      setHideSuggestions([]);
+    } else {
+      if (!selectedTags.find((t) => t.user_id === s.user_id)) {
+        setSelectedTags([...selectedTags, s]);
+      }
+      setTagQuery("");
+      setTagSuggestions([]);
     }
-    setTagQuery("");
-    setTagSuggestions([]);
   };
 
-  const removeTag = (userId: string) => {
-    setSelectedTags(selectedTags.filter((t) => t.user_id !== userId));
+  const removeTag = (userId: string, isHide = false) => {
+    if (isHide) {
+      setHiddenUsers(hiddenUsers.filter((t) => t.user_id !== userId));
+    } else {
+      setSelectedTags(selectedTags.filter((t) => t.user_id !== userId));
+    }
   };
 
   const handlePost = async () => {
@@ -289,6 +314,7 @@ export default function Gossip() {
           gossip_avatar: "mask",
           expires_at: isBurner ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
           is_followers_only: isFollowersOnly,
+          hidden_from_usernames: hiddenUsers.map(u => u.display_name)
         })
         .select("id")
         .single();
@@ -302,6 +328,7 @@ export default function Gossip() {
 
       setContent("");
       setSelectedTags([]);
+      setHiddenUsers([]);
       setIsBurner(false);
       setIsFollowersOnly(false);
       setShowComposer(false);
@@ -505,6 +532,48 @@ export default function Gossip() {
                     >
                       @{t.display_name}
                       <X className="h-3 w-3 cursor-pointer hover:text-white" onClick={() => removeTag(t.user_id)} />
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Hide from users */}
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  <Ghost className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Hide from username..."
+                    value={hideQuery}
+                    onChange={(e) => searchTags(e.target.value, true)}
+                    className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-red-500/50"
+                  />
+                </div>
+                {hideSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-md shadow-lg overflow-hidden">
+                    <div className="p-1.5 space-y-0.5">
+                      {hideSuggestions.map((s) => (
+                        <button
+                          key={s.user_id}
+                          onClick={() => addTag(s, true)}
+                          className="w-full text-left p-2 rounded-lg hover:bg-white/10 text-sm text-foreground transition-colors"
+                        >
+                          {s.display_name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {hiddenUsers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {hiddenUsers.map((t) => (
+                    <span
+                      key={t.user_id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-medium border border-red-500/30"
+                    >
+                      Hidden from: @{t.display_name}
+                      <X className="h-3 w-3 cursor-pointer hover:text-white" onClick={() => removeTag(t.user_id, true)} />
                     </span>
                   ))}
                 </div>

@@ -210,27 +210,27 @@ function OnboardingForm({ userId, existing }: { userId?: string; existing?: any 
   return (
     <div className="dating-world min-h-[100dvh] flex flex-col">
       {/* ── PROGRESS HEADER ── */}
-      <div className="sticky top-0 z-20 dw-glass border-b border-white/40 px-5 py-4">
+      <div className="sticky top-0 z-20 liquid-glass border-b border-white/5 px-5 py-6">
         <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={handleBack}
-              className={cn("transition-opacity", step === 0 ? "opacity-0 pointer-events-none" : "opacity-60 hover:opacity-100")}
-              style={{ color: "hsl(var(--dw-text))" }}
+              className={cn("transition-opacity", step === 0 ? "opacity-0 pointer-events-none" : "opacity-40 hover:opacity-100")}
+              style={{ color: "white" }}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-6 h-6" />
             </button>
-            <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "hsl(var(--dw-text-soft))" }}>
+            <p className="font-editorial text-lg text-white">
               {steps[step]}
             </p>
-            <div className="w-5" />
+            <div className="w-6" />
           </div>
           {/* Step dots */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2.5">
             {steps.map((_, i) => (
               <div
                 key={i}
-                className={cn("dw-step-dot transition-all", i === step ? "dw-step-dot-active" : i < step ? "bg-rose-200" : "")}
+                className={cn("dw-step-dot transition-all duration-500", i === step ? "dw-step-dot-active" : i < step ? "bg-amber-500/40" : "bg-white/10")}
               />
             ))}
           </div>
@@ -280,26 +280,26 @@ function OnboardingForm({ userId, existing }: { userId?: string; existing?: any 
       />
 
       {/* ── BOTTOM CTA ── */}
-      <div className="fixed bottom-0 left-0 right-0 dw-glass border-t border-white/40 px-5 py-4">
+      <div className="fixed bottom-0 left-0 right-0 liquid-glass border-t border-white/5 px-5 py-6">
         <div className="max-w-md mx-auto">
           {step < steps.length - 1 ? (
             <button
               onClick={handleNext}
               disabled={!canNext[step]}
-              className="dw-btn-primary w-full py-4 flex items-center justify-center gap-2 font-semibold disabled:opacity-40 disabled:pointer-events-none"
+              className="dw-btn-liquid w-full py-5 flex items-center justify-center gap-2 font-bold disabled:opacity-20 disabled:pointer-events-none"
             >
               Continue
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
             <button
               onClick={handleSubmit}
               disabled={uploading}
-              className="dw-btn-primary w-full py-4 flex items-center justify-center gap-2 font-semibold"
+              className="dw-btn-liquid w-full py-5 flex items-center justify-center gap-2 font-bold"
             >
               {uploading
                 ? <Loader2 className="w-5 h-5 animate-spin" />
-                : <><Check className="w-4 h-4" /> Go Live</>
+                : <><Check className="w-5 h-5" /> Go Live</>
               }
             </button>
           )}
@@ -319,11 +319,11 @@ function GalleryStep({ media, onAdd, onRemove }: {
   onRemove: (id: string) => void;
 }) {
   return (
-    <div className="pt-8 pb-4">
-      <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>
+    <div className="pt-10 pb-4">
+      <h1 className="font-editorial text-5xl text-white mb-2">
         Your Gallery
       </h1>
-      <p className="text-sm mb-8" style={{ color: "hsl(var(--dw-text-soft))" }}>
+      <p className="text-sm mb-10 text-white/40">
         Up to 5 photos or short videos. Your first photo is your hero shot.
       </p>
 
@@ -338,10 +338,9 @@ function GalleryStep({ media, onAdd, onRemove }: {
               exit={{ opacity: 0, scale: 0.85 }}
               transition={{ duration: 0.25 }}
               className={cn(
-                "relative overflow-hidden rounded-2xl bg-stone-100",
+                "relative overflow-hidden rounded-[2rem] bg-stone-900 border border-white/5",
                 i === 0 ? "col-span-2 aspect-[4/5]" : "aspect-[3/4]"
               )}
-              style={{ boxShadow: "var(--dw-shadow)" }}
             >
               {item.type === "video"
                 ? <VideoPreview src={item.preview} />
@@ -451,90 +450,72 @@ function AboutStep({ vitals, setVital }: {
   };
 
   return (
-    <div className="pt-8 pb-4 space-y-8">
+    <div className="pt-10 pb-4 space-y-10">
       <div>
-        <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>About You</h1>
-        <p className="text-sm" style={{ color: "hsl(var(--dw-text-soft))" }}>Help us find your people.</p>
+        <h1 className="font-editorial text-5xl text-white mb-2">About You</h1>
+        <p className="text-sm text-white/40">Help us find your people.</p>
       </div>
 
       {/* Age */}
       <Section label="Age">
-        <input
-          type="number"
-          min={18} max={30}
-          value={vitals.age.value}
-          onChange={e => setVital("age", "value", e.target.value)}
-          placeholder="Your age"
-          className="w-32 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 font-sans"
-          style={{
-            border: "1px solid hsl(var(--dw-border))",
-            color: "hsl(var(--dw-text))",
-            ["--tw-ring-color" as string]: "hsla(340,75%,55%,0.3)",
-          }}
-        />
-      </Section>
-
-      {/* Gender */}
-      <Section label="Gender" required>
-        <div className="flex flex-wrap gap-2">
-          {genderOptions.map(o => chip("gender", o))}
-        </div>
-      </Section>
-
-      {/* Pronouns */}
-      <Section label="Pronouns">
-        <div className="flex flex-wrap gap-2">
-          {pronounOptions.map(o => chip("pronouns", o))}
-        </div>
-      </Section>
-
-      {/* Year */}
-      <Section label="Year" required>
-        <div className="flex flex-wrap gap-2">
-          {yearOptions.map(o => chip("year", o))}
-        </div>
-      </Section>
-
-      {/* Major */}
-      <Section label="Major">
-        <div className="flex items-center gap-2">
           <input
-            type="text"
-            value={vitals.major.value}
-            onChange={e => setVital("major", "value", e.target.value)}
-            placeholder="e.g. Architecture"
-            className="flex-1 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 font-sans"
-            style={{
-              border: "1px solid hsl(var(--dw-border))",
-              color: "hsl(var(--dw-text))",
-              ["--tw-ring-color" as string]: "hsla(340,75%,55%,0.3)",
-            }}
+            type="number"
+            min={18} max={30}
+            value={vitals.age.value}
+            onChange={e => setVital("age", "value", e.target.value)}
+            placeholder="Age"
+            className="w-32 bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-amber-500/50 transition-colors font-sans"
           />
-          <VisToggle visible={vitals.major.visible} onToggle={() => setVital("major", "visible", !vitals.major.visible)} />
-        </div>
-      </Section>
-
-      {/* Height */}
-      <Section label="Height">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={vitals.height.value}
-            onChange={e => setVital("height", "value", e.target.value)}
-            placeholder={`e.g. 5'10"`}
-            className="flex-1 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 font-sans"
-            style={{
-              border: "1px solid hsl(var(--dw-border))",
-              color: "hsl(var(--dw-text))",
-              ["--tw-ring-color" as string]: "hsla(340,75%,55%,0.3)",
-            }}
-          />
-          <VisToggle visible={vitals.height.visible} onToggle={() => setVital("height", "visible", !vitals.height.visible)} />
-        </div>
-        <p className="text-[11px] mt-1.5" style={{ color: "hsl(var(--dw-text-soft))" }}>
-          Toggle to show/hide on profile
-        </p>
-      </Section>
+        </Section>
+  
+        {/* Gender */}
+        <Section label="Gender" required>
+          <div className="flex flex-wrap gap-2.5">
+            {genderOptions.map(o => chip("gender", o))}
+          </div>
+        </Section>
+  
+        {/* Pronouns */}
+        <Section label="Pronouns">
+          <div className="flex flex-wrap gap-2.5">
+            {pronounOptions.map(o => chip("pronouns", o))}
+          </div>
+        </Section>
+  
+        {/* Year */}
+        <Section label="Year" required>
+          <div className="flex flex-wrap gap-2.5">
+            {yearOptions.map(o => chip("year", o))}
+          </div>
+        </Section>
+  
+        {/* Major */}
+        <Section label="Major">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={vitals.major.value}
+              onChange={e => setVital("major", "value", e.target.value)}
+              placeholder="e.g. Architecture"
+              className="flex-1 bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-amber-500/50 transition-colors font-sans"
+            />
+            <VisToggle visible={vitals.major.visible} onToggle={() => setVital("major", "visible", !vitals.major.visible)} />
+          </div>
+        </Section>
+  
+        {/* Height */}
+        <Section label="Height">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={vitals.height.value}
+              onChange={e => setVital("height", "value", e.target.value)}
+              placeholder={`e.g. 5'10"`}
+              className="flex-1 bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-amber-500/50 transition-colors font-sans"
+            />
+            <VisToggle visible={vitals.height.visible} onToggle={() => setVital("height", "visible", !vitals.height.visible)} />
+          </div>
+        </Section>
 
       {/* Relationship type */}
       <Section label="Looking for">
@@ -588,9 +569,9 @@ function PromptsStep({ prompts, setPrompts }: {
   };
 
   return (
-    <div className="pt-8 pb-4">
-      <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>Your Prompts</h1>
-      <p className="text-sm mb-8" style={{ color: "hsl(var(--dw-text-soft))" }}>
+    <div className="pt-10 pb-4">
+      <h1 className="font-editorial text-5xl text-white mb-2">Your Prompts</h1>
+      <p className="text-sm mb-10 text-white/40">
         Two questions. Show them who you really are.
       </p>
 
@@ -598,7 +579,7 @@ function PromptsStep({ prompts, setPrompts }: {
         <motion.div
           key={i}
           layout
-          className="dw-card mb-5 p-5"
+          className="liquid-glass mb-6 p-6 rounded-3xl"
         >
           {/* Prompt selector */}
           <button
@@ -688,9 +669,9 @@ function ReviewStep({ media, vitals, prompts }: { media: any[]; vitals: Vitals; 
   const visVitals = Object.entries(vitals).filter(([_, v]) => v.visible && v.value);
 
   return (
-    <div className="pt-8 pb-4">
-      <h1 className="font-editorial text-4xl mb-1" style={{ color: "hsl(var(--dw-text))" }}>Preview</h1>
-      <p className="text-sm mb-6" style={{ color: "hsl(var(--dw-text-soft))" }}>
+    <div className="pt-10 pb-4">
+      <h1 className="font-editorial text-5xl text-white mb-2">Preview</h1>
+      <p className="text-sm mb-10 text-white/40">
         This is how others will see you.
       </p>
 
@@ -715,11 +696,11 @@ function ReviewStep({ media, vitals, prompts }: { media: any[]; vitals: Vitals; 
 
       {/* Prompts */}
       {prompts.filter(p => p.question).map((p, i) => (
-        <div key={i} className="dw-prompt-card p-5 mb-4">
-          <p className="text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: "hsl(var(--dw-text-soft))" }}>
+        <div key={i} className="liquid-glass p-6 mb-5 rounded-3xl">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mb-3 ml-1">
             {p.question}
           </p>
-          <p className="font-editorial text-xl" style={{ color: "hsl(var(--dw-text))" }}>{p.answer}</p>
+          <p className="font-editorial text-2xl text-white leading-relaxed">"{p.answer}"</p>
         </div>
       ))}
 
@@ -746,11 +727,11 @@ function ReviewStep({ media, vitals, prompts }: { media: any[]; vitals: Vitals; 
 
 function Section({ label, sub, required, children }: { label: string; sub?: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div>
-      <div className="flex items-baseline gap-1.5 mb-3">
-        <span className="text-sm font-bold" style={{ color: "hsl(var(--dw-text))" }}>{label}</span>
-        {required && <span className="text-xs" style={{ color: "hsl(var(--dw-accent))" }}>*</span>}
-        {sub && <span className="text-xs" style={{ color: "hsl(var(--dw-text-soft))" }}>{sub}</span>}
+    <div className="space-y-4">
+      <div className="flex items-baseline gap-2">
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/30">{label}</span>
+        {required && <span className="text-amber-500 scale-150 rotate-12">*</span>}
+        {sub && <span className="text-[10px] text-white/20 font-medium">({sub})</span>}
       </div>
       {children}
     </div>
@@ -761,14 +742,13 @@ function VisToggle({ visible, onToggle }: { visible: boolean; onToggle: () => vo
   return (
     <button
       onClick={onToggle}
-      className="w-10 h-10 rounded-xl border flex items-center justify-center transition-all shrink-0 hover:bg-stone-50"
-      style={{
-        borderColor: "hsl(var(--dw-border))",
-        color: visible ? "hsl(var(--dw-text))" : "hsl(var(--dw-text-soft))",
-      }}
+      className={cn(
+        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all liquid-glass",
+        visible ? "text-white" : "text-white/20 scale-95"
+      )}
       title={visible ? "Visible on profile" : "Hidden from profile"}
     >
-      {visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+      {visible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
     </button>
   );
 }

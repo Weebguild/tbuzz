@@ -23,6 +23,7 @@ import AvatarCrop from "./pages/AvatarCrop";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import DatingOnboarding from "./pages/dating/DatingOnboarding";
+import DatingJourney from "./pages/dating/DatingJourney";
 import DatingDiscover from "./pages/dating/DatingDiscover";
 import DatingCrushes from "./pages/dating/DatingCrushes";
 import DatingProfile from "./pages/dating/DatingProfile";
@@ -123,6 +124,7 @@ function AppRoutes() {
             }
           >
             <Route path="/dating" element={<Navigate to="/dating/discover" replace />} />
+            <Route path="/dating/journey" element={<DatingJourney />} />
             <Route path="/dating/onboarding" element={<DatingOnboarding />} />
             <Route path="/dating/discover" element={<DatingDiscover />} />
             <Route path="/dating/matches" element={<DatingCrushes />} />

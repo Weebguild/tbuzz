@@ -28,6 +28,216 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import React from "react";
+
+interface MessageBubbleProps {
+  msg: any;
+  idx: number;
+  prevMsg: any;
+  nextMsg: any;
+  user: any;
+  recipient: any;
+  getHaloClass: (id: string) => string;
+  setSelectedMedia: (url: string | null) => void;
+  setReplyingTo: (msg: any | null) => void;
+  handleDocumentDownload: (url: string, name: string) => void;
+  toggleAudioPlayback: (msgId: string, url: string) => void;
+  playingAudioId: string | null;
+  renderMessageText: (content: string, isOwn: boolean) => React.ReactNode;
+  getDateLabel: (date: Date) => string;
+}
+
+// --- MEMOIZED MESSAGE BUBBLE ---
+const MessageBubble = React.memo<MessageBubbleProps>(({ 
+  msg, 
+  idx, 
+  prevMsg, 
+  nextMsg, 
+  user, 
+  recipient, 
+  getHaloClass, 
+  setSelectedMedia,
+  setReplyingTo,
+  handleDocumentDownload,
+  toggleAudioPlayback,
+  playingAudioId,
+  renderMessageText,
+  getDateLabel
+}) => {
+  const isOwn = msg.sender_id === user?.id;
+  const data = React.useMemo(() => {
+    try {
+      if (typeof msg.content === 'string' && msg.content.startsWith("{") && msg.content.endsWith("}")) {
+        return JSON.parse(msg.content);
+      }
+    } catch (e) {
+      // JSON parse error
+    }
+    return { type: "text", content: msg.content };
+  }, [msg.content]);
+
+  const isGrouping = prevMsg?.sender_id === msg.sender_id;
+  const isLastInGroup = nextMsg?.sender_id !== msg.sender_id;
+
+  // Date separator
+  const msgDate = new Date(msg.created_at);
+  const showDateSeparator = !prevMsg || !isSameDay(msgDate, new Date(prevMsg.created_at));
+
+  return (
+    <div key={msg.id}>
+      {showDateSeparator && (
+        <div className="flex items-center justify-center my-6">
+          <div className="px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.05] backdrop-blur-sm">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">{getDateLabel(msgDate)}</span>
+          </div>
+        </div>
+      )}
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.9, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      className={cn(
+        "flex items-end gap-3",
+        isOwn ? "flex-row-reverse" : "flex-row",
+        isGrouping ? "mt-1" : "mt-8"
+      )}
+    >
+      {!isOwn && (
+        <div className="w-8 shrink-0">
+          {isLastInGroup && recipient && (
+            <Avatar className={cn("h-8 w-8 shadow-lg", recipient ? getHaloClass(recipient.user_id) : "ring-1 ring-white/10")}>
+              <AvatarImage src={recipient.avatar_url || ""} />
+              <AvatarFallback className="text-[10px] font-bold bg-white/5">
+                {recipient.display_name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      )}
+
+      <div className={cn(
+        "flex flex-col gap-1 max-w-[80%] min-w-0 overflow-hidden",
+        isOwn ? "items-end" : "items-start"
+      )}>
+          <div className="relative group/bubble max-w-full overflow-hidden">
+          <div
+            className={cn(
+              "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden max-w-full",
+              isOwn
+                ? "bg-primary text-white shadow-[0_4px_16px_-4px_rgba(124,58,237,0.3)] border border-primary/20"
+                : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
+              isOwn && isLastInGroup ? "rounded-br-lg" : "",
+              !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
+              (data.type === "image" || data.type === "video") ? "p-1.5" : "px-6 py-4"
+            )}
+          >
+            {data.type === "reply" && (
+              <div className="mb-3 p-3 rounded-2xl bg-black/20 border-l-4 border-primary/40 text-sm overflow-hidden opacity-80">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1">Replying to</p>
+                <p className="truncate italic">"{data.replyTo.content}"</p>
+              </div>
+            )}
+
+            {data.type === "image" && data.url ? (
+              <div
+                onClick={() => setSelectedMedia(data.url)}
+                className="relative group cursor-pointer overflow-hidden rounded-[24px]"
+              >
+                <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
+                {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
+              </div>
+            ) : data.type === "file" && data.url ? (
+              (() => {
+                const fileNameFromUrl = data.url.split("/").pop()?.split("?")[0] || "";
+                const hasStoredName = typeof data.fileName === "string" && data.fileName.trim().length > 0;
+                const inferredExt = fileNameFromUrl.split(".").pop()?.toLowerCase() || "pdf";
+                const displayName = hasStoredName
+                  ? data.fileName
+                  : /^\d+\.[a-z0-9]+$/i.test(fileNameFromUrl)
+                    ? `document.${inferredExt}`
+                    : fileNameFromUrl || `document.${inferredExt}`;
+
+                const fileExt = displayName.split(".").pop()?.toUpperCase() || "FILE";
+                const fileSize = data.fileSize
+                  ? (data.fileSize < 1024 * 1024
+                    ? `${(data.fileSize / 1024).toFixed(0)} KB`
+                    : `${(data.fileSize / (1024 * 1024)).toFixed(1)} MB`)
+                  : fileExt;
+
+                return (
+                  <button
+                    type="button"
+                    onClick={() => handleDocumentDownload(data.url, displayName)}
+                    className="flex w-full items-center gap-4 py-1.5 px-2 min-w-[220px] max-w-[320px] text-left group/file hover:brightness-110 transition-all"
+                  >
+                    <div className={cn(
+                      "h-14 w-14 flex items-center justify-center rounded-2xl shrink-0 shadow-lg",
+                      isOwn
+                        ? "bg-white/15 shadow-white/5"
+                        : "bg-gradient-to-br from-red-500/20 to-orange-500/20 shadow-red-500/10"
+                    )}>
+                      <FileText className={cn("h-7 w-7", isOwn ? "text-white/80" : "text-red-400")} />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      <p className="text-sm font-bold truncate leading-tight">{displayName}</p>
+                      <p className={cn(
+                        "text-[10px] font-semibold uppercase tracking-widest",
+                        isOwn ? "text-white/40" : "text-muted-foreground/40"
+                      )}>{fileSize} · {fileExt}</p>
+                    </div>
+                    <div className={cn(
+                      "h-9 w-9 flex items-center justify-center rounded-full shrink-0 transition-all group-hover/file:scale-110",
+                      isOwn ? "bg-white/10 group-hover/file:bg-white/20" : "bg-white/[0.06] group-hover/file:bg-white/10"
+                    )}>
+                      <Download className={cn("h-4 w-4", isOwn ? "text-white/60" : "text-white/40")} />
+                    </div>
+                  </button>
+                );
+              })()
+            ) : data.type === "audio" && data.url ? (
+              <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
+                <button
+                  onClick={() => toggleAudioPlayback(msg.id, data.url)}
+                  className="h-12 w-12 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all active:scale-90"
+                >
+                  {playingAudioId === msg.id ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-1" />}
+                </button>
+                <div className="flex-1 flex gap-1 items-center h-8">
+                  {[...Array(14)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      animate={playingAudioId === msg.id
+                        ? { height: [`${30 + Math.random() * 50}%`, `${30 + Math.random() * 50}%`] }
+                        : { height: "20%" }
+                      }
+                      transition={{ repeat: Infinity, duration: 0.4, delay: i * 0.03 }}
+                      className="w-1 bg-white/40 rounded-full"
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-hidden max-w-full">
+                <p className="whitespace-pre-wrap break-words overflow-hidden" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Reply + Emoji buttons on hover */}
+          <div className={cn(
+            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 z-10",
+            isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
+          )}>
+            <button onClick={() => setReplyingTo(data)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+              <Reply className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+    </div>
+  );
+});
 
 export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -639,224 +849,25 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             )}
 
             <AnimatePresence mode="popLayout" initial={false}>
-              {filteredMessages.map((msg, idx) => {
-                const isOwn = msg.sender_id === user?.id;
-                const nextMsg = filteredMessages[idx + 1];
-                const prevMsg = filteredMessages[idx - 1];
-                const data = parseMessageContent(msg.content);
-                const isGrouping = prevMsg?.sender_id === msg.sender_id;
-                const isLastInGroup = nextMsg?.sender_id !== msg.sender_id;
-
-                // Date separator
-                const msgDate = new Date(msg.created_at);
-                const showDateSeparator = !prevMsg || !isSameDay(msgDate, new Date(prevMsg.created_at));
-
-                return (
-                  <div key={msg.id}>
-                    {showDateSeparator && (
-                      <div className="flex items-center justify-center my-6">
-                        <div className="px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.05] backdrop-blur-sm">
-                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">{getDateLabel(msgDate)}</span>
-                        </div>
-                      </div>
-                    )}
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className={cn(
-                      "flex items-end gap-3",
-                      isOwn ? "flex-row-reverse" : "flex-row",
-                      isGrouping ? "mt-1" : "mt-8"
-                    )}
-                  >
-                    {!isOwn && (
-                      <div className="w-8 shrink-0">
-                        {isLastInGroup && recipient && (
-                          <Avatar className={cn("h-8 w-8 shadow-lg", recipient ? getHaloClass(recipient.user_id) : "ring-1 ring-white/10")}>
-                            <AvatarImage src={recipient.avatar_url || ""} />
-                            <AvatarFallback className="text-[10px] font-bold bg-white/5">
-                              {recipient.display_name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                    )}
-
-                    <div className={cn(
-                      "flex flex-col gap-1 max-w-[80%] min-w-0 overflow-hidden",
-                      isOwn ? "items-end" : "items-start"
-                    )}>
-                       <div className="relative group/bubble max-w-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden max-w-full",
-                            isOwn
-                              ? "bg-primary text-white shadow-[0_4px_16px_-4px_rgba(124,58,237,0.3)] border border-primary/20"
-                              : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
-                            isOwn && isLastInGroup ? "rounded-br-lg" : "",
-                            !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
-                            (data.type === "image" || data.type === "video") ? "p-1.5" : "px-6 py-4"
-                          )}
-                        >
-                          {data.type === "reply" && (
-                            <div className="mb-3 p-3 rounded-2xl bg-black/20 border-l-4 border-primary/40 text-sm overflow-hidden opacity-80">
-                              <p className="text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1">Replying to</p>
-                              <p className="truncate italic">"{data.replyTo.content}"</p>
-                            </div>
-                          )}
-
-                          {data.type === "image" && data.url ? (
-                            <div
-                              onClick={() => setSelectedMedia(data.url)}
-                              className="relative group cursor-pointer overflow-hidden rounded-[24px]"
-                            >
-                              <img src={data.url} alt="Shared" className="w-full h-full object-cover max-h-[400px]" />
-                              {data.text && <p className="px-4 py-3 text-sm">{data.text}</p>}
-                            </div>
-                          ) : data.type === "file" && data.url ? (
-                            (() => {
-                              const fileNameFromUrl = data.url.split("/").pop()?.split("?")[0] || "";
-                              const hasStoredName = typeof data.fileName === "string" && data.fileName.trim().length > 0;
-                              const inferredExt = fileNameFromUrl.split(".").pop()?.toLowerCase() || "pdf";
-                              const displayName = hasStoredName
-                                ? data.fileName
-                                : /^\d+\.[a-z0-9]+$/i.test(fileNameFromUrl)
-                                  ? `document.${inferredExt}`
-                                  : fileNameFromUrl || `document.${inferredExt}`;
-
-                              const fileExt = displayName.split(".").pop()?.toUpperCase() || "FILE";
-                              const fileSize = data.fileSize
-                                ? (data.fileSize < 1024 * 1024
-                                  ? `${(data.fileSize / 1024).toFixed(0)} KB`
-                                  : `${(data.fileSize / (1024 * 1024)).toFixed(1)} MB`)
-                                : fileExt;
-
-                              return (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDocumentDownload(data.url, displayName)}
-                                  className="flex w-full items-center gap-4 py-1.5 px-2 min-w-[220px] max-w-[320px] text-left group/file hover:brightness-110 transition-all"
-                                >
-                                  <div className={cn(
-                                    "h-14 w-14 flex items-center justify-center rounded-2xl shrink-0 shadow-lg",
-                                    isOwn
-                                      ? "bg-white/15 shadow-white/5"
-                                      : "bg-gradient-to-br from-red-500/20 to-orange-500/20 shadow-red-500/10"
-                                  )}>
-                                    <FileText className={cn("h-7 w-7", isOwn ? "text-white/80" : "text-red-400")} />
-                                  </div>
-                                  <div className="flex-1 min-w-0 space-y-0.5">
-                                    <p className="text-sm font-bold truncate leading-tight">{displayName}</p>
-                                    <p className={cn(
-                                      "text-[10px] font-semibold uppercase tracking-widest",
-                                      isOwn ? "text-white/40" : "text-muted-foreground/40"
-                                    )}>{fileSize} · {fileExt}</p>
-                                  </div>
-                                  <div className={cn(
-                                    "h-9 w-9 flex items-center justify-center rounded-full shrink-0 transition-all group-hover/file:scale-110",
-                                    isOwn ? "bg-white/10 group-hover/file:bg-white/20" : "bg-white/[0.06] group-hover/file:bg-white/10"
-                                  )}>
-                                    <Download className={cn("h-4 w-4", isOwn ? "text-white/60" : "text-white/40")} />
-                                  </div>
-                                </button>
-                              );
-                            })()
-                          ) : data.type === "audio" && data.url ? (
-                            <div className="flex items-center gap-4 py-1 px-2 min-w-[200px]">
-                              <button
-                                onClick={() => toggleAudioPlayback(msg.id, data.url)}
-                                className="h-12 w-12 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all active:scale-90"
-                              >
-                                {playingAudioId === msg.id ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-1" />}
-                              </button>
-                              <div className="flex-1 flex gap-1 items-center h-8">
-                                {[...Array(14)].map((_, i) => (
-                                  <motion.div
-                                    key={i}
-                                    animate={playingAudioId === msg.id
-                                      ? { height: [`${30 + Math.random() * 50}%`, `${30 + Math.random() * 50}%`] }
-                                      : { height: "20%" }
-                                    }
-                                    transition={{ repeat: Infinity, duration: 0.4, delay: i * 0.03 }}
-                                    className="w-1 bg-white/40 rounded-full"
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="overflow-hidden max-w-full">
-                              <p className="whitespace-pre-wrap break-words overflow-hidden" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Reply + Emoji buttons on hover */}
-                        <div className={cn(
-                          "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 z-10",
-                          isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
-                        )}>
-                          <button onClick={() => setReplyingTo(data)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                            <Reply className="h-3.5 w-3.5" />
-                          </button>
-                          <Popover open={emojiDrawerMsgId === msg.id} onOpenChange={(open) => { if (!open) setEmojiDrawerMsgId(null); }}>
-                            <PopoverTrigger asChild>
-                              <button onClick={() => setEmojiDrawerMsgId(msg.id)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
-                                <Smile className="h-3.5 w-3.5" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent side="top" align={isOwn ? "end" : "start"} sideOffset={8} className="w-auto p-2 bg-[#0A0A0A]/95 backdrop-blur-3xl border-white/[0.06] rounded-xl">
-                              <div className="flex gap-1 flex-wrap max-w-[280px]">
-                                {["🔥", "❤️", "😂", "😮", "👍", "😢", "🙏", "💀", "🤯", "👀", "💯", "🎉", "😍", "🥺", "💜"].map(emoji => (
-                                  <button
-                                    key={emoji}
-                                    onClick={() => {
-                                      if (emojiDrawerMsgId) {
-                                        setReactions(prev => ({ ...prev, [emojiDrawerMsgId]: emoji }));
-                                        navigator.vibrate?.(10);
-                                      }
-                                      setEmojiDrawerMsgId(null);
-                                    }}
-                                    className="text-xl p-1.5 rounded-lg hover:bg-white/10 hover:scale-125 transition-all duration-150 select-none"
-                                  >
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-
-                        {reactions[msg.id] && (
-                          <div className={cn(
-                            "absolute -bottom-2 px-2 py-0.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md text-xs",
-                            isOwn ? "left-0" : "right-0"
-                          )}>
-                            {reactions[msg.id]}
-                          </div>
-                        )}
-                      </div>
-
-                      {isLastInGroup && (
-                        <div className={cn(
-                          "flex items-center gap-2 mt-1 px-2",
-                          isOwn ? "flex-row-reverse" : "flex-row"
-                        )}>
-                          <span className="text-[9px] font-black uppercase tracking-widest opacity-30">
-                            {formatDistanceToNow(new Date(msg.created_at))}
-                          </span>
-                          {isOwn && (
-                            msg.is_read
-                              ? <CheckCheck className="h-3.5 w-3.5 text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.4)]" />
-                              : <Check className="h-3 w-3 text-white/40" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                  </div>
-                );
-              })}
+              {filteredMessages.map((msg, idx) => (
+                <MessageBubble 
+                  key={msg.id}
+                  msg={msg}
+                  idx={idx}
+                  prevMsg={filteredMessages[idx - 1]}
+                  nextMsg={filteredMessages[idx + 1]}
+                  user={user}
+                  recipient={recipient}
+                  getHaloClass={getHaloClass}
+                  setSelectedMedia={setSelectedMedia}
+                  setReplyingTo={setReplyingTo}
+                  handleDocumentDownload={handleDocumentDownload}
+                  toggleAudioPlayback={toggleAudioPlayback}
+                  playingAudioId={playingAudioId}
+                  renderMessageText={renderMessageText}
+                  getDateLabel={getDateLabel}
+                  />
+              ))}
 
               {isTyping && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mt-4">
@@ -1167,6 +1178,8 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Media viewer */}
       <AnimatePresence>
         {selectedMedia && (
           <motion.div

@@ -185,7 +185,35 @@ export default function Messages() {
 
     const channel = supabase
       .channel('messages-inbox')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, debouncedFetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        // Surgically update the conversations list instead of a full debounced fetch
+        setConversations(prev => {
+          const newMsg = payload.new as any;
+          if (!newMsg || !newMsg.conversation_id) return prev;
+          
+          const convIndex = prev.findIndex(c => c.conversation_id === newMsg.conversation_id);
+          
+          if (convIndex === -1) {
+            // New conversation we don't know about yet; fetch it fully
+            debouncedFetch();
+            return prev;
+          }
+          
+          const isFromMe = newMsg.sender_id === user.id;
+          const updatedConv = {
+            ...prev[convIndex],
+            last_message: newMsg.content.startsWith("{") ? "Media Message" : newMsg.content,
+            last_message_at: newMsg.created_at,
+            updated_at: newMsg.created_at,
+            unread_count: isFromMe ? prev[convIndex].unread_count : prev[convIndex].unread_count + 1
+          };
+          
+          const newConversations = [...prev];
+          newConversations.splice(convIndex, 1);
+          newConversations.unshift(updatedConv); // Move to top
+          return newConversations;
+        });
+      })
       .subscribe();
 
     return () => {

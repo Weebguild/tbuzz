@@ -50,7 +50,7 @@ export function useDatingTransition() {
         const hasPrompts = Boolean(data && data.prompts && Object.keys(data.prompts).length > 0);
 
         if (!hasMedia || !hasPrompts) {
-          target = "/dating/onboarding";
+          target = "/dating/journey";
         }
       }
     } catch {

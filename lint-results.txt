@@ -1,0 +1,216 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+C:\tbuzz\src\components\Counter.tsx
+  13:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\LiquidBackground.tsx
+   11:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   11:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   12:72  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   33:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  225:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\components\chat\DesktopChatLayout.tsx
+   23:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:76  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:29  error  Empty block statement                     no-empty
+
+C:\tbuzz\src\components\dating\DatingGateway.tsx
+  85:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\dating\DatingLayout.tsx
+  129:22  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  145:43  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  151:27  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  152:17  error    Empty block statement                                                                                           no-empty
+  172:28  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  175:40  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  182:19  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  189:24  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  198:39  warning  React Hook useEffect has a missing dependency: 'loadCrushes'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\tbuzz\src\components\feed\PostImageExpander.tsx
+  105:6  warning  React Hook useEffect has a missing dependency: 'fetchComments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\tbuzz\src\components\layout\ActivityDrawer.tsx
+  48:19  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  71:6   warning  React Hook useEffect has a missing dependency: 'fetchNotifications'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  98:6   warning  React Hook useEffect has a missing dependency: 'fetchNotifications'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\tbuzz\src\components\layout\DesktopSidebar.tsx
+  164:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\components\ui\UserHoverCard.tsx
+   77:11  warning  The 'clipIds' array makes the dependencies of useCallback Hook (at line 140) change on every render. To fix this, wrap the initialization of 'clipIds' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  181:53  error    Unexpected any. Specify a different type                                                                                                                                          @typescript-eslint/no-explicit-any
+  220:8   warning  React Hook useLayoutEffect has a missing dependency: 'createLoop'. Either include it or remove the dependency array                                                               react-hooks/exhaustive-deps
+
+C:\tbuzz\src\components\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\ui\button.tsx
+  47:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\ui\command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\tbuzz\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\ui\sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\tbuzz\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\hooks\useAuth.tsx
+  97:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\hooks\useHalo.tsx
+  125:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\tbuzz\src\lib\sanitize-error.ts
+  8:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\Auth.tsx
+   68:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\AvatarCrop.tsx
+  12:35  error    Unexpected any. Specify a different type                                                                                      @typescript-eslint/no-explicit-any
+  13:39  error    Unexpected any. Specify a different type                                                                                      @typescript-eslint/no-explicit-any
+  28:6   warning  React Hook useEffect has missing dependencies: 'navigate' and 'returnTo'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  91:19  error    Unexpected any. Specify a different type                                                                                      @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\ChatRoom.tsx
+   50:4   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:17  error  Empty block statement                     no-empty
+  234:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  342:17  error  Empty block statement                     no-empty
+  398:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  398:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\Feed.tsx
+  207:6    warning  React Hook useEffect has missing dependencies: 'loadComments', 'searchParams', and 'setSearchParams'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  239:53   error    Unexpected any. Specify a different type                                                                                                                  @typescript-eslint/no-explicit-any
+  326:6    warning  React Hook useEffect has a missing dependency: 'fetchFollowing'. Either include it or remove the dependency array                                         react-hooks/exhaustive-deps
+  330:6    warning  React Hook useEffect has missing dependencies: 'fetchPosts' and 'fetchTrendingGossip'. Either include them or remove the dependency array                 react-hooks/exhaustive-deps
+  344:6    warning  React Hook useEffect has a missing dependency: 'profile'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  370:21   error    Unexpected any. Specify a different type                                                                                                                  @typescript-eslint/no-explicit-any
+  531:104  error    Unexpected any. Specify a different type                                                                                                                  @typescript-eslint/no-explicit-any
+  549:10   error    Unexpected any. Specify a different type                                                                                                                  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\Gossip.tsx
+  106:6   warning  React Hook useEffect has a missing dependency: 'setSearchParams'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  117:53  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  137:9   error    'enriched' is never reassigned. Use 'const' instead                                                                 prefer-const
+  239:6   warning  React Hook useEffect has a missing dependency: 'fetchGossip'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  253:6   warning  React Hook useEffect has a missing dependency: 'profile'. Either include it or remove the dependency array          react-hooks/exhaustive-deps
+  336:21  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\Messages.tsx
+  191:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\Onboarding.tsx
+  103:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\Profile.tsx
+  191:118  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:117  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:57   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:57   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:33   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:44   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:58   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:44   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:58   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  350:48   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  373:72   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  373:115  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  390:48   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  425:47   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  472:137  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  484:35   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  485:52   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  488:37   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  624:21   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\ResetPassword.tsx
+  49:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\dating\DatingCrushes.tsx
+  25:6   warning  React Hook useEffect has a missing dependency: 'fetchMatches'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  38:40  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  49:46  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  58:51  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  64:52  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  64:92  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  65:53  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  68:34  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  68:51  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  69:49  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\dating\DatingDiscover.tsx
+   57:6   warning  React Hook useEffect has a missing dependency: 'fetchDiscoverFeed'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   66:48  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   77:47  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   84:43  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   86:42  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   87:40  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   87:57  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  126:28  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  127:93  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  132:19  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  161:28  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  162:93  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  167:19  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  346:43  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  347:41  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\dating\DatingOnboarding.tsx
+   56:52  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+   88:77  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  100:85  error  Expected a `const` instead of a literal type assertion  @typescript-eslint/prefer-as-const
+  171:73  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  198:67  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  203:19  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  317:10  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  421:66  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  668:58  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+
+C:\tbuzz\src\pages\dating\DatingProfile.tsx
+  32:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\tbuzz\tailwind.config.ts
+  89:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\tbuzz\tmp\index-CMu7Fgl9.js
+  1:1  error  Parsing error: Unexpected token <
+
+✖ 136 problems (109 errors, 27 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+

@@ -175,9 +175,36 @@ export default function Profile() {
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchProfileData = useCallback(async () => {
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const postsPerPage = 10;
+  
+  // Observer for infinite scroll
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastPostElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading || loadingMore) return;
+      if (observerRef.current) observerRef.current.disconnect();
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+      if (node) observerRef.current.observe(node);
+    },
+    [loading, loadingMore, hasMore]
+  );
+
+  const fetchProfileData = useCallback(async (pageNumber = 1, isInitial = false) => {
     if (!targetUserId) return;
-    setLoading(true);
+    
+    if (isInitial) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
 
     // Batch all independent queries in parallel
     const [
@@ -227,9 +254,34 @@ export default function Profile() {
       setIsMutualFollow(isFollowingNow && !!rd && rd.status === 'accepted');
     }
 
-    const photoPosts = allPosts?.filter((p) => p.image_url) || [];
-    const textPostsData = allPosts?.filter((p) => !p.image_url) || [];
-    const allPostIds = allPosts?.map((p) => p.id) || [];
+    // Calculate Pagination bounds
+    const fromIndex = (pageNumber - 1) * postsPerPage;
+    const toIndex = fromIndex + postsPerPage - 1;
+
+    // Fetch posts with pagination
+    const { data: pagedPosts, error: postError } = await supabase
+      .from("posts")
+      .select("id, content, created_at, image_url")
+      .eq("user_id", targetUserId)
+      .order("created_at", { ascending: false })
+      .range(fromIndex, toIndex);
+
+    if (postError) {
+      console.error("Error fetching posts:", postError);
+    }
+
+    const newPosts = pagedPosts || [];
+    
+    // Check if we have more
+    if (newPosts.length < postsPerPage) {
+      setHasMore(false);
+    } else {
+      setHasMore(true);
+    }
+
+    const photoPosts = newPosts.filter((p) => p.image_url);
+    const textPostsData = newPosts.filter((p) => !p.image_url);
+    const allPostIds = newPosts.map((p) => p.id);
 
     if (allPostIds.length > 0) {
       const [{ data: reactions }, { data: comments }] = await Promise.all([
@@ -237,28 +289,43 @@ export default function Profile() {
         supabase.from("comments").select("post_id").in("post_id", allPostIds),
       ]);
 
-      setPhotos(
-        photoPosts.map((photo) => ({
-          ...photo,
-          reaction_count: reactions?.filter((r) => r.post_id === photo.id).length || 0,
-        })),
-      );
+      const newPhotos = photoPosts.map((photo) => ({
+        ...photo,
+        reaction_count: reactions?.filter((r) => r.post_id === photo.id).length || 0,
+      }));
 
-      setTextPosts(
-        textPostsData.map((post) => ({
-          ...post,
-          reaction_count: reactions?.filter((r) => r.post_id === post.id).length || 0,
-          comment_count: comments?.filter((c) => c.post_id === post.id).length || 0,
-          has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) || false,
-        })),
-      );
-    } else {
+      const newTextPosts = textPostsData.map((post) => ({
+        ...post,
+        reaction_count: reactions?.filter((r) => r.post_id === post.id).length || 0,
+        comment_count: comments?.filter((c) => c.post_id === post.id).length || 0,
+        has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) || false,
+      }));
+
+      if (isInitial) {
+        setPhotos(newPhotos);
+        setTextPosts(newTextPosts);
+      } else {
+        setPhotos(prev => [...prev, ...newPhotos]);
+        setTextPosts(prev => [...prev, ...newTextPosts]);
+      }
+    } else if (isInitial) {
       setPhotos([]);
       setTextPosts([]);
     }
 
     setLoading(false);
+    setLoadingMore(false);
   }, [targetUserId, user?.id, isOwnProfile]);
+
+  useEffect(() => {
+    fetchProfileData(1, true);
+  }, [fetchProfileData]);
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchProfileData(page, false);
+    }
+  }, [page, fetchProfileData]);
 
   const fetchSavedItems = useCallback(async () => {
     if (!user || !isOwnProfile) return;
@@ -646,7 +713,7 @@ export default function Profile() {
     setSavedPosts([]);
     setSavedGossips([]);
     fetchProfileData();
-  }, [fetchProfileData]);
+  }, [fetchProfileData, setActiveTab]);
 
   // Realtime reactions listener removed — toggleLike handles optimistic UI,
   // and fetchProfileData loads fresh counts on revisit.
@@ -1070,6 +1137,7 @@ export default function Profile() {
                   ) : (
                     textPosts.map((post, i) => (
                       <motion.div
+                        ref={i === textPosts.length - 1 ? lastPostElementRef : null}
                         key={post.id}
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1112,6 +1180,11 @@ export default function Profile() {
                       </motion.div>
                     ))
                   )}
+                  {loadingMore && (
+                    <div className="py-4 flex justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" />
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -1136,6 +1209,7 @@ export default function Profile() {
                       const isWide = i % 3 === 0;
                       return (
                         <motion.div
+                          ref={i === photos.length - 1 ? lastPostElementRef : null}
                           key={photo.id}
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -1151,13 +1225,16 @@ export default function Profile() {
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                             <div className="flex items-center gap-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                              <Heart className="h-4 w-4 text-[#EC4899] fill-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
-                              <span className="text-xs font-bold text-white">{photo.reaction_count}</span>
                             </div>
                           </div>
                         </motion.div>
                       );
                     })
+                  )}
+                  {loadingMore && activeTab === "gallery" && (
+                    <div className="col-span-2 py-4 flex justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" />
+                    </div>
                   )}
                 </motion.div>
               )}
