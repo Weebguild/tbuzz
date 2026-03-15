@@ -104,8 +104,9 @@ export default function Gossip() {
 
     return () => clearTimeout(timer);
   }, [loading, posts.length, deepLinkGossipId]);
-  const [isBurner, setIsBurner] = useState(false);
+  const [burnerDuration, setBurnerDuration] = useState<"12h" | "24h" | "1w" | null>(null);
   const [isFollowersOnly, setIsFollowersOnly] = useState(false);
+  const [activePanel, setActivePanel] = useState<"tag" | "hide" | "burner" | null>(null);
 
   const getTimeRangeDate = (range: TimeRange): Date => {
     const now = new Date();
