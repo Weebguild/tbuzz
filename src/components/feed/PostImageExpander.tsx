@@ -11,19 +11,12 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MicroExpander } from "@/components/ui/micro-expander";
 
+import { CommentItem, type Comment } from "@/components/feed/CommentItem";
+
 interface Spark {
   id: number;
   x: number;
   y: number;
-}
-
-interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  display_name: string;
-  avatar_url: string | null;
 }
 
 interface PostImageExpanderProps {
@@ -55,6 +48,7 @@ export function PostImageExpander({
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [replyingTo, setReplyingTo] = useState<{ commentId: string, displayName: string } | null>(null);
   const [sparks, setSparks] = useState<Spark[]>([]);
   const tapTimer = useRef<number | null>(null);
 
@@ -76,32 +70,59 @@ export function PostImageExpander({
     };
   }, []);
 
-  const fetchComments = async () => {
+  const loadComments = async () => {
     setLoadingComments(true);
     const { data } = await supabase
       .from("comments")
-      .select("id, content, created_at, user_id")
+      .select("id, content, created_at, user_id, parent_id")
       .eq("post_id", postId)
       .order("created_at", { ascending: true });
 
-    if (data) {
-      const uids = [...new Set(data.map((c) => c.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name, avatar_url")
-        .in("user_id", uids);
-
-      const enriched = data.map((c) => {
-        const p = profiles?.find((pr) => pr.user_id === c.user_id);
-        return { ...c, display_name: p?.display_name ?? "Unknown", avatar_url: p?.avatar_url ?? null };
-      });
-      setComments(enriched);
+    if (!data || data.length === 0) {
+      setComments([]);
+      setLoadingComments(false);
+      return;
     }
+
+    const uids = [...new Set(data.map((c) => c.user_id))];
+    const commentIds = data.map((c) => c.id);
+
+    const [{ data: profiles }, { data: reactions }] = await Promise.all([
+      supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", uids),
+      supabase.from("comment_reactions").select("comment_id, user_id").in("comment_id", commentIds)
+    ]);
+
+    const enriched = data.map((c) => {
+      const p = profiles?.find((pr) => pr.user_id === c.user_id);
+      const cReactions = reactions?.filter((r) => r.comment_id === c.id) || [];
+      return {
+        ...c,
+        display_name: p?.display_name ?? "Unknown",
+        avatar_url: p?.avatar_url ?? null,
+        reaction_count: cReactions.length,
+        has_liked: user ? cReactions.some((r) => r.user_id === user.id) : false,
+        replies: []
+      } as Comment;
+    });
+
+    const commentMap = new Map<string, Comment>();
+    enriched.forEach(c => commentMap.set(c.id, c));
+
+    const rootComments: Comment[] = [];
+    enriched.forEach(c => {
+      if (c.parent_id && commentMap.has(c.parent_id)) {
+        commentMap.get(c.parent_id)!.replies!.push(commentMap.get(c.id)!);
+      } else {
+        rootComments.push(commentMap.get(c.id)!);
+      }
+    });
+
+    setComments(rootComments);
     setLoadingComments(false);
   };
 
   useEffect(() => {
-    if (isSplitScreen) fetchComments();
+    if (isSplitScreen) loadComments();
   }, [isSplitScreen]);
 
   const handleLikeClick = () => {
@@ -142,19 +163,56 @@ export function PostImageExpander({
     }
   };
 
+  const toggleCommentLike = async (commentId: string, hasLiked: boolean, _postId: string) => {
+    if (!user) return;
+
+    setComments(prev => {
+      const updateTree = (nodes: Comment[]): Comment[] => {
+        return nodes.map(node => {
+          if (node.id === commentId) {
+            return {
+              ...node,
+              has_liked: !hasLiked,
+              reaction_count: (node.reaction_count || 0) + (hasLiked ? -1 : 1)
+            };
+          }
+          if (node.replies && node.replies.length > 0) {
+            return { ...node, replies: updateTree(node.replies) };
+          }
+          return node;
+        });
+      };
+      return updateTree(prev);
+    });
+
+    try {
+      if (hasLiked) {
+        await supabase.from("comment_reactions").delete().eq("comment_id", commentId).eq("user_id", user.id);
+      } else {
+        await supabase.from("comment_reactions").insert({ user_id: user.id, comment_id: commentId } as any);
+      }
+    } catch (e) {
+      loadComments();
+    }
+  };
+
   const submitComment = async () => {
     if (!newComment.trim() || !user) return;
+    
+    const parentId = replyingTo?.commentId || null;
+
     const { error } = await supabase
       .from("comments")
-      .insert({ user_id: user.id, post_id: postId, content: newComment.trim() });
+      .insert({ user_id: user.id, post_id: postId, content: newComment.trim(), parent_id: parentId } as any);
 
     if (error) {
       toast.error("Failed to post comment");
       return;
     }
     setNewComment("");
+    setReplyingTo(null);
     setLocalCommentCount((prev) => prev + 1);
-    fetchComments();
+    loadComments();
   };
 
   return (
@@ -179,7 +237,7 @@ export function PostImageExpander({
             dragY.set(0);
           }
         }}
-        className={`relative flex items-center justify-center w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden cursor-grab active:cursor-grabbing select-none [-webkit-tap-highlight-color:transparent] ${
+        className={`relative flex items-center justify-center w-full overflow-hidden cursor-grab active:cursor-grabbing select-none [-webkit-tap-highlight-color:transparent] ${
           isSplitScreen ? "h-[45vh] bg-black border-b border-white/10" : "h-screen"
         }`}
         onClick={handleTap}
@@ -226,8 +284,7 @@ export function PostImageExpander({
         </AnimatePresence>
 
         {/* Floating Action Bar with MicroExpanders */}
-        <motion.div
-          layout
+        <div
           className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-full glass-panel border border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.8)] z-50"
           onClick={(e) => e.stopPropagation()}
         >
@@ -267,21 +324,21 @@ export function PostImageExpander({
 
           <div className="w-[1px] h-6 bg-white/20" />
 
-          <MicroExpander
-            text={localSaved ? "Saved" : "Save"}
-            icon={
-              <Bookmark
-                className={`h-5 w-5 transition-all duration-300 ${
-                  localSaved ? "fill-current" : ""
-                }`}
-              />
-            }
-            variant="ghost"
-            onClick={handleSaveClick}
-            className={`h-10 ${localSaved ? "text-foreground" : "text-white hover:text-foreground"}`}
-          />
+            <MicroExpander
+              text={localSaved ? "Saved" : "Save"}
+              icon={
+                <Bookmark
+                  className={`h-5 w-5 transition-all duration-300 ${
+                    localSaved ? "fill-current" : ""
+                  }`}
+                />
+              }
+              variant="ghost"
+              onClick={handleSaveClick}
+              className={`h-10 ${localSaved ? "text-foreground" : "text-white hover:text-foreground"}`}
+            />
+          </div>
         </motion.div>
-      </motion.div>
 
       {/* ── BOTTOM: COMMENT SPLIT ── */}
       <AnimatePresence>
@@ -308,38 +365,36 @@ export function PostImageExpander({
                 </div>
               ) : (
                 comments.map((c) => (
-                  <div key={c.id} className="flex gap-3">
-                    <Avatar className={cn("h-8 w-8 shrink-0", getHaloClass(c.user_id))}>
-                      {c.avatar_url ? (
-                        <AvatarImage src={c.avatar_url} />
-                      ) : (
-                        <AvatarFallback className="bg-black/40 text-xs font-bold text-foreground">
-                          {c.display_name.charAt(0)}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div>
-                      <div className="flex items-baseline gap-2 mb-0.5">
-                        <span className="text-sm font-bold text-foreground tracking-wide">{c.display_name}</span>
-                        <span className="text-[10px] text-muted-foreground/40">
-                          {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
-                    </div>
-                  </div>
+                  <CommentItem
+                    key={c.id}
+                    comment={c}
+                    postId={postId}
+                    currentUserId={user?.id ?? null}
+                    onReply={(commentId, displayName) => {
+                      setReplyingTo({ commentId, displayName });
+                    }}
+                    onToggleLike={toggleCommentLike}
+                  />
                 ))
               )}
             </div>
 
             <div className="p-4 bg-background/60 backdrop-blur-xl border-t border-white/5 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
-              <div className="flex gap-2 max-w-lg mx-auto">
+              {replyingTo && (
+                <div className="flex items-center justify-between bg-black/40 px-3 py-1.5 rounded-t-xl mb-[-4px] border-x border-t border-white/10 z-0 opacity-80 mx-auto max-w-lg">
+                  <span className="text-[10px] text-muted-foreground">Replying to <span className="text-foreground font-semibold">@{replyingTo.displayName}</span></span>
+                  <button onClick={() => setReplyingTo(null)} className="text-muted-foreground hover:text-white transition-colors">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <div className={`flex gap-2 max-w-lg mx-auto ${replyingTo ? "mt-0 z-10 relative" : ""}`}>
                 <Input
-                  placeholder="Add a comment..."
+                  placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submitComment()}
-                  className="h-11 rounded-full bg-white/5 border border-white/10 text-sm pl-4 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                  className={`h-11 bg-white/5 border border-white/10 text-sm pl-4 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50 ${replyingTo ? "rounded-b-xl rounded-t-none border-x border-b border-t-0" : "rounded-full"}`}
                 />
                 <button
                   onClick={submitComment}
