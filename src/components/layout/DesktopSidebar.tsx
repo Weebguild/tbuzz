@@ -53,8 +53,8 @@ function DockNavItem({
               "flex items-center justify-center rounded-2xl transition-colors duration-300 group relative",
               isDating
                 ? isActive
-                  ? "bg-rose-100/80 text-rose-700"
-                  : "text-stone-500 hover:bg-rose-50 hover:text-rose-600"
+                  ? "bg-white/10 text-white shadow-xl"
+                  : "text-white/40 hover:bg-white/5 hover:text-white"
                 : isActive
                 ? "bg-white/10 text-white shadow-xl"
                 : "text-muted-foreground hover:bg-white/5 hover:text-white"
@@ -68,7 +68,7 @@ function DockNavItem({
               <motion.div
                 layoutId="desktop-sidebar-active"
                 className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
-                style={{ background: isDating ? "hsl(340, 72%, 52%)" : "hsl(var(--primary))" }}
+                style={{ background: isDating ? "hsl(180, 100%, 50%)" : "hsl(var(--primary))" }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
@@ -124,9 +124,9 @@ export function DesktopSidebar() {
       <div
         className="w-[80px] shrink-0 flex flex-col items-center py-8 gap-8 h-[100dvh] sticky top-0 relative z-30 overflow-visible"
         style={isDating ? {
-          background: "rgba(255, 248, 242, 0.82)",
-          backdropFilter: "blur(20px)",
-          borderRight: "1px solid rgba(220, 180, 170, 0.3)",
+          background: "rgba(0,0,0,0.6)",
+          backdropFilter: "blur(40px) saturate(2)",
+          borderRight: "1px solid rgba(255,255,255,0.08)",
         } : {
           background: "rgba(0,0,0,0.4)",
           borderRight: "1px solid rgba(255,255,255,0.05)",
@@ -142,7 +142,7 @@ export function DesktopSidebar() {
               style={{
                 fontFamily: "'Bebas Neue', sans-serif",
                 backgroundImage: isDating
-                  ? "linear-gradient(180deg, hsl(340, 75%, 60%) 0%, hsl(340, 70%, 48%) 100%)"
+                  ? "linear-gradient(180deg, hsl(300, 100%, 75%) 0%, hsl(180, 100%, 50%) 100%)"
                   : "linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsla(0, 0%, 100%, 0.65) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -178,7 +178,7 @@ export function DesktopSidebar() {
                     className={cn(
                       "flex items-center justify-center rounded-2xl transition-all duration-300 relative",
                       isDating
-                        ? "text-stone-600 hover:text-stone-800"
+                        ? "text-white/60 hover:text-white"
                         : "text-muted-foreground hover:text-white"
                     )}
                     style={{
@@ -216,7 +216,7 @@ export function DesktopSidebar() {
                     className={cn(
                       "flex items-center justify-center rounded-2xl transition-colors duration-300",
                       isDating
-                        ? "text-stone-500 hover:bg-rose-50 hover:text-rose-600"
+                        ? "text-white/40 hover:bg-white/5 hover:text-white"
                         : "text-muted-foreground hover:bg-white/5 hover:text-white"
                     )}
                     style={{ width: searchSize, height: searchSize }}
