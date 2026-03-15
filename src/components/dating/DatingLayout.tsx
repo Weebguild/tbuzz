@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { DatingTransitionOverlay } from "./DatingTransition";
-import { CherryBlossomLogo } from "./CherryBlossomLogo";
+import { SparkLogo } from "./SparkLogo";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function DatingLayout() {
   const location = useLocation();
@@ -15,6 +16,7 @@ export function DatingLayout() {
   const { user } = useAuth();
   const [showCrushDrawer, setShowCrushDrawer] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleExit = () => {
     setExiting(true);
@@ -25,7 +27,7 @@ export function DatingLayout() {
     <div className="dating-world relative flex min-h-[100dvh]">
       {/* Actual DesktopSidebar on desktop — rendered here so dating content
           aligns with the main app's content area (left of sidebar = 80px) */}
-      <DesktopSidebar />
+      {!isMobile && <DesktopSidebar />}
 
       <div className="flex-1 flex flex-col min-w-0">
 
@@ -46,10 +48,10 @@ export function DatingLayout() {
             {/* CENTER — Logo */}
             <button
               onClick={handleExit}
-              className="flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+              className="flex items-center justify-center transition-all hover:scale-110 active:scale-95 drop-shadow-[0_0_15px_rgba(0,229,255,0.4)]"
               aria-label="Home"
             >
-              <CherryBlossomLogo size={40} />
+              <SparkLogo size={48} />
             </button>
 
             {/* RIGHT — Secret Crush Pill */}
