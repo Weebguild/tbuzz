@@ -448,32 +448,26 @@ export type Database = {
       }
       posts: {
         Row: {
-          archived_at: string | null
           content: string
           created_at: string
           id: string
           image_url: string | null
-          is_archived: boolean | null
           university_id: string
           user_id: string
         }
         Insert: {
-          archived_at?: string | null
           content?: string
           created_at?: string
           id?: string
           image_url?: string | null
-          is_archived?: boolean | null
           university_id: string
           user_id: string
         }
         Update: {
-          archived_at?: string | null
           content?: string
           created_at?: string
           id?: string
           image_url?: string | null
-          is_archived?: boolean | null
           university_id?: string
           user_id?: string
         }
