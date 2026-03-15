@@ -822,6 +822,7 @@ export type Database = {
         Args: { user_a: string; user_b: string }
         Returns: boolean
       }
+      delete_expired_archived_posts: { Args: never; Returns: undefined }
       get_profile_id: { Args: { _user_id: string }; Returns: string }
       get_user_university_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
