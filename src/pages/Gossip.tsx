@@ -585,7 +585,7 @@ export default function Gossip() {
               {/* Expandable panels */}
               <AnimatePresence mode="wait">
                 {activePanel === "tag" && (
-                  <motion.div key="tag-panel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-2">
+                  <motion.div key="tag-panel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2" style={{ overflow: "clip visible" }}>
                     <div className="relative">
                       <Input
                         placeholder="Search users to tag..."
@@ -619,7 +619,7 @@ export default function Gossip() {
                 )}
 
                 {activePanel === "hide" && (
-                  <motion.div key="hide-panel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-2">
+                  <motion.div key="hide-panel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2" style={{ overflow: "clip visible" }}>
                     <div className="relative">
                       <Input
                         placeholder="Search users to hide from..."
