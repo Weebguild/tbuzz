@@ -261,9 +261,11 @@ export type Database = {
           expires_at: string | null
           gossip_alias: string
           gossip_avatar: string
+          hidden_from_usernames: string[] | null
           hotness_score: number | null
           id: string
           is_flagged: boolean
+          is_followers_only: boolean | null
           tagged_user_id: string | null
           university_id: string
           user_id: string
@@ -274,9 +276,11 @@ export type Database = {
           expires_at?: string | null
           gossip_alias: string
           gossip_avatar?: string
+          hidden_from_usernames?: string[] | null
           hotness_score?: number | null
           id?: string
           is_flagged?: boolean
+          is_followers_only?: boolean | null
           tagged_user_id?: string | null
           university_id: string
           user_id: string
@@ -287,9 +291,11 @@ export type Database = {
           expires_at?: string | null
           gossip_alias?: string
           gossip_avatar?: string
+          hidden_from_usernames?: string[] | null
           hotness_score?: number | null
           id?: string
           is_flagged?: boolean
+          is_followers_only?: boolean | null
           tagged_user_id?: string | null
           university_id?: string
           user_id?: string
@@ -768,6 +774,7 @@ export type Database = {
           created_at: string | null
           gossip_alias: string | null
           gossip_avatar: string | null
+          hidden_from_usernames: string[] | null
           id: string | null
           tagged_user_id: string | null
           university_id: string | null
@@ -777,6 +784,7 @@ export type Database = {
           created_at?: string | null
           gossip_alias?: string | null
           gossip_avatar?: string | null
+          hidden_from_usernames?: string[] | null
           id?: string | null
           tagged_user_id?: string | null
           university_id?: string | null
@@ -786,6 +794,7 @@ export type Database = {
           created_at?: string | null
           gossip_alias?: string | null
           gossip_avatar?: string | null
+          hidden_from_usernames?: string[] | null
           id?: string | null
           tagged_user_id?: string | null
           university_id?: string | null
