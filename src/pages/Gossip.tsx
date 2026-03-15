@@ -104,8 +104,9 @@ export default function Gossip() {
 
     return () => clearTimeout(timer);
   }, [loading, posts.length, deepLinkGossipId]);
-  const [isBurner, setIsBurner] = useState(false);
+  const [burnerDuration, setBurnerDuration] = useState<"12h" | "24h" | "1w" | null>(null);
   const [isFollowersOnly, setIsFollowersOnly] = useState(false);
+  const [activePanel, setActivePanel] = useState<"tag" | "hide" | "burner" | null>(null);
 
   const getTimeRangeDate = (range: TimeRange): Date => {
     const now = new Date();
@@ -312,7 +313,9 @@ export default function Gossip() {
           content: content.trim(),
           gossip_alias: profile.anonymous_alias ?? "Anonymous",
           gossip_avatar: "mask",
-          expires_at: isBurner ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
+          expires_at: burnerDuration
+            ? new Date(Date.now() + ({ "12h": 12, "24h": 24, "1w": 168 }[burnerDuration]) * 3600000).toISOString()
+            : null,
           is_followers_only: isFollowersOnly,
           hidden_from_usernames: hiddenUsers.map(u => u.display_name)
         })
@@ -329,8 +332,9 @@ export default function Gossip() {
       setContent("");
       setSelectedTags([]);
       setHiddenUsers([]);
-      setIsBurner(false);
+      setBurnerDuration(null);
       setIsFollowersOnly(false);
+      setActivePanel(null);
       setShowComposer(false);
       toast.success("Gossip posted!");
     } catch (error: any) {
@@ -482,136 +486,193 @@ export default function Gossip() {
             className="overflow-hidden"
           >
             <div className="mb-5 rounded-3xl glass-panel p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-primary">
-                  Posting as {profile?.anonymous_alias ?? "Anonymous"}
-                </span>
-              </div>
+              {/* Posting as label */}
+              <span className="text-xs font-semibold text-primary">
+                Posting as {profile?.anonymous_alias ?? "Anonymous"}
+              </span>
+
+              {/* Textarea */}
               <Textarea
                 placeholder="Spill the tea..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={3}
-                className="bg-black/20 border border-white/10 rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                className="bg-black/20 border border-white/10 rounded-xl resize-none text-sm p-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50 min-h-[72px]"
               />
 
-              {/* Tag users */}
-              <div className="relative">
-                <div className="flex items-center gap-2">
-                  <AtSign className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Tag someone..."
-                    value={tagQuery}
-                    onChange={(e) => searchTags(e.target.value)}
-                    className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
-                  />
-                </div>
-                {tagSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-md shadow-lg overflow-hidden">
-                    <div className="p-1.5 space-y-0.5">
-                      {tagSuggestions.map((s) => (
-                        <button
-                          key={s.user_id}
-                          onClick={() => addTag(s)}
-                          className="w-full text-left p-2 rounded-lg hover:bg-white/10 text-sm text-foreground transition-colors"
-                        >
-                          {s.display_name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {selectedTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedTags.map((t) => (
-                    <span
-                      key={t.user_id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary text-xs font-medium border border-primary/30"
-                    >
-                      @{t.display_name}
-                      <X className="h-3 w-3 cursor-pointer hover:text-white" onClick={() => removeTag(t.user_id)} />
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Hide from users */}
-              <div className="relative">
-                <div className="flex items-center gap-2">
-                  <Ghost className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Hide from username..."
-                    value={hideQuery}
-                    onChange={(e) => searchTags(e.target.value, true)}
-                    className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-red-500/50"
-                  />
-                </div>
-                {hideSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 rounded-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-md shadow-lg overflow-hidden">
-                    <div className="p-1.5 space-y-0.5">
-                      {hideSuggestions.map((s) => (
-                        <button
-                          key={s.user_id}
-                          onClick={() => addTag(s, true)}
-                          className="w-full text-left p-2 rounded-lg hover:bg-white/10 text-sm text-foreground transition-colors"
-                        >
-                          {s.display_name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {hiddenUsers.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {hiddenUsers.map((t) => (
-                    <span
-                      key={t.user_id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-medium border border-red-500/30"
-                    >
-                      Hidden from: @{t.display_name}
-                      <X className="h-3 w-3 cursor-pointer hover:text-white" onClick={() => removeTag(t.user_id, true)} />
-                    </span>
-                  ))}
-                </div>
-              )}
-
+              {/* Icon toolbar + Post button */}
               <div className="flex items-center justify-between">
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1">
+                  {/* Tag */}
                   <button
                     type="button"
-                    onClick={() => setIsBurner(!isBurner)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isBurner
-                      ? "bg-red-500/10 backdrop-blur-md text-red-400 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]"
-                      : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
-                      }`}
+                    title="Tag users"
+                    onClick={() => setActivePanel(activePanel === "tag" ? null : "tag")}
+                    className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-all ${
+                      activePanel === "tag" || selectedTags.length > 0
+                        ? "bg-primary/20 text-primary shadow-[0_0_12px_rgba(124,58,237,0.4)] border border-primary/40"
+                        : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10 hover:text-foreground"
+                    }`}
                   >
-                    <Timer className="h-3.5 w-3.5" />
-                    24h Burner
+                    <AtSign className="h-4 w-4" />
+                    {selectedTags.length > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {selectedTags.length}
+                      </span>
+                    )}
                   </button>
+
+                  {/* Hide */}
                   <button
                     type="button"
-                    onClick={() => setIsFollowersOnly(!isFollowersOnly)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isFollowersOnly
-                      ? "bg-primary/20 backdrop-blur-md text-primary border border-primary/50 shadow-[0_0_15px_rgba(124,58,237,0.4)]"
-                      : "bg-white/5 backdrop-blur-md text-muted-foreground border border-white/10 hover:bg-white/10"
-                      }`}
+                    title="Hide from users"
+                    onClick={() => setActivePanel(activePanel === "hide" ? null : "hide")}
+                    className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-all ${
+                      activePanel === "hide" || hiddenUsers.length > 0
+                        ? "bg-destructive/20 text-destructive shadow-[0_0_12px_rgba(239,68,68,0.4)] border border-destructive/40"
+                        : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10 hover:text-foreground"
+                    }`}
                   >
-                    <UserCheck className="h-3.5 w-3.5" />
-                    Followers Only
+                    <Ghost className="h-4 w-4" />
+                    {hiddenUsers.length > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                        {hiddenUsers.length}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Followers only */}
+                  <button
+                    type="button"
+                    title="Followers only"
+                    onClick={() => setIsFollowersOnly(!isFollowersOnly)}
+                    className={`flex items-center justify-center h-9 w-9 rounded-full transition-all ${
+                      isFollowersOnly
+                        ? "bg-primary/20 text-primary shadow-[0_0_12px_rgba(124,58,237,0.4)] border border-primary/40"
+                        : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10 hover:text-foreground"
+                    }`}
+                  >
+                    <UserCheck className="h-4 w-4" />
+                  </button>
+
+                  {/* Burner */}
+                  <button
+                    type="button"
+                    title="Set expiry timer"
+                    onClick={() => setActivePanel(activePanel === "burner" ? null : "burner")}
+                    className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-all ${
+                      activePanel === "burner" || burnerDuration
+                        ? "bg-destructive/20 text-orange-400 shadow-[0_0_12px_rgba(251,146,60,0.4)] border border-orange-500/40"
+                        : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10 hover:text-foreground"
+                    }`}
+                  >
+                    <Timer className="h-4 w-4" />
+                    {burnerDuration && (
+                      <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-orange-400 border border-background" />
+                    )}
                   </button>
                 </div>
+
                 <button
                   onClick={handlePost}
                   disabled={posting || !content.trim()}
-                  className="px-5 py-2 rounded-full bg-primary text-white text-xs font-bold shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-40 disabled:shadow-none transition-transform active:scale-95"
+                  className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-40 disabled:shadow-none transition-transform active:scale-95"
                 >
                   {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
                 </button>
               </div>
+
+              {/* Expandable panels */}
+              <AnimatePresence mode="wait">
+                {activePanel === "tag" && (
+                  <motion.div key="tag-panel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2" style={{ overflow: "clip visible" }}>
+                    <div className="relative">
+                      <Input
+                        placeholder="Search users to tag..."
+                        value={tagQuery}
+                        onChange={(e) => searchTags(e.target.value)}
+                        className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
+                      />
+                      {tagSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 rounded-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-md shadow-lg overflow-hidden">
+                          <div className="p-1.5 space-y-0.5">
+                            {tagSuggestions.map((s) => (
+                              <button key={s.user_id} onClick={() => addTag(s)} className="w-full text-left p-2 rounded-lg hover:bg-white/10 text-sm text-foreground transition-colors">
+                                {s.display_name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {selectedTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedTags.map((t) => (
+                          <span key={t.user_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary text-xs font-medium border border-primary/30">
+                            @{t.display_name}
+                            <X className="h-3 w-3 cursor-pointer hover:text-foreground" onClick={() => removeTag(t.user_id)} />
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {activePanel === "hide" && (
+                  <motion.div key="hide-panel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2" style={{ overflow: "clip visible" }}>
+                    <div className="relative">
+                      <Input
+                        placeholder="Search users to hide from..."
+                        value={hideQuery}
+                        onChange={(e) => searchTags(e.target.value, true)}
+                        className="h-9 rounded-full bg-black/40 border border-white/10 text-xs pl-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-destructive/50"
+                      />
+                      {hideSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 rounded-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-md shadow-lg overflow-hidden">
+                          <div className="p-1.5 space-y-0.5">
+                            {hideSuggestions.map((s) => (
+                              <button key={s.user_id} onClick={() => addTag(s, true)} className="w-full text-left p-2 rounded-lg hover:bg-white/10 text-sm text-foreground transition-colors">
+                                {s.display_name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {hiddenUsers.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {hiddenUsers.map((t) => (
+                          <span key={t.user_id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-medium border border-destructive/30">
+                            @{t.display_name}
+                            <X className="h-3 w-3 cursor-pointer hover:text-foreground" onClick={() => removeTag(t.user_id, true)} />
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {activePanel === "burner" && (
+                  <motion.div key="burner-panel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <div className="flex gap-2">
+                      {([["12h", "12 hours"], ["24h", "1 day"], ["1w", "1 week"]] as const).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setBurnerDuration(burnerDuration === value ? null : value)}
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+                            burnerDuration === value
+                              ? "bg-orange-500/20 text-orange-300 border border-orange-500/50 shadow-[0_0_15px_rgba(251,146,60,0.4)]"
+                              : "bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10 hover:text-foreground"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         )}
