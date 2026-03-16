@@ -70,6 +70,7 @@ function DockNavItem({
 
 export function DesktopSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [showSearch, setShowSearch] = useState(false);
   const mouseY = useMotionValue(Infinity);
 
