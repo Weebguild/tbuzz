@@ -739,7 +739,6 @@ export type Database = {
       }
     }
     Functions: {
-      add_secret_crush: { Args: { p_crush_username: string }; Returns: Json }
       check_mutual_follow: {
         Args: { user_a: string; user_b: string }
         Returns: boolean
@@ -761,14 +760,6 @@ export type Database = {
       resolve_username_to_email: {
         Args: { target_display_name: string }
         Returns: string
-      }
-      send_dating_like: {
-        Args: {
-          p_comment: string
-          p_content_liked: string
-          p_receiver_id: string
-        }
-        Returns: Json
       }
     }
     Enums: {
