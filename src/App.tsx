@@ -10,7 +10,6 @@ import { HaloProvider } from "@/hooks/useHalo";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { DatingLayout } from "@/components/dating/DatingLayout";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Feed from "./pages/Feed";
@@ -22,13 +21,7 @@ import ChatRoom from "./pages/ChatRoom";
 import AvatarCrop from "./pages/AvatarCrop";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import DatingOnboarding from "./pages/dating/DatingOnboarding";
-import DatingJourney from "./pages/dating/DatingJourney";
-import DatingDiscover from "./pages/dating/DatingDiscover";
-import DatingCrushes from "./pages/dating/DatingCrushes";
-import DatingProfile from "./pages/dating/DatingProfile";
 import { Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 const queryClient = new QueryClient();
 
@@ -55,9 +48,6 @@ function AppRoutes() {
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  const isDating = location.pathname.startsWith('/dating');
-  const layoutKey = isDating ? 'dating' : 'main';
-
   if (showSplash) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
   }
@@ -73,20 +63,9 @@ function AppRoutes() {
   }
 
   return (
-    // BottomNav MUST be outside the AnimatePresence/motion.div.
-    // If it is inside a parent with transform/filter CSS, `position: fixed`
-    // gets trapped in that stacking context on mobile — nav scrolls with the page.
     <>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={layoutKey}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className={isDating ? "min-h-screen w-full" : "bg-black min-h-screen w-full"}
-        >
-          <Routes location={location}>
+      <div className="bg-black min-h-screen w-full">
+        <Routes location={location}>
           <Route path="/auth" element={session ? <Navigate to="/feed" replace /> : <Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/onboarding" element={session && !profile ? <Onboarding /> : <Navigate to="/feed" replace />} />
@@ -114,31 +93,10 @@ function AppRoutes() {
             <Route path="/profile/:userId" element={<Profile />} />
           </Route>
           <Route path="/" element={<Navigate to="/feed" replace />} />
-          
-          {/* ── DATING ECOSYSTEM — Separate Layout ── */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <DatingLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dating" element={<Navigate to="/dating/discover" replace />} />
-            <Route path="/dating/journey" element={<DatingJourney />} />
-            <Route path="/dating/onboarding" element={<DatingOnboarding />} />
-            <Route path="/dating/discover" element={<DatingDiscover />} />
-            <Route path="/dating/matches" element={<DatingCrushes />} />
-            <Route path="/dating/crushes" element={<Navigate to="/dating/matches" replace />} />
-            <Route path="/dating/profile" element={<DatingProfile />} />
-          </Route>
-          
           <Route path="*" element={<NotFound />} />
-          </Routes>
-        </motion.div>
-      </AnimatePresence>
+        </Routes>
+      </div>
 
-      {/* BottomNav lives here — outside any transform/filter parent — so
-          position:fixed correctly anchors to the viewport on iOS Safari */}
       {isMobile && <BottomNav />}
     </>
   );
