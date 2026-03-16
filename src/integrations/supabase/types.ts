@@ -173,63 +173,6 @@ export type Database = {
         }
         Relationships: []
       }
-      dating_likes: {
-        Row: {
-          comment: string
-          content_liked: string
-          created_at: string | null
-          id: string
-          receiver_id: string
-          sender_id: string
-        }
-        Insert: {
-          comment: string
-          content_liked: string
-          created_at?: string | null
-          id?: string
-          receiver_id: string
-          sender_id: string
-        }
-        Update: {
-          comment?: string
-          content_liked?: string
-          created_at?: string | null
-          id?: string
-          receiver_id?: string
-          sender_id?: string
-        }
-        Relationships: []
-      }
-      dating_profiles: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          media: string[] | null
-          prompts: Json | null
-          updated_at: string | null
-          vitals: Json | null
-        }
-        Insert: {
-          created_at?: string | null
-          id: string
-          is_active?: boolean | null
-          media?: string[] | null
-          prompts?: Json | null
-          updated_at?: string | null
-          vitals?: Json | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          media?: string[] | null
-          prompts?: Json | null
-          updated_at?: string | null
-          vitals?: Json | null
-        }
-        Relationships: []
-      }
       follows: {
         Row: {
           created_at: string
@@ -708,27 +651,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      secret_crushes: {
-        Row: {
-          created_at: string | null
-          crush_username: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          crush_username: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          crush_username?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       universities: {
         Row: {
