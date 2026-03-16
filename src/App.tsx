@@ -98,6 +98,21 @@ function AppRoutes() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<Profile />} />
           </Route>
+          <Route
+            path="/ship"
+            element={
+              <ProtectedRoute>
+                <ShipLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/ship/discover" replace />} />
+            <Route path="discover" element={<ShipDiscover />} />
+            <Route path="matches" element={<ShipMatches />} />
+            <Route path="profile" element={<ShipProfile />} />
+            <Route path="chat/:matchId" element={<ShipChat />} />
+            <Route path="onboarding" element={<ShipOnboarding />} />
+          </Route>
           <Route path="/" element={<Navigate to="/feed" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -135,7 +135,27 @@ export function DesktopSidebar() {
 
           {/* ── Bottom Actions ── */}
           <div className="mt-auto mb-4 flex flex-col gap-4 items-center">
-            {/* Ship entry point will be added in Step 4 */}
+            {/* Ship Entry */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={() => navigate("/ship/discover")}>
+                  <motion.div
+                    className="flex items-center justify-center rounded-2xl transition-colors duration-300 text-muted-foreground hover:text-white"
+                    style={{ width: 44, height: 44 }}
+                    whileHover={{
+                      background: "rgba(167,139,250,0.12)",
+                      boxShadow: "0 0 16px rgba(167,139,250,0.3)",
+                    }}
+                    whileTap={{ scale: 0.88 }}
+                  >
+                    <Anchor className="w-[22px] h-[22px]" style={{ color: "#A78BFA" }} />
+                  </motion.div>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="z-[9999] bg-black/80 backdrop-blur-xl border-white/10 text-white font-bold text-xs">
+                Ship
+              </TooltipContent>
+            </Tooltip>
 
             {/* Search */}
             <Tooltip>
