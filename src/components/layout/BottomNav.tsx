@@ -17,6 +17,7 @@ const mainTabs = [
 
 export function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
