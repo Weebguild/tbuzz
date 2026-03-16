@@ -4,11 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* When dating world is mounted anywhere, override the dark body background
-   so the warm cream background is seamless edge-to-edge on desktop */
-body:has(.dating-world) {
-  background: linear-gradient(160deg, hsl(32, 34%, 96%) 0%, hsl(36, 28%, 93%) 45%, hsl(20, 24%, 95%) 100%) !important;
-}
 
 @layer base {
   :root {
