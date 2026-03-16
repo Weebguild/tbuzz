@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, MessageSquare, Mail, User, Heart, Compass, MessageCircleHeart, Flame } from "lucide-react";
+import { Home, MessageSquare, Mail, User, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { UserSearch } from "@/components/UserSearch";
-import { DatingTransitionOverlay } from "@/components/dating/DatingTransition";
-import { useDatingTransition } from "@/hooks/use-dating-transition";
 
 const mainTabs = [
   { path: "/feed", icon: Home },
@@ -17,16 +15,8 @@ const mainTabs = [
   { path: "/profile", icon: User },
 ];
 
-const datingTabs = [
-  { path: "/dating/discover", icon: Compass },
-  { path: "center", isCenter: true },
-  { path: "/dating/matches", icon: MessageCircleHeart },
-  { path: "/dating/profile", icon: User },
-];
-
 export function BottomNav() {
   const location = useLocation();
-  const { transitioning, enterDating } = useDatingTransition();
   const { user } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -68,24 +58,16 @@ export function BottomNav() {
   const isMessagesPage = location.pathname.startsWith("/messages");
   const isInChatRoom = isMessagesPage && location.pathname.split("/").filter(Boolean).length > 1;
 
-  const isDating = location.pathname.startsWith("/dating");
   // Hide when: expander open, OR inside a chat room
   if (hidden || isInChatRoom) return null;
 
-  const currentTabs = isDating ? datingTabs : mainTabs;
-
   return (
     <>
-      {/* Redesigned Cyber-Glow Search Overlay */}
+      {/* Search Overlay */}
       <AnimatePresence>
         {showSearch && (
           <UserSearch onClose={() => setShowSearch(false)} />
         )}
-      </AnimatePresence>
-
-      {/* Dating Transition Overlay */}
-      <AnimatePresence>
-        {transitioning && <DatingTransitionOverlay direction={transitioning} />}
       </AnimatePresence>
 
       {/* Floating Glass Bottom Nav Bar */}
@@ -94,38 +76,28 @@ export function BottomNav() {
         style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
       >
         <nav className="relative flex items-center justify-between w-full max-w-[340px] h-[64px] pointer-events-auto bg-[#0A0A0A]/60 backdrop-blur-2xl border border-white/10 rounded-full px-2 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)]">
-          {currentTabs.map((tab) => {
-            // Render the Center Floating Button (Search)
+          {mainTabs.map((tab) => {
+            // Render the Center Floating Button
             if (tab.isCenter) {
               return (
                 <div key="center" className="relative flex-1 flex justify-center items-center h-full">
-                  {/* Action Center Button */}
-                    <motion.button
-                    onClick={isDating ? enterDating : enterDating /* To toggle properly we probably just need exitDating from the hook, so we will use enterDating for both right now and rely on layout exit logic, but let's actually import exitDating up top */}
-                    // wait. useDatingTransition hook provides `enterDating` and `exitDating`. Let's assume exitDating exists on it.
-                    onClickCapture={isDating ? () => window.location.href = '/feed' : enterDating} // Hard fallback if exitDating isn't exposed properly, but let's assume it is or use standard navigation. Actually since useDatingTransition returns exitDating, we should destruct it. Let's fix destruction.
+                  {/* Ship entry point will be added in Step 4 */}
+                  <motion.button
+                    onClick={() => setShowSearch(true)}
                     whileTap={{ scale: 0.88 }}
                     className="absolute -top-5 flex h-[56px] w-[56px] items-center justify-center rounded-full border-[4px] border-[#000000] transition-transform hover:scale-105 active:scale-90"
                     style={{
-                      background: isDating
-                        ? "linear-gradient(135deg, hsl(0,0%,15%), hsl(0,0%,5%))"
-                        : "linear-gradient(135deg, hsl(25,100%,50%), hsl(20,100%,45%))",
-                      boxShadow: isDating
-                        ? "0 8px 28px hsla(0,0%,100%,0.1)"
-                        : "0 8px 28px hsla(25,100%,50%,0.5)",
+                      background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))",
+                      boxShadow: "0 8px 28px hsla(var(--primary) / 0.5)",
                     }}
                   >
-                    {isDating ? (
-                      <Flame className="w-6 h-6 text-white drop-shadow-md" style={{ color: "hsl(25, 90%, 55%)" }} />
-                    ) : (
-                      <Heart className="w-6 h-6 text-white drop-shadow-md" fill="white" />
-                    )}
+                    <Search className="w-6 h-6 text-white drop-shadow-md" />
                   </motion.button>
                 </div>
               );
             }
 
-            const isActive = location.pathname === tab.path || (tab.path === "/feed" && location.pathname === "/") || (tab.path === "/messages" && location.pathname.startsWith("/messages")) || (tab.path === "/dating/matches" && location.pathname.startsWith("/dating/matches"));
+            const isActive = location.pathname === tab.path || (tab.path === "/feed" && location.pathname === "/") || (tab.path === "/messages" && location.pathname.startsWith("/messages"));
 
             return (
               <Link
@@ -148,9 +120,7 @@ export function BottomNav() {
                       className={cn(
                         "h-[22px] w-[22px] transition-all duration-300",
                         isActive
-                          ? isDating
-                            ? "text-cyan-400 scale-110 drop-shadow-[0_0_10px_rgba(34,211,238,0.6)]"
-                            : "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
+                          ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
                           : "text-muted-foreground group-hover:text-white/70",
                       )}
                       fill="none"
@@ -169,8 +139,8 @@ export function BottomNav() {
                   <div 
                     className="absolute bottom-[6px] w-1 h-1 rounded-full shadow-[0_0_10px_currentColor]" 
                     style={{ 
-                      backgroundColor: isDating ? "hsl(180, 100%, 50%)" : "hsl(var(--primary))",
-                      color: isDating ? "hsl(180, 100%, 50%)" : "hsl(var(--primary))"
+                      backgroundColor: "hsl(var(--primary))",
+                      color: "hsl(var(--primary))"
                     }} 
                   />
                 )}
