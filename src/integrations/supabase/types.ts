@@ -652,6 +652,350 @@ export type Database = {
           },
         ]
       }
+      ship_crushes: {
+        Row: {
+          assigned_at: string
+          crushed_id: string
+          crusher_id: string
+          id: string
+          refreshes_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          crushed_id: string
+          crusher_id: string
+          id?: string
+          refreshes_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          crushed_id?: string
+          crusher_id?: string
+          id?: string
+          refreshes_at?: string
+        }
+        Relationships: []
+      }
+      ship_daily_visits: {
+        Row: {
+          id: string
+          user_id: string
+          visited_date: string
+          visited_id: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          visited_date?: string
+          visited_id: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          visited_date?: string
+          visited_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_daily_visits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ship_daily_visits_visited_id_fkey"
+            columns: ["visited_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ship_matches: {
+        Row: {
+          expires_at: string | null
+          hard_unmatched: boolean
+          id: string
+          is_archived_by_a: boolean
+          is_archived_by_b: boolean
+          last_message_at: string | null
+          matched_at: string
+          user_a_id: string
+          user_b_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          hard_unmatched?: boolean
+          id?: string
+          is_archived_by_a?: boolean
+          is_archived_by_b?: boolean
+          last_message_at?: string | null
+          matched_at?: string
+          user_a_id: string
+          user_b_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          hard_unmatched?: boolean
+          id?: string
+          is_archived_by_a?: boolean
+          is_archived_by_b?: boolean
+          last_message_at?: string | null
+          matched_at?: string
+          user_a_id?: string
+          user_b_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_matches_user_a_id_fkey"
+            columns: ["user_a_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ship_matches_user_b_id_fkey"
+            columns: ["user_b_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ship_messages: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          match_id: string
+          media_url: string | null
+          reaction_ref: Json | null
+          sender_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          match_id: string
+          media_url?: string | null
+          reaction_ref?: Json | null
+          sender_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          match_id?: string
+          media_url?: string | null
+          reaction_ref?: Json | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_messages_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "ship_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ship_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ship_never_show: {
+        Row: {
+          blocked_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_never_show_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ship_never_show_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ship_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          related_user_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          related_user_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          related_user_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ship_profiles: {
+        Row: {
+          age: number
+          age_max: number
+          age_min: number
+          bio: string | null
+          boost_active_until: string | null
+          created_at: string
+          display_name: string
+          gender: string
+          hero_element: Json
+          id: string
+          is_active: boolean
+          is_verified: boolean
+          is_visa: boolean
+          last_active_at: string
+          max_distance_km: number
+          photos: string[]
+          profile_updated_at: string
+          prompts: Json
+          seeking: string[]
+          tbuzz_visibility: string
+          university_id: string
+          videos: string[] | null
+          visa_expires_at: string | null
+        }
+        Insert: {
+          age: number
+          age_max?: number
+          age_min?: number
+          bio?: string | null
+          boost_active_until?: string | null
+          created_at?: string
+          display_name: string
+          gender: string
+          hero_element?: Json
+          id: string
+          is_active?: boolean
+          is_verified?: boolean
+          is_visa?: boolean
+          last_active_at?: string
+          max_distance_km?: number
+          photos: string[]
+          profile_updated_at?: string
+          prompts?: Json
+          seeking: string[]
+          tbuzz_visibility?: string
+          university_id: string
+          videos?: string[] | null
+          visa_expires_at?: string | null
+        }
+        Update: {
+          age?: number
+          age_max?: number
+          age_min?: number
+          bio?: string | null
+          boost_active_until?: string | null
+          created_at?: string
+          display_name?: string
+          gender?: string
+          hero_element?: Json
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          is_visa?: boolean
+          last_active_at?: string
+          max_distance_km?: number
+          photos?: string[]
+          profile_updated_at?: string
+          prompts?: Json
+          seeking?: string[]
+          tbuzz_visibility?: string
+          university_id?: string
+          videos?: string[] | null
+          visa_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_profiles_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ship_swipes: {
+        Row: {
+          created_at: string
+          direction: string
+          id: string
+          swiped_id: string
+          swiper_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          id?: string
+          swiped_id: string
+          swiper_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          id?: string
+          swiped_id?: string
+          swiper_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_swipes_swiped_id_fkey"
+            columns: ["swiped_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ship_swipes_swiper_id_fkey"
+            columns: ["swiper_id"]
+            isOneToOne: false
+            referencedRelation: "ship_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       universities: {
         Row: {
           created_at: string
