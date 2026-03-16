@@ -5,6 +5,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import ShipLayout from "@/ship/layouts/ShipLayout";
+import ShipDiscover from "@/ship/pages/ShipDiscover";
+import ShipMatches from "@/ship/pages/ShipMatches";
+import ShipProfile from "@/ship/pages/ShipProfile";
+import ShipChat from "@/ship/pages/ShipChat";
+import ShipOnboarding from "@/ship/pages/ShipOnboarding";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { HaloProvider } from "@/hooks/useHalo";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -91,6 +97,21 @@ function AppRoutes() {
             <Route path="/messages/:conversationId" element={<Messages />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<Profile />} />
+          </Route>
+          <Route
+            path="/ship"
+            element={
+              <ProtectedRoute>
+                <ShipLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/ship/discover" replace />} />
+            <Route path="discover" element={<ShipDiscover />} />
+            <Route path="matches" element={<ShipMatches />} />
+            <Route path="profile" element={<ShipProfile />} />
+            <Route path="chat/:matchId" element={<ShipChat />} />
+            <Route path="onboarding" element={<ShipOnboarding />} />
           </Route>
           <Route path="/" element={<Navigate to="/feed" replace />} />
           <Route path="*" element={<NotFound />} />

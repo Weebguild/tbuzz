@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Home, MessageSquare, Mail, User, Search } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, MessageSquare, Mail, User, Search, Anchor } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ const mainTabs = [
 
 export function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -58,8 +59,8 @@ export function BottomNav() {
   const isMessagesPage = location.pathname.startsWith("/messages");
   const isInChatRoom = isMessagesPage && location.pathname.split("/").filter(Boolean).length > 1;
 
-  // Hide when: expander open, OR inside a chat room
-  if (hidden || isInChatRoom) return null;
+  // Hide on Ship routes, when expander open, or inside a chat room
+  if (hidden || isInChatRoom || location.pathname.startsWith("/ship")) return null;
 
   return (
     <>
@@ -81,17 +82,16 @@ export function BottomNav() {
             if (tab.isCenter) {
               return (
                 <div key="center" className="relative flex-1 flex justify-center items-center h-full">
-                  {/* Ship entry point will be added in Step 4 */}
                   <motion.button
-                    onClick={() => setShowSearch(true)}
+                    onClick={() => navigate("/ship/discover")}
                     whileTap={{ scale: 0.88 }}
                     className="absolute -top-5 flex h-[56px] w-[56px] items-center justify-center rounded-full border-[4px] border-[#000000] transition-transform hover:scale-105 active:scale-90"
                     style={{
-                      background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))",
-                      boxShadow: "0 8px 28px hsla(var(--primary) / 0.5)",
+                      background: "linear-gradient(135deg, #A78BFA, #6D28D9)",
+                      boxShadow: "0 0 20px rgba(167,139,250,0.4), 0 8px 28px rgba(109,40,217,0.5)",
                     }}
                   >
-                    <Search className="w-6 h-6 text-white drop-shadow-md" />
+                    <Anchor className="w-6 h-6 text-white drop-shadow-md" />
                   </motion.button>
                 </div>
               );
