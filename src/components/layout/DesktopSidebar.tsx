@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Mail, User, Search } from "lucide-react";
+import { Home, MessageSquare, Mail, User, Search, Anchor } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { UserSearch } from "@/components/UserSearch";
