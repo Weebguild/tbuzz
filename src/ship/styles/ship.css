@@ -76,7 +76,7 @@
 }
 
 /* ── SECTION 3: GLASS PANEL SYSTEM ───────────────────────────────────────── */
-.glass-panel {
+.ship-glass-panel {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -91,7 +91,7 @@
 }
 
 /* Glass texture overlay — SVG noise for tactile grain */
-.glass-panel::after {
+.ship-glass-panel::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -104,7 +104,7 @@
 }
 
 /* Edge prism effect — warm/cool light split at the top-left corner */
-.glass-panel::before {
+.ship-glass-panel::before {
   content: '';
   position: absolute;
   top: 0;
@@ -120,7 +120,7 @@
   pointer-events: none;
 }
 
-.glass-panel-lg {
+.ship-glass-panel-lg {
   border-radius: var(--glass-radius-lg);
 }
 
@@ -192,7 +192,6 @@
   text-transform: lowercase;
   color: var(--ship-violet);
   text-shadow: 0 0 20px var(--ship-violet-glow), 0 0 40px rgba(167,139,250,0.2);
-  animation: shipGlowPulse 3s ease-in-out infinite;
 }
 
 /* ── SECTION 7: GLASS INPUT ──────────────────────────────────────────────── */
