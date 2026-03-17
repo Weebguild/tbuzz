@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy, Search } from "lucide-react";
+import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy, Search, Share, ArrowUp } from "lucide-react";
 import { UserSearch } from "@/components/UserSearch";
 import { HeartBurst } from "@/components/feed/HeartBurst";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
@@ -90,6 +90,7 @@ export default function Feed() {
   const [expandedImage, setExpandedImage] = useState<Post | null>(null);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
+  const [hasNewPosts, setHasNewPosts] = useState(false);
 
   // Deep-link: scroll to post from notification
   const deepLinkPostId = searchParams.get("postId");
@@ -250,10 +251,14 @@ export default function Feed() {
     if (!profile) return;
     const channel = supabase
       .channel("feed-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `university_id=eq.${profile.university_id}` }, () => fetchPostsRef.current())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `university_id=eq.${profile.university_id}` }, (payload) => {
+        if (payload.new && payload.new.user_id !== user?.id) {
+          setHasNewPosts(true);
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [profile?.university_id]);
+  }, [profile?.university_id, user?.id]);
 
   const handlePost = async () => {
     if (!user || !profile || !newPost.trim()) return;
@@ -501,6 +506,30 @@ export default function Feed() {
         {showSearch && <UserSearch onClose={() => setShowSearch(false)} />}
       </AnimatePresence>
 
+      {/* New Posts Pill */}
+      <AnimatePresence>
+        {hasNewPosts && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-40"
+          >
+            <button
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                setHasNewPosts(false);
+                fetchPostsRef.current();
+              }}
+              className="bg-primary text-white px-4 py-2 rounded-full shadow-[0_0_15px_rgba(124,58,237,0.5)] text-sm font-semibold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+            >
+              <ArrowUp className="h-4 w-4" />
+              New posts available
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Feed</h1>
@@ -726,17 +755,21 @@ export default function Feed() {
                     {/* Post image */}
                     {post.image_url && (
                       <NeonSparkOverlay
-                        className="w-full mt-2 cursor-pointer overflow-hidden"
+                        className="w-full mt-2 cursor-pointer overflow-hidden rounded-2xl"
                         onDoubleTap={() => {
                           if (!post.has_liked) toggleLike(post.id, false);
                         }}
                         onSingleTap={() => setExpandedImage(post)}
                       >
-                        <img
+                        <motion.img
+                          layoutId={`post-img-${post.id}`}
                           src={post.image_url + (post.image_url.includes('?') ? '&' : '?') + 'width=600&quality=80'}
                           alt="Post"
-                          className="w-full max-h-80 object-cover pointer-events-none"
+                          className="w-full max-h-80 object-cover pointer-events-none opacity-0 transition-opacity duration-500 ease-in-out"
                           loading="lazy"
+                          onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                            e.currentTarget.style.opacity = "1";
+                          }}
                         />
                       </NeonSparkOverlay>
                     )}
@@ -747,31 +780,48 @@ export default function Feed() {
                     </div>
 
                     {/* Action row */}
-                    <div className="px-4 pb-3 flex items-center gap-4">
-                      <motion.button
-                        onClick={() => toggleLike(post.id, post.has_liked)}
-                        whileTap={{ scale: 1.3 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className={`relative flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
-                      >
-                        <div className="relative flex items-center justify-center h-5 w-5">
-                          <HeartBurst show={burstingPostId === post.id} onComplete={() => setBurstingPostId(null)} />
-                          <Heart className={`h-4 w-4 transition-opacity ${post.has_liked ? "fill-current" : ""} ${burstingPostId === post.id ? "opacity-0" : "opacity-100"}`} />
-                        </div>
-                        {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
-                      </motion.button>
-                      <button
-                        onClick={() => toggleComments(post.id)}
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                        {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
-                      </button>
+                    <div className="px-4 pb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <motion.button
+                          onClick={() => toggleLike(post.id, post.has_liked)}
+                          whileTap={{ scale: 1.3 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                          className={`relative flex items-center gap-1.5 text-sm transition-colors ${post.has_liked ? "text-primary drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                          <div className="relative flex items-center justify-center h-5 w-5">
+                            <HeartBurst show={burstingPostId === post.id} onComplete={() => setBurstingPostId(null)} />
+                            <Heart className={`h-4 w-4 transition-opacity ${post.has_liked ? "fill-current" : ""} ${burstingPostId === post.id ? "opacity-0" : "opacity-100"}`} />
+                          </div>
+                          {post.reaction_count > 0 && <span className="text-xs font-medium">{post.reaction_count}</span>}
+                        </motion.button>
+                        <button
+                          onClick={() => toggleComments(post.id)}
+                          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          {post.comment_count > 0 && <span className="text-xs font-medium">{post.comment_count}</span>}
+                        </button>
+                        <motion.button
+                          onClick={() => {
+                            if (navigator.share) {
+                              navigator.share({ title: "tbuzz", url: `${window.location.origin}/feed?postId=${post.id}` }).catch(() => {});
+                            } else {
+                              navigator.clipboard.writeText(`${window.location.origin}/feed?postId=${post.id}`);
+                              toast.success("Link copied!");
+                            }
+                          }}
+                          whileTap={{ scale: 1.4 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Share className="h-4 w-4" />
+                        </motion.button>
+                      </div>
                       <motion.button
                         onClick={() => toggleSave(post.id, post.has_saved)}
                         whileTap={{ scale: 1.4 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className={`ml-auto text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                        className={`text-sm transition-colors ${post.has_saved ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                       >
                         <Bookmark className={`h-4 w-4 ${post.has_saved ? "fill-current" : ""}`} />
                       </motion.button>
@@ -852,6 +902,10 @@ export default function Feed() {
             onClose={() => setExpandedImage(null)}
             onToggleLike={() => toggleLike(expandedImage.id, expandedImage.has_liked)}
             onToggleSave={() => toggleSave(expandedImage.id, expandedImage.has_saved)}
+            onCommentAdded={() => {
+              setPosts((prev) => prev.map((p) => p.id === expandedImage.id ? { ...p, comment_count: p.comment_count + 1 } : p));
+              setExpandedImage(prev => prev ? { ...prev, comment_count: prev.comment_count + 1 } : null);
+            }}
           />
         )}
       </AnimatePresence>
