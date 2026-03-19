@@ -84,11 +84,11 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
   const showDateSeparator = !prevMsg || !isSameDay(msgDate, new Date(prevMsg.created_at));
 
   return (
-    <div key={msg.id}>
+    <div key={msg.id} id={`msg-${msg.id}`}>
       {showDateSeparator && (
-        <div className="flex items-center justify-center my-6">
-          <div className="px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.05] backdrop-blur-sm">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">{getDateLabel(msgDate)}</span>
+        <div className="flex items-center justify-center my-6 sticky top-4 z-20">
+          <div className="px-4 py-1.5 rounded-full bg-black/60 shadow-lg border border-white/10 backdrop-blur-md">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">{getDateLabel(msgDate)}</span>
           </div>
         </div>
       )}
@@ -119,7 +119,15 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
         "flex flex-col gap-1 max-w-[80%] min-w-0 overflow-hidden",
         isOwn ? "items-end" : "items-start"
       )}>
-          <div className="relative group/bubble max-w-full overflow-hidden">
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.1}
+            onDragEnd={(_, info) => {
+              if (Math.abs(info.offset.x) > 50) setReplyingTo({ ...data, messageId: msg.id });
+            }}
+            className="relative group/bubble max-w-full overflow-hidden"
+          >
           <div
             className={cn(
               "rounded-[28px] text-[15px] font-medium leading-relaxed transition-all duration-300 relative overflow-hidden max-w-full",
@@ -128,17 +136,59 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
                 : "bg-white/[0.04] backdrop-blur-sm text-white/90 border border-white/5",
               isOwn && isLastInGroup ? "rounded-br-lg" : "",
               !isOwn && isLastInGroup ? "rounded-bl-lg" : "",
-              (data.type === "image" || data.type === "video") ? "p-1.5" : "px-6 py-4"
+              (data.type === "image" || data.type === "video") ? "p-1.5" : "px-6 py-4 pb-6"
             )}
           >
             {data.type === "reply" && (
-              <div className="mb-3 p-3 rounded-2xl bg-black/20 border-l-4 border-primary/40 text-sm overflow-hidden opacity-80">
+              <div 
+                className="mb-3 p-3 rounded-2xl bg-black/20 border-l-4 border-primary/40 text-sm overflow-hidden opacity-80 cursor-pointer hover:opacity-100 transition-all hover:bg-black/40"
+                onClick={() => {
+                  if (data.replyTo?.messageId) {
+                    const el = document.getElementById(`msg-${data.replyTo.messageId}`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      const bubble = el.querySelector('.group\\/bubble > div');
+                      if (bubble) {
+                        const origBg = (bubble as HTMLElement).style.backgroundColor;
+                        (bubble as HTMLElement).style.backgroundColor = 'rgba(124, 58, 237, 0.4)';
+                        (bubble as HTMLElement).style.transition = 'background-color 0.5s ease';
+                        setTimeout(() => {
+                          (bubble as HTMLElement).style.backgroundColor = origBg;
+                        }, 1500);
+                      }
+                    }
+                  }
+                }}
+              >
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1">Replying to</p>
                 <p className="truncate italic">"{data.replyTo.content}"</p>
               </div>
             )}
 
-            {data.type === "image" && data.url ? (
+            {data.type === "post_share" && data.postId ? (
+              <div 
+                className="flex flex-col gap-2 w-full min-w-[200px] max-w-[280px] cursor-pointer group"
+                onClick={() => window.location.href = `/feed?postId=${data.postId}`}
+              >
+                <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-white/10 shadow-lg bg-black/40">
+                  {data.imageUrl ? (
+                    <img src={data.imageUrl} alt="Shared Post" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  ) : (
+                    <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-white/20" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                    <span className="text-white text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 backdrop-blur-md bg-white/20 px-3 py-1.5 rounded-full">
+                      <ExternalLink className="h-3 w-3" /> View Post
+                    </span>
+                  </div>
+                </div>
+                {data.text && (
+                  <p className="text-sm px-1.5 font-medium leading-snug">{data.text}</p>
+                )}
+              </div>
+            ) : data.type === "image" && data.url ? (
               <div
                 onClick={() => setSelectedMedia(data.url)}
                 className="relative group cursor-pointer overflow-hidden rounded-[24px]"
@@ -202,18 +252,25 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
                 >
                   {playingAudioId === msg.id ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-1" />}
                 </button>
-                <div className="flex-1 flex gap-1 items-center h-8">
-                  {[...Array(14)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      animate={playingAudioId === msg.id
-                        ? { height: [`${30 + Math.random() * 50}%`, `${30 + Math.random() * 50}%`] }
-                        : { height: "20%" }
-                      }
-                      transition={{ repeat: Infinity, duration: 0.4, delay: i * 0.03 }}
-                      className="w-1 bg-white/40 rounded-full"
-                    />
-                  ))}
+                <div className="flex-1 flex gap-[2px] items-center h-8 px-2 overflow-hidden w-32 relative">
+                  {(playingAudioId === msg.id ? [...Array(30)] : [...Array(30)]).map((_, i) => {
+                    const h = playingAudioId === msg.id 
+                       ? 20 + Math.random() * 80 
+                       : 20 + Math.sin(i * 0.5) * 40 + Math.random() * 20;
+                    return (
+                      <motion.div
+                        key={i}
+                        animate={playingAudioId === msg.id
+                          ? { height: [`${h}%`, `${Math.random() * 100}%`, `${h}%`] }
+                          : { height: `${h}%` }
+                        }
+                        transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.05 }}
+                        className="w-[3px] bg-white/60 rounded-full shrink-0"
+                      />
+                    );
+                  })}
+                  {/* Fake progress overlay */}
+                  <div className="absolute inset-y-0 left-0 w-1/3 bg-white/20 mix-blend-overlay" />
                 </div>
               </div>
             ) : (
@@ -221,18 +278,83 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
                 <p className="whitespace-pre-wrap break-words overflow-hidden" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>{renderMessageText(data.content || data.text || "", isOwn)}</p>
               </div>
             )}
+            
+            {/* Status & Time */}
+            <div className={cn(
+              "absolute bottom-1.5 flex items-center gap-1 opacity-70",
+              isOwn ? "right-3" : "right-3"
+            )}>
+              <span className="text-[9px] font-bold tracking-widest">{format(msgDate, 'HH:mm')}</span>
+              {isOwn && (
+                msg.status === "sending" ? (
+                  <Loader2 className="h-3 w-3 animate-spin -ms-0.5" />
+                ) : msg.is_read ? (
+                  <CheckCheck className="h-3.5 w-3.5 text-blue-400" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )
+              )}
+            </div>
           </div>
 
-          {/* Reply + Emoji buttons on hover */}
+          {/* Reply, Emoji, and Options buttons on hover */}
           <div className={cn(
             "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 z-10",
             isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
           )}>
-            <button onClick={() => setReplyingTo(data)} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+            {['❤️', '😂', '🔥'].map(emoji => (
+              <button 
+                key={emoji} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // For now, toggle visual local state or toast
+                  toast.success(`Reacted with ${emoji}`);
+                }}
+                className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all text-xs leading-none hover:scale-125 hover:z-20 origin-center"
+              >
+                {emoji}
+              </button>
+            ))}
+            <button onClick={() => setReplyingTo({ ...data, messageId: msg.id })} className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
               <Reply className="h-3.5 w-3.5" />
             </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/40 hover:text-white transition-all">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isOwn ? "end" : "start"} sideOffset={8} className="w-44 bg-zinc-950/95 backdrop-blur-xl border-white/10 text-white p-1.5 rounded-2xl shadow-2xl">
+                <DropdownMenuItem 
+                  onClick={() => { 
+                    navigator.clipboard.writeText(data.content || data.text || ""); 
+                    toast.success("Copied to clipboard"); 
+                  }} 
+                  className="rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                >
+                  <Copy className="h-4 w-4 mr-2" /> Copy Text
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => toast("Forward functionality coming soon")} 
+                  className="rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                >
+                  <Share2 className="h-4 w-4 mr-2" /> Forward
+                </DropdownMenuItem>
+                {isOwn && (
+                  <>
+                    <DropdownMenuSeparator className="bg-white/10 mx-2 my-1" />
+                    <DropdownMenuItem 
+                      onClick={() => toast.error("Delete coming soon")} 
+                      className="rounded-xl px-3 py-2.5 text-sm font-medium text-red-400 focus:text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete Message
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
+        </motion.div>
       </div>
     </motion.div>
     </div>
@@ -244,8 +366,25 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   const { user } = useAuth();
   const { getHaloClass } = useHalo();
   const navigate = useNavigate();
-  const { messages, loading, sendMessage, markAsRead, isTyping, handleInputChange } = useMessages(conversationId);
+  const { messages, loading, loadingMore, hasMore, loadMoreMessages, sendMessage, markAsRead, isTyping, handleInputChange } = useMessages(conversationId);
   const [input, setInput] = useState("");
+  
+  // Draft persistence
+  useEffect(() => {
+    if (conversationId) {
+      const draft = localStorage.getItem(`draft_${conversationId}`);
+      if (draft && !input) setInput(draft);
+    }
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (conversationId && input.trim()) {
+      localStorage.setItem(`draft_${conversationId}`, input);
+    } else if (conversationId && !input.trim()) {
+      localStorage.removeItem(`draft_${conversationId}`);
+    }
+  }, [input, conversationId]);
+
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -349,8 +488,10 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
   }, [conversationId, user, recipient]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, attachment, isRecording]);
+    if (!showScrollButton) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isTyping, attachment, isRecording, showScrollButton]);
 
   const parseMessageContent = (content: string) => {
     try {
@@ -387,6 +528,10 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
     navigator.vibrate?.(10);
     
     setSending(true);
+    // Force scroll to bottom on send
+    setShowScrollButton(false);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    
     try {
       if (attachment) {
         const payload = replyingTo
@@ -830,9 +975,17 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
             const target = e.currentTarget;
             const isBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
             setShowScrollButton(!isBottom);
+            if (target.scrollTop <= 50 && hasMore && !loadingMore) {
+              loadMoreMessages();
+            }
           }}
         >
           <div className="max-w-3xl mx-auto space-y-12">
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-5 w-5 text-primary animate-spin" />
+              </div>
+            )}
             {/* Empty state */}
             {filteredMessages.length === 0 && !loading && recipient && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -869,12 +1022,19 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
                   />
               ))}
 
-              {isTyping && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mt-4">
-                  <div className="h-8 w-12 bg-white/[0.04] backdrop-blur-sm border border-white/5 rounded-full flex items-center justify-center gap-1.5 px-3">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" />
+              {isTyping && recipient && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-end gap-2 mt-4 ml-6">
+                  <Avatar className={cn("h-6 w-6 ring-1 ring-white/10 shrink-0", recipient ? getHaloClass(recipient.user_id) : "")}>
+                    <AvatarImage src={recipient.avatar_url || ""} />
+                    <AvatarFallback className="text-[8px] font-bold bg-white/5">{recipient.display_name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-1 items-start">
+                    <span className="text-[9px] font-bold text-muted-foreground ml-2 opacity-60 uppercase tracking-widest">{recipient.display_name.split(' ')[0]} is typing...</span>
+                    <div className="h-8 w-12 bg-white/[0.04] backdrop-blur-sm border border-white/5 rounded-[20px] rounded-bl-sm flex items-center justify-center gap-1.5 px-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" />
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -894,6 +1054,7 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
               className="absolute bottom-32 right-8 h-12 w-12 rounded-full bg-primary text-white shadow-2xl flex items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all"
             >
               <ChevronLeft className="h-6 w-6 rotate-[-90deg]" />
+              <div className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-background" />
             </motion.button>
           )}
         </AnimatePresence>

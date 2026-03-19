@@ -9,25 +9,61 @@ export interface Message {
   content: string;
   created_at: string;
   is_read: boolean;
+  status?: "sending" | "sent" | "error";
+  error_message?: string;
 }
+
+const PAGE_SIZE = 50;
 
 export function useMessages(conversationId: string | undefined) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const fetchMessages = useCallback(async () => {
+  const fetchMessages = useCallback(async (loadMore = false) => {
     if (!conversationId) return;
-    setLoading(true);
-    const { data } = await supabase
+
+    if (loadMore) {
+      if (loadingMore || !hasMore) return;
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setMessages([]);
+    }
+
+    const currentLength = loadMore ? messages.length : 0;
+    
+    const { data: fetchResult, error } = await supabase
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
-    setMessages((data as Message[]) ?? []);
-    setLoading(false);
-  }, [conversationId]);
+      .order("created_at", { ascending: false })
+      .range(currentLength, currentLength + PAGE_SIZE - 1);
+
+    if (!error && fetchResult) {
+      // Reverse because we fetch descending (newest first) but render ascending (oldest first at top)
+      const formattedData = (fetchResult as Message[]).reverse();
+      
+      setMessages((prev) => {
+        if (loadMore) {
+          // Prepend older messages
+          return [...formattedData, ...prev];
+        }
+        return formattedData;
+      });
+      setHasMore(fetchResult.length === PAGE_SIZE);
+    }
+    
+    if (loadMore) {
+      setLoadingMore(false);
+    } else {
+      setLoading(false);
+    }
+  }, [conversationId, messages.length, loadingMore, hasMore]);
 
   // Mark unread messages as read
   const markAsRead = useCallback(async () => {
@@ -42,7 +78,8 @@ export function useMessages(conversationId: string | undefined) {
 
   useEffect(() => {
     fetchMessages();
-  }, [fetchMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,8 +118,11 @@ export function useMessages(conversationId: string | undefined) {
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
+            // Update if optimistic insert already added it
+            if (prev.some((m) => m.id === newMsg.id)) {
+              return prev.map(m => m.id === newMsg.id ? { ...newMsg, status: "sent" } : m);
+            }
+            return [...prev, { ...newMsg, status: "sent" }];
           });
         }
       )
@@ -97,7 +137,7 @@ export function useMessages(conversationId: string | undefined) {
         (payload) => {
           const updatedMsg = payload.new as Message;
           setMessages((prev) =>
-            prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
+            prev.map((m) => (m.id === updatedMsg.id ? { ...updatedMsg, status: m.status || "sent" } : m))
           );
         }
       )
@@ -122,40 +162,75 @@ export function useMessages(conversationId: string | undefined) {
 
       let finalContent = content.trim();
 
-      if (file) {
-        const ext = file.name.split(".").pop();
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const bucket = "post-images";
-
-        const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file);
-        if (uploadError) {
-          console.error("Upload error:", uploadError);
-          throw uploadError;
-        }
-
-        const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
-        finalContent = JSON.stringify({
-          type,
-          url: publicUrl.publicUrl,
-          text: content.trim() || undefined,
-          fileName: file.name,
-          fileSize: file.size,
-        });
-      }
-
-      const { error } = await supabase.from("messages").insert({
+      // OPTIMISTIC UPDATE
+      const tempId = crypto.randomUUID();
+      const optimisticMsg: Message = {
+        id: tempId,
         conversation_id: conversationId,
         sender_id: user.id,
         content: finalContent,
-      });
+        created_at: new Date().toISOString(),
+        is_read: false,
+        status: "sending"
+      };
 
-      if (error) {
-        console.error("Failed to send message:", error);
-        throw error;
+      if (!file) {
+        setMessages(prev => [...prev, optimisticMsg]);
+      } else {
+        // If file, we wait for upload before optimistic UI to handle correct media URL,
+        // or we use local preview url. Using local preview is complex for now,
+        // so we just show regular sending without image preview in the chat line,
+        // then actual upload.
+        optimisticMsg.content = JSON.stringify({ type, url: URL.createObjectURL(file), text: content.trim() || undefined, isLocal: true });
+        setMessages(prev => [...prev, optimisticMsg]);
+      }
+
+      try {
+        if (file) {
+          const ext = file.name.split(".").pop();
+          const path = `${user.id}/${Date.now()}.${ext}`;
+          const bucket = "post-images";
+
+          const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file);
+          if (uploadError) {
+            console.error("Upload error:", uploadError);
+            throw uploadError;
+          }
+
+          const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
+          finalContent = JSON.stringify({
+            type,
+            url: publicUrl.publicUrl,
+            text: content.trim() || undefined,
+            fileName: file.name,
+            fileSize: file.size,
+          });
+        }
+
+        const { error } = await supabase.from("messages").insert({
+          id: tempId,
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: finalContent,
+        });
+
+        if (error) {
+          console.error("Failed to send message:", error);
+          throw error;
+        }
+        
+      } catch (err) {
+        // Handle failure: mark as error
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: "error", error_message: "Failed to send" } : m));
       }
     },
     [conversationId, user, setTyping]
   );
 
-  return { messages, loading, sendMessage, markAsRead, isTyping, handleInputChange };
+  const loadMoreMessages = useCallback(() => {
+    fetchMessages(true);
+  }, [fetchMessages]);
+
+  return { messages, loading, loadingMore, hasMore, loadMoreMessages, sendMessage, markAsRead, isTyping, handleInputChange };
 }
+

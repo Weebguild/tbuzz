@@ -88,6 +88,7 @@ export default function Feed() {
   const [replyingTo, setReplyingTo] = useState<Record<string, { commentId: string, displayName: string } | null>>({});
   const [trendingGossip, setTrendingGossip] = useState<TrendingGossip[]>([]);
   const [expandedImage, setExpandedImage] = useState<Post | null>(null);
+  const [shareExpandedPost, setShareExpandedPost] = useState(false);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [hasNewPosts, setHasNewPosts] = useState(false);
@@ -803,12 +804,8 @@ export default function Feed() {
                         </button>
                         <motion.button
                           onClick={() => {
-                            if (navigator.share) {
-                              navigator.share({ title: "tbuzz", url: `${window.location.origin}/feed?postId=${post.id}` }).catch(() => {});
-                            } else {
-                              navigator.clipboard.writeText(`${window.location.origin}/feed?postId=${post.id}`);
-                              toast.success("Link copied!");
-                            }
+                            setShareExpandedPost(true);
+                            setExpandedImage(post);
                           }}
                           whileTap={{ scale: 1.4 }}
                           transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -899,7 +896,11 @@ export default function Feed() {
             hasSaved={expandedImage.has_saved}
             reactionCount={expandedImage.reaction_count}
             commentCount={expandedImage.comment_count}
-            onClose={() => setExpandedImage(null)}
+            defaultOpenSharePanel={shareExpandedPost}
+            onClose={() => {
+              setExpandedImage(null);
+              setShareExpandedPost(false);
+            }}
             onToggleLike={() => toggleLike(expandedImage.id, expandedImage.has_liked)}
             onToggleSave={() => toggleSave(expandedImage.id, expandedImage.has_saved)}
             onCommentAdded={() => {

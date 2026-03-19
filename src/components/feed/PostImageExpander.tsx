@@ -40,6 +40,7 @@ interface PostImageExpanderProps {
   onToggleLike: () => void;
   onToggleSave?: () => void;
   onCommentAdded?: () => void;
+  defaultOpenSharePanel?: boolean;
 }
 
 export function PostImageExpander({
@@ -54,11 +55,12 @@ export function PostImageExpander({
   onToggleLike,
   onToggleSave,
   onCommentAdded,
+  defaultOpenSharePanel = false,
 }: PostImageExpanderProps) {
   const { getHaloClass } = useHalo();
   const { user } = useAuth();
   const [isSplitScreen, setIsSplitScreen] = useState(false);
-  const [isSharePanelOpen, setIsSharePanelOpen] = useState(false);
+  const [isSharePanelOpen, setIsSharePanelOpen] = useState(defaultOpenSharePanel);
   
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -100,14 +102,6 @@ export function PostImageExpander({
     return () => {
       document.body.removeAttribute("data-expander-open");
     };
-  }, []);
-
-  const onUpdate = useCallback(({ x, y, scale }: { x: number; y: number; scale: number }) => {
-    const { current: img } = imgRef;
-    if (img) {
-      const value = make3dTransformValue({ x, y, scale });
-      img.style.setProperty("transform", value);
-    }
   }, []);
 
   // Load Share Users
@@ -223,7 +217,12 @@ export function PostImageExpander({
         supabase.from("messages").insert({
           conversation_id: u.conversation_id,
           sender_id: user.id,
-          content: `Check out this post: ${url}`,
+          content: JSON.stringify({ 
+            type: "post_share", 
+            postId, 
+            imageUrl: displayImages[activeIndex], 
+            text: "Check out this post" 
+          }),
         } as any)
       );
       
@@ -460,20 +459,21 @@ export function PostImageExpander({
           </div>
         )}
 
-        <div className="w-full h-full relative" onClick={handleTap}>
-          <QuickPinchZoom onUpdate={onUpdate} wheelScaleFactor={1.5} doubleTapZoomOutOnMaxScale={true}>
-            <motion.img 
-              ref={imgRef as unknown as React.Ref<HTMLImageElement>}
-              layoutId={`post-img-${postId}`}
-              src={displayImages[activeIndex]} 
-              alt="Expanded" 
-              className={cn(
-                "w-full h-full object-contain pointer-events-none transition-opacity duration-500",
-                !imageLoaded ? "opacity-0" : "opacity-100"
-              )} 
-              onLoad={() => setImageLoaded(true)}
-            />
-          </QuickPinchZoom>
+        <div className="w-full h-full relative overflow-hidden flex items-center justify-center p-4" onClick={handleTap}>
+          <motion.img 
+            ref={imgRef as unknown as React.Ref<HTMLImageElement>}
+            layoutId={`post-img-${postId}`}
+            src={displayImages[activeIndex]} 
+            alt="Expanded" 
+            drag
+            dragConstraints={{ left: -50, right: 50, top: -50, bottom: 50 }}
+            dragElastic={0.4}
+            className={cn(
+              "max-w-full max-h-full object-contain pointer-events-auto transition-opacity duration-500 rounded-2xl",
+              !imageLoaded ? "opacity-0" : "opacity-100"
+            )} 
+            onLoad={() => setImageLoaded(true)}
+          />
         </div>
 
         {/* ── NEON SPARKS ── */}
