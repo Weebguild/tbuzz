@@ -42,7 +42,6 @@ interface MessageBubbleProps {
   setReplyingTo: (msg: any | null) => void;
   handleDocumentDownload: (url: string, name: string) => void;
   toggleAudioPlayback: (msgId: string, url: string) => void;
-  playingAudioId: string | null;
   renderMessageText: (content: string, isOwn: boolean) => React.ReactNode;
   getDateLabel: (date: Date) => string;
 }
@@ -65,6 +64,11 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
   getDateLabel
 }) => {
   const isOwn = msg.sender_id === user?.id;
+  
+  // Premium swipe-to-reply physics
+  const dragX = useMotionValue(0);
+  const replyIconOpacity = useTransform(dragX, isOwn ? [0, -40] : [0, 40], [0, 1]);
+  const replyIconScale = useTransform(dragX, isOwn ? [0, -50] : [0, 50], [0.5, 1.1]);
   const data = React.useMemo(() => {
     try {
       if (typeof msg.content === 'string' && msg.content.startsWith("{") && msg.content.endsWith("}")) {
@@ -116,17 +120,29 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
       )}
 
       <div className={cn(
-        "flex flex-col gap-1 max-w-[80%] min-w-0 overflow-hidden",
+        "flex flex-col gap-1 max-w-[80%] min-w-0 relative",
         isOwn ? "items-end" : "items-start"
       )}>
-          <motion.div
+        {/* Swipe Reply Icon */}
+        <motion.div
+           style={{ opacity: replyIconOpacity, scale: replyIconScale }}
+           className={cn("absolute top-1/2 -translate-y-1/2 flex items-center justify-center h-8 w-8 bg-black/40 backdrop-blur-md rounded-full border border-white/10 shadow-xl", isOwn ? "right-[-45px]" : "left-[-45px]")}
+        >
+          <Reply className="h-4 w-4 text-white" />
+        </motion.div>
+
+        <motion.div
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.1}
+            dragElastic={0.08}
+            style={{ x: dragX }}
             onDragEnd={(_, info) => {
-              if (Math.abs(info.offset.x) > 50) setReplyingTo({ ...data, messageId: msg.id });
+              if (Math.abs(info.offset.x) > 50) {
+                navigator.vibrate?.(15);
+                setReplyingTo({ ...data, messageId: msg.id });
+              }
             }}
-            className="relative group/bubble max-w-full overflow-hidden"
+            className="relative group/bubble max-w-full"
           >
           <div
             className={cn(
@@ -141,7 +157,7 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
           >
             {data.type === "reply" && (
               <div 
-                className="mb-3 p-3 rounded-2xl bg-black/20 border-l-4 border-primary/40 text-sm overflow-hidden opacity-80 cursor-pointer hover:opacity-100 transition-all hover:bg-black/40"
+                className="mb-3 p-3 rounded-[18px] bg-black/40 backdrop-blur-md border border-white/10 border-l-4 border-l-primary shadow-inner text-sm overflow-hidden opacity-90 cursor-pointer hover:opacity-100 transition-all hover:bg-white/5 active:scale-[0.98] relative"
                 onClick={() => {
                   if (data.replyTo?.messageId) {
                     const el = document.getElementById(`msg-${data.replyTo.messageId}`);
@@ -160,8 +176,12 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
                   }
                 }}
               >
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1">Replying to</p>
-                <p className="truncate italic">"{data.replyTo.content}"</p>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
+                <div className="flex items-center gap-1.5 opacity-60 mb-0.5 relative z-10">
+                  <Reply className="h-3 w-3 text-primary" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Replying to msg</span>
+                </div>
+                <p className="truncate italic text-white/90 relative z-10 pl-1 leading-snug">"{data.replyTo.content}"</p>
               </div>
             )}
 
@@ -299,8 +319,9 @@ const MessageBubble = React.memo<MessageBubbleProps>(({
 
           {/* Reply, Emoji, and Options buttons on hover */}
           <div className={cn(
-            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all flex gap-1 z-10",
-            isOwn ? "right-full mr-1.5" : "left-full ml-1.5"
+            "absolute top-1/2 -translate-y-1/2 transition-all flex gap-1 z-10",
+            "opacity-50 hover:opacity-100 md:opacity-0 md:group-hover/bubble:opacity-100",
+            isOwn ? "right-full mr-2" : "left-full ml-2"
           )}>
             {['❤️', '😂', '🔥'].map(emoji => (
               <button 
@@ -1068,13 +1089,17 @@ export default function ChatRoom({ desktop = false }: { desktop?: boolean }) {
         <AnimatePresence>
           {replyingTo && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-4 overflow-hidden">
-              <div className="p-4 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Reply className="h-4 w-4 text-primary shrink-0" />
-                  <p className="text-sm truncate opacity-60">Replying to: {replyingTo.content}</p>
+              <div className="p-3 rounded-2xl bg-black/40 backdrop-blur-xl border-l-4 border-l-primary border-t border-t-white/10 border-r border-r-white/10 shadow-lg flex items-center justify-between mx-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0 z-10 pl-2">
+                  <div className="flex items-center gap-1.5 opacity-60">
+                    <Reply className="h-3 w-3 text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Replying to msg</span>
+                  </div>
+                  <p className="text-sm truncate text-white/90 pr-4">"{replyingTo.content}"</p>
                 </div>
-                <button onClick={() => setReplyingTo(null)} className="p-2 rounded-full hover:bg-white/10">
-                  <X className="h-4 w-4" />
+                <button onClick={() => setReplyingTo(null)} className="p-2 rounded-full hover:bg-white/10 z-10 transition-colors">
+                  <X className="h-4 w-4 text-white/60 hover:text-white" />
                 </button>
               </div>
             </motion.div>
