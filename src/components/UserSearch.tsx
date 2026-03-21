@@ -23,17 +23,40 @@ export function UserSearch({ onClose }: { onClose: () => void }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
-    const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+    const [suggestedUsers, setSuggestedUsers] = useState<SearchResult[]>([]);
 
     useEffect(() => {
-        if (user) {
-            const fetchFollowing = async () => {
-                const { data } = await supabase.from("follows").select("following_user_id").eq("follower_user_id", user.id);
-                setFollowingIds(new Set(data?.map((f) => f.following_user_id) ?? []));
-            };
-            fetchFollowing();
-        }
-    }, [user]);
+        if (!user || !profile) return;
+        
+        let isMounted = true;
+        const loadInitialData = async () => {
+            const { data: follows } = await supabase.from("follows").select("following_user_id").eq("follower_user_id", user.id);
+            const exclude = new Set(follows?.map((f) => f.following_user_id) ?? []);
+            if (isMounted) setFollowingIds(exclude);
+
+            const { data } = await supabase
+                .from("profiles")
+                .select("user_id, display_name, avatar_url, year, department")
+                .eq("university_id", profile.university_id)
+                .limit(50);
+            
+            if (data && isMounted) {
+                const filtered = data.filter(p => !exclude.has(p.user_id) && p.user_id !== user.id);
+                // Score based on shared attributes
+                const scored = filtered.map(p => {
+                    let score = 0;
+                    if (p.department === profile.department) score += 2;
+                    if (p.year === profile.year) score += 1;
+                    return { ...p, score };
+                });
+                const sorted = scored.sort((a, b) => b.score - a.score || 0.5 - Math.random());
+                setSuggestedUsers(sorted.slice(0, 6) as SearchResult[]);
+            }
+        };
+
+        loadInitialData();
+        return () => { isMounted = false; };
+    }, [user, profile]);
 
     const handleSearch = async (query: string) => {
         setSearchQuery(query);
@@ -184,8 +207,14 @@ export function UserSearch({ onClose }: { onClose: () => void }) {
 
             {/* ── RESULTS ── */}
             <div className="w-full max-w-[440px] mt-8 space-y-3 overflow-y-auto no-scrollbar pb-20">
+                {!searchQuery && suggestedUsers.length > 0 && (
+                    <div className="flex items-center gap-2 mb-4 mt-2 px-2 opacity-80">
+                        <UserPlus className="h-4 w-4 text-purple-400" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-[#c0b9c0]">People You May Know</span>
+                    </div>
+                )}
                 <AnimatePresence mode="popLayout">
-                    {searchResults.map((r, i) => (
+                    {(searchQuery ? searchResults : suggestedUsers).map((r, i) => (
                         <motion.div
                             key={r.user_id}
                             initial={{ opacity: 0, x: -20 }}

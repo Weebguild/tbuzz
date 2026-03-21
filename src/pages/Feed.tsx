@@ -9,8 +9,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy, Search, Share, ArrowUp } from "lucide-react";
+import { Heart, MessageCircle, Send, Image, Loader2, Plus, X, MoreVertical, Bookmark, Trophy, Search, Share, ArrowUp, Flame, Clock } from "lucide-react";
 import { UserSearch } from "@/components/UserSearch";
+import { SuggestedConnections } from "@/components/feed/SuggestedConnections";
 import { HeartBurst } from "@/components/feed/HeartBurst";
 import { PostSkeleton } from "@/components/ui/PostSkeleton";
 import { Input } from "@/components/ui/input";
@@ -92,6 +93,7 @@ export default function Feed() {
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [hasNewPosts, setHasNewPosts] = useState(false);
+  const [filterMode, setFilterMode] = useState<"latest" | "trending">("latest");
 
   // Deep-link: scroll to post from notification
   const deepLinkPostId = searchParams.get("postId");
@@ -148,7 +150,7 @@ export default function Feed() {
     setTrendingGossip(scored.slice(0, 3));
   };
 
-  const enrichPosts = useCallback(async (postsData: any[], append = false) => {
+  const enrichPosts = useCallback(async (postsData: any[], append = false, isTrending = false) => {
     if (!user) return;
     const userIds = [...new Set(postsData.map((p) => p.user_id))];
     const postIds = postsData.map((p) => p.id);
@@ -160,7 +162,7 @@ export default function Feed() {
       supabase.from("saved_posts").select("post_id").eq("user_id", user.id).in("post_id", postIds),
     ]);
 
-    const enriched: Post[] = postsData.map((post) => ({
+    let enriched: Post[] = postsData.map((post) => ({
       ...post,
       profiles: profiles?.find((p) => p.user_id === post.user_id),
       reaction_count: reactions?.filter((r) => r.post_id === post.id).length ?? 0,
@@ -168,6 +170,12 @@ export default function Feed() {
       has_liked: reactions?.some((r) => r.post_id === post.id && r.user_id === user?.id) ?? false,
       has_saved: savedPosts?.some((s) => s.post_id === post.id) ?? false,
     }));
+
+    if (isTrending) {
+      enriched.sort((a, b) => b.reaction_count - a.reaction_count);
+      // Optional: limit to top 30
+      enriched = enriched.slice(0, 30);
+    }
 
     if (append) {
       setPosts((prev) => [...prev, ...enriched]);
@@ -178,22 +186,42 @@ export default function Feed() {
 
   const fetchPosts = useCallback(async () => {
     if (!profile) return;
-    const { data: postsData, error } = await supabase
-      .from("posts")
-      .select("*")
-      .eq("university_id", profile.university_id)
-      .neq("is_archived", true)
-      .order("created_at", { ascending: false })
-      .range(0, PAGE_SIZE - 1);
-    if (error) {
-      console.error("[Feed]", sanitizeError(error));
-      return;
-    }
+    if (filterMode === "trending") {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: postsData, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("university_id", profile.university_id)
+        .neq("is_archived", true)
+        .gte("created_at", weekAgo)
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-    setHasMore(postsData.length === PAGE_SIZE);
-    await enrichPosts(postsData);
-    setLoading(false);
-  }, [profile, enrichPosts]);
+      if (error) {
+        console.error("[Feed]", sanitizeError(error));
+        return;
+      }
+      setHasMore(false); // No infinite scroll for trending
+      await enrichPosts(postsData, false, true);
+      setLoading(false);
+    } else {
+      const { data: postsData, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("university_id", profile.university_id)
+        .neq("is_archived", true)
+        .order("created_at", { ascending: false })
+        .range(0, PAGE_SIZE - 1);
+      if (error) {
+        console.error("[Feed]", sanitizeError(error));
+        return;
+      }
+
+      setHasMore(postsData.length === PAGE_SIZE);
+      await enrichPosts(postsData);
+      setLoading(false);
+    }
+  }, [profile, filterMode, enrichPosts]);
 
   const fetchMorePosts = useCallback(async () => {
     if (!profile || loadingMore || !hasMore) return;
@@ -239,9 +267,10 @@ export default function Feed() {
     fetchFollowing();
   }, [user]);
   useEffect(() => {
+    setLoading(true);
     fetchPosts();
     fetchTrendingGossip();
-  }, [profile]);
+  }, [profile, filterMode]);
 
   // Keep a ref to the latest fetchPosts so the channel doesn't tear down on every recreation
   const fetchPostsRef = useRef(fetchPosts);
@@ -532,9 +561,9 @@ export default function Feed() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <h1 className="text-4xl tracking-widest text-foreground uppercase drop-shadow-md">Feed</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSearch(true)}
             className="flex h-10 w-10 items-center justify-center rounded-full glass-panel hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
@@ -555,6 +584,24 @@ export default function Feed() {
             {showComposer ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
           </button>
         </div>
+      </div>
+
+      {/* Filter Toggle */}
+      <div className="mb-5 flex gap-2">
+        <button
+          onClick={() => setFilterMode("latest")}
+          className={`flex items-center px-4 py-2 rounded-full text-xs font-bold transition-all ${filterMode === "latest" ? "bg-foreground text-background" : "bg-black/40 border border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white"}`}
+        >
+          <Clock className="h-3.5 w-3.5 mr-1.5" />
+          Latest
+        </button>
+        <button
+          onClick={() => setFilterMode("trending")}
+          className={`flex items-center px-4 py-2 rounded-full text-xs font-bold transition-all ${filterMode === "trending" ? "bg-[#7C3AED] text-white shadow-[0_0_15px_rgba(124,58,237,0.4)]" : "bg-black/40 border border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white"}`}
+        >
+          <Flame className="h-3.5 w-3.5 mr-1.5" />
+          Trending
+        </button>
       </div>
 
       {/* Trending Gossip Ticker */}
@@ -687,6 +734,9 @@ export default function Feed() {
           >
             {posts.map((post, i) => (
               <ErrorBoundary key={`eb-${post.id}`}>
+                {i === 2 && (
+                  <SuggestedConnections followingIds={followingIds} onFollowToggle={toggleFollow} />
+                )}
                 <motion.div
                   key={post.id}
                   id={`post-${post.id}`}
@@ -708,7 +758,7 @@ export default function Feed() {
                           )}
                         </Avatar>
                       </button>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
                         <UserHoverCard userId={post.user_id}>
                           <button
                             onClick={() => navigate(`/profile/${post.user_id}`)}
@@ -717,7 +767,12 @@ export default function Feed() {
                             {post.profiles?.display_name ?? "Unknown"}
                           </button>
                         </UserHoverCard>
-                        <p className="text-xs text-muted-foreground/80">
+                        {filterMode === "trending" && i < 3 && (
+                          <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-500/50 flex items-center gap-1">
+                            <Flame className="h-3 w-3" /> TOP
+                          </span>
+                        )}
+                        <p className="text-xs text-muted-foreground/80 w-full sm:w-auto">
                           {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                         </p>
                       </div>

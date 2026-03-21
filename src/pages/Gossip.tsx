@@ -86,6 +86,7 @@ export default function Gossip() {
   const [hiddenUsers, setHiddenUsers] = useState<TagSuggestion[]>([]);
   
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const [showVault, setShowVault] = useState(false);
 
   // Deep-link: scroll to gossip from notification
   const deepLinkGossipId = searchParams.get("gossipId");
@@ -173,16 +174,28 @@ export default function Gossip() {
   }, [user, profile, filterMode]);
 
   const fetchGossip = useCallback(async () => {
-    if (!profile) return;
+    if (!profile || !user) return;
     const since = getTimeRangeDate(timeRange).toISOString();
 
-    const { data, error } = await supabase
-      .from("anonymous_gossip_posts")
-      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
-      .eq("university_id", profile.university_id)
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .range(0, PAGE_SIZE - 1);
+    let query;
+    if (showVault) {
+      query = supabase
+        .from("gossip_posts")
+        .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .range(0, PAGE_SIZE - 1);
+    } else {
+      query = supabase
+        .from("anonymous_gossip_posts")
+        .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
+        .eq("university_id", profile.university_id)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .range(0, PAGE_SIZE - 1);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("[Gossip]", sanitizeError(error));
@@ -192,22 +205,34 @@ export default function Gossip() {
     setHasMore((data?.length ?? 0) === PAGE_SIZE);
     await enrichGossipData(data ?? []);
     setLoading(false);
-  }, [profile, timeRange, enrichGossipData]);
+  }, [profile, timeRange, enrichGossipData, showVault, user]);
 
   const fetchMoreGossip = useCallback(async () => {
-    if (!profile || loadingMore || !hasMore) return;
+    if (!profile || !user || loadingMore || !hasMore) return;
     setLoadingMore(true);
     const since = getTimeRangeDate(timeRange).toISOString();
     const from = posts.length;
     const to = from + PAGE_SIZE - 1;
 
-    const { data, error } = await supabase
-      .from("anonymous_gossip_posts")
-      .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
-      .eq("university_id", profile.university_id)
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .range(from, to);
+    let query;
+    if (showVault) {
+      query = supabase
+        .from("gossip_posts")
+        .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .range(from, to);
+    } else {
+      query = supabase
+        .from("anonymous_gossip_posts")
+        .select("id, content, gossip_alias, gossip_avatar, created_at, university_id")
+        .eq("university_id", profile.university_id)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .range(from, to);
+    }
+    
+    const { data, error } = await query;
 
     if (error) {
       console.error("[Gossip]", sanitizeError(error));
@@ -218,7 +243,7 @@ export default function Gossip() {
     setHasMore((data?.length ?? 0) === PAGE_SIZE);
     await enrichGossipData(data ?? [], true);
     setLoadingMore(false);
-  }, [profile, posts.length, loadingMore, hasMore, timeRange, enrichGossipData]);
+  }, [profile, posts.length, loadingMore, hasMore, timeRange, enrichGossipData, showVault, user]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -236,8 +261,9 @@ export default function Gossip() {
   }, [hasMore, loadingMore, loading, fetchMoreGossip]);
 
   useEffect(() => {
+    if (!loading) setLoading(true); // show skeleton when switching between modes
     fetchGossip();
-  }, [profile, filterMode, timeRange]);
+  }, [profile, filterMode, timeRange, showVault]);
 
   // Keep a ref to the latest fetchGossip so the channel doesn't tear down on every recreation
   const fetchGossipRef = useRef(fetchGossip);
@@ -423,6 +449,13 @@ export default function Gossip() {
           <p className="text-xs text-muted-foreground/80 mt-0.5">Anonymous. Unfiltered. Campus tea.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowVault(!showVault)}
+            className={`flex h-10 w-10 items-center justify-center rounded-full glass-panel transition-all duration-300 ${showVault ? "bg-[#EC4899]/20 text-[#EC4899] border border-[#EC4899]/40 shadow-[0_0_15px_rgba(236,72,153,0.3)] ring-2 ring-[#EC4899]/50" : "text-muted-foreground hover:bg-white/10 hover:text-foreground"}`}
+            title="Gossip Vault"
+          >
+            <Ghost className="h-5 w-5" />
+          </button>
           <ActivityDrawer />
           <button
             onClick={() => setShowComposer(!showComposer)}
@@ -433,7 +466,20 @@ export default function Gossip() {
         </div>
       </div>
 
+      {showVault && (
+        <div className="mb-5">
+           <div className="bg-[#EC4899]/10 border border-[#EC4899]/20 text-[#EC4899] px-4 py-3 rounded-2xl flex items-center gap-3">
+             <Ghost className="h-6 w-6 shrink-0" />
+             <div>
+               <p className="text-sm font-bold tracking-tight">Your Gossip Vault</p>
+               <p className="text-xs opacity-80 leading-snug">Only you can see this. These are the anonymous whispers you've sent.</p>
+             </div>
+           </div>
+        </div>
+      )}
+
       {/* Filters */}
+      {!showVault && (
       <div className="mb-5 space-y-2.5">
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {filters.map((mode) => (
@@ -475,6 +521,7 @@ export default function Gossip() {
           )}
         </AnimatePresence>
       </div>
+      )}
 
       {/* Composer */}
       <AnimatePresence>

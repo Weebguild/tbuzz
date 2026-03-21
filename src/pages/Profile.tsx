@@ -112,6 +112,7 @@ interface SavedPost {
   created_at: string;
   author_name: string;
   author_avatar: string | null;
+  context?: string;
 }
 
 interface SavedGossip {
@@ -122,8 +123,8 @@ interface SavedGossip {
   upvote_count: number;
 }
 
-type ProfileTab = "posts" | "gallery" | "saved" | "settings" | "archived";
-type SavedSubFilter = "posts" | "gossip";
+type ProfileTab = "posts" | "gallery" | "history" | "settings" | "archived";
+type HistorySubFilter = "saved" | "liked" | "commented";
 
 export default function Profile() {
   const { userId: id } = useParams();
@@ -153,11 +154,13 @@ export default function Profile() {
   const [tabDirection, setTabDirection] = useState(0);
   const [expandedPhoto, setExpandedPhoto] = useState<PhotoPost | null>(null);
 
-  // Saved tab state
-  const [savedSubFilter, setSavedSubFilter] = useState<SavedSubFilter>("posts");
-  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
-  const [savedGossips, setSavedGossips] = useState<SavedGossip[]>([]);
-  const [loadingSaved, setLoadingSaved] = useState(false);
+  // History tab state
+  const [historySubFilter, setHistorySubFilter] = useState<HistorySubFilter>("saved");
+  const [historyPosts, setHistoryPosts] = useState<SavedPost[]>([]);
+  const [historyGossips, setHistoryGossips] = useState<SavedGossip[]>([]);
+  const [likedPosts, setLikedPosts] = useState<SavedPost[]>([]);
+  const [commentedPosts, setCommentedPosts] = useState<SavedPost[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [archivedPosts, setArchivedPosts] = useState<TextPost[]>([]);
   const [loadingArchived, setLoadingArchived] = useState(false);
@@ -333,11 +336,11 @@ export default function Profile() {
     }
   }, [page, fetchProfileData]);
 
-  const fetchSavedItems = useCallback(async () => {
+  const fetchHistoryItems = useCallback(async () => {
     if (!user || !isOwnProfile) return;
-    setLoadingSaved(true);
+    setLoadingHistory(true);
 
-    if (savedSubFilter === "posts") {
+    if (historySubFilter === "saved") {
       const { data: saved } = await supabase
         .from("saved_posts")
         .select("post_id, created_at")
@@ -368,50 +371,98 @@ export default function Profile() {
               created_at: post?.created_at ?? s.created_at,
               author_name: prof?.display_name ?? "Unknown",
               author_avatar: prof?.avatar_url ?? null,
+              context: "You saved this post",
             };
           });
-          setSavedPosts(enriched);
+          setHistoryPosts(enriched);
         }
       } else {
-        setSavedPosts([]);
+        setHistoryPosts([]);
       }
-    } else {
-      const { data: saved } = await supabase
-        .from("saved_gossips")
-        .select("gossip_post_id, created_at")
+    } else if (historySubFilter === "liked") {
+      const { data: reactions } = await supabase
+        .from("reactions")
+        .select("post_id, created_at")
+        .eq("user_id", user.id)
+        .eq("reaction_type", "like")
+        .not("post_id", "is", null)
+        .order("created_at", { ascending: false });
+
+      if (reactions && reactions.length > 0) {
+        const postIds = Array.from(new Set(reactions.map((r) => r.post_id)));
+        const { data: posts } = await supabase
+          .from("posts")
+          .select("id, content, image_url, created_at, user_id")
+          .in("id", postIds);
+
+        if (posts) {
+          const userIds = [...new Set(posts.map((p) => p.user_id))];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, avatar_url")
+            .in("user_id", userIds);
+
+          const enriched: SavedPost[] = reactions.map((r) => {
+            const post = posts.find((p) => p.id === r.post_id);
+            const prof = profiles?.find((pr) => pr.user_id === post?.user_id);
+            return {
+              id: post?.id ?? r.post_id!,
+              content: post?.content ?? "",
+              image_url: post?.image_url ?? null,
+              created_at: r.created_at, // time of like
+              author_name: prof?.display_name ?? "Unknown",
+              author_avatar: prof?.avatar_url ?? null,
+              context: `You liked this ${formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}`,
+            };
+          });
+          setLikedPosts(enriched);
+        }
+      } else {
+        setLikedPosts([]);
+      }
+    } else if (historySubFilter === "commented") {
+      const { data: comments } = await supabase
+        .from("comments")
+        .select("post_id, created_at, content")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (saved && saved.length > 0) {
-        const gossipIds = saved.map((s) => s.gossip_post_id);
-        const { data: gossips } = await supabase
-          .from("anonymous_gossip_posts")
-          .select("id, content, gossip_alias, created_at")
-          .in("id", gossipIds);
+      if (comments && comments.length > 0) {
+        const postIds = Array.from(new Set(comments.map((c) => c.post_id)));
+        const { data: posts } = await supabase
+          .from("posts")
+          .select("id, content, image_url, created_at, user_id")
+          .in("id", postIds);
 
-        const { data: reactions } = await supabase
-          .from("reactions")
-          .select("gossip_post_id")
-          .in("gossip_post_id", gossipIds);
+        if (posts) {
+          const userIds = [...new Set(posts.map((p) => p.user_id))];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, avatar_url")
+            .in("user_id", userIds);
 
-        const enriched: SavedGossip[] = saved.map((s) => {
-          const gossip = gossips?.find((g) => g.id === s.gossip_post_id);
-          return {
-            id: gossip?.id ?? s.gossip_post_id,
-            content: gossip?.content ?? "",
-            gossip_alias: gossip?.gossip_alias ?? "Anonymous",
-            created_at: gossip?.created_at ?? s.created_at,
-            upvote_count: reactions?.filter((r) => r.gossip_post_id === s.gossip_post_id).length ?? 0,
-          };
-        });
-        setSavedGossips(enriched);
+          const enriched: SavedPost[] = comments.map((c) => {
+            const post = posts.find((p) => p.id === c.post_id);
+            const prof = profiles?.find((pr) => pr.user_id === post?.user_id);
+            return {
+              id: post?.id ?? c.post_id!,
+              content: post?.content ?? "",
+              image_url: post?.image_url ?? null,
+              created_at: c.created_at, // time of comment
+              author_name: prof?.display_name ?? "Unknown",
+              author_avatar: prof?.avatar_url ?? null,
+              context: `You commented: "${c.content}"`,
+            };
+          });
+          setCommentedPosts(enriched);
+        }
       } else {
-        setSavedGossips([]);
+        setCommentedPosts([]);
       }
     }
 
-    setLoadingSaved(false);
-  }, [user, isOwnProfile, savedSubFilter]);
+    setLoadingHistory(false);
+  }, [user, isOwnProfile, historySubFilter]);
 
   const fetchArchivedItems = useCallback(async () => {
     if (!user || !isOwnProfile) return;
@@ -582,10 +633,10 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    if (activeTab === "saved" && isOwnProfile) {
-      fetchSavedItems();
+    if (activeTab === "history" && isOwnProfile) {
+      fetchHistoryItems();
     }
-  }, [activeTab, savedSubFilter, fetchSavedItems, isOwnProfile]);
+  }, [activeTab, historySubFilter, fetchHistoryItems, isOwnProfile]);
 
   const toggleFollow = async () => {
     if (!user || !targetUserId || isOwnProfile) return;
@@ -774,8 +825,10 @@ export default function Profile() {
     setFollowRequestPending(false);
     setActiveTab("posts");
     setExpandedPhoto(null);
-    setSavedPosts([]);
-    setSavedGossips([]);
+    setHistoryPosts([]);
+    setHistoryGossips([]);
+    setLikedPosts([]);
+    setCommentedPosts([]);
     fetchProfileData();
   }, [fetchProfileData, setActiveTab]);
 
@@ -803,14 +856,14 @@ export default function Profile() {
   const unsavPost = async (postId: string) => {
     if (!user) return;
     await supabase.from("saved_posts").delete().eq("post_id", postId).eq("user_id", user.id);
-    setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+    setHistoryPosts((prev) => prev.filter((p) => p.id !== postId));
     toast.success("Removed from saved");
   };
 
   const unsavGossip = async (gossipId: string) => {
     if (!user) return;
     await supabase.from("saved_gossips").delete().eq("gossip_post_id", gossipId).eq("user_id", user.id);
-    setSavedGossips((prev) => prev.filter((g) => g.id !== gossipId));
+    setHistoryGossips((prev) => prev.filter((g) => g.id !== gossipId));
     toast.success("Removed from saved");
   };
 
@@ -838,7 +891,7 @@ export default function Profile() {
   const tabs: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
     { key: "posts", label: "Posts", icon: <LayoutList className="h-4 w-4" /> },
     { key: "gallery", label: "Gallery", icon: <Grid className="h-4 w-4" /> },
-    ...(isOwnProfile ? [{ key: "saved" as ProfileTab, label: "Saved", icon: <Bookmark className="h-4 w-4" /> }] : []),
+    ...(isOwnProfile ? [{ key: "history" as ProfileTab, label: "History", icon: <Bookmark className="h-4 w-4" /> }] : []),
     ...(isOwnProfile ? [{ key: "archived" as ProfileTab, label: "Archived", icon: <Archive className="h-4 w-4" /> }] : []),
   ];
 
@@ -1304,10 +1357,10 @@ export default function Profile() {
                 </motion.div>
               )}
 
-              {/* SAVED TAB - only own profile */}
-              {activeTab === "saved" && isOwnProfile && (
+              {/* HISTORY TAB - only own profile */}
+              {activeTab === "history" && isOwnProfile && (
                 <motion.div
-                  key="saved"
+                  key="history"
                   custom={tabDirection}
                   initial={{ opacity: 0, x: tabDirection * 30 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -1316,35 +1369,54 @@ export default function Profile() {
                   className="space-y-4"
                 >
                   {/* Sub-filter */}
-                  <div className="flex gap-2 p-1 glass-panel rounded-full max-w-[220px] mx-auto">
+                  <div className="flex gap-2 p-1 glass-panel rounded-full max-w-[340px] mx-auto overflow-x-auto no-scrollbar">
                     <button
-                      onClick={() => setSavedSubFilter("posts")}
-                      className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "posts" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+                      onClick={() => setHistorySubFilter("saved")}
+                      className={`flex-1 min-w-[70px] py-1.5 rounded-full text-xs font-bold transition-all ${historySubFilter === "saved" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
                     >
-                      Posts
+                      Saved
                     </button>
                     <button
-                      onClick={() => setSavedSubFilter("gossip")}
-                      className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${savedSubFilter === "gossip" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+                      onClick={() => setHistorySubFilter("gossip")}
+                      className={`flex-1 min-w-[70px] py-1.5 rounded-full text-xs font-bold transition-all ${historySubFilter === "gossip" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
                     >
                       Gossip
                     </button>
+                    <button
+                      onClick={() => setHistorySubFilter("liked")}
+                      className={`flex-1 min-w-[70px] py-1.5 rounded-full text-xs font-bold transition-all ${historySubFilter === "liked" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+                    >
+                      Liked
+                    </button>
+                    <button
+                      onClick={() => setHistorySubFilter("commented")}
+                      className={`flex-1 min-w-[70px] py-1.5 rounded-full text-xs font-bold transition-all ${historySubFilter === "commented" ? "bg-white/10 text-white shadow-md" : "text-muted-foreground hover:text-white/70"}`}
+                    >
+                      Commented
+                    </button>
                   </div>
 
-                  {loadingSaved ? (
+                  {loadingHistory ? (
                     <div className="flex justify-center py-10">
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     </div>
-                  ) : savedSubFilter === "posts" ? (
-                    savedPosts.length === 0 ? (
-                      <div className="py-20 text-center">
-                        <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                        <p className="text-sm text-muted-foreground font-medium">No saved posts yet.</p>
-                      </div>
-                    ) : (
-                      savedPosts.map((post, i) => (
+                  ) : historySubFilter === "saved" || historySubFilter === "liked" || historySubFilter === "commented" ? (
+                    (() => {
+                      const postsToRender = historySubFilter === "saved" ? historyPosts : historySubFilter === "liked" ? likedPosts : commentedPosts;
+                      const emptyMessage = historySubFilter === "saved" ? "No saved posts yet." : historySubFilter === "liked" ? "No liked posts yet." : "No commented posts yet.";
+                      
+                      if (postsToRender.length === 0) {
+                        return (
+                          <div className="py-20 text-center">
+                            <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                            <p className="text-sm text-muted-foreground font-medium">{emptyMessage}</p>
+                          </div>
+                        );
+                      }
+                      
+                      return postsToRender.map((post, i) => (
                         <motion.div
-                          key={post.id}
+                          key={`${post.id}-${i}`}
                           initial={{ opacity: 0, y: 15 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
@@ -1366,30 +1438,37 @@ export default function Profile() {
                                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                               </p>
                             </div>
-                            <motion.button
-                              onClick={() => unsavPost(post.id)}
-                              whileTap={{ scale: 1.4 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                              className="text-foreground"
-                            >
-                              <Bookmark className="h-4 w-4 fill-current" />
-                            </motion.button>
+                            {historySubFilter === "saved" && (
+                              <motion.button
+                                onClick={() => unsavPost(post.id)}
+                                whileTap={{ scale: 1.4 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                className="text-foreground"
+                              >
+                                <Bookmark className="h-4 w-4 fill-current" />
+                              </motion.button>
+                            )}
                           </div>
+                          {historySubFilter !== "saved" && post.context && (
+                             <div className="mb-3 px-3 py-1.5 rounded-lg bg-white/5 border border-primary/20 text-xs text-primary/90 italic shadow-[0_0_10px_rgba(124,58,237,0.1)]">
+                               {post.context}
+                             </div>
+                          )}
                           {post.image_url && (
                             <img src={post.image_url} alt="Saved post" className="w-full rounded-xl max-h-48 object-cover mb-3 border border-white/5" loading="lazy" />
                           )}
                           <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
                         </motion.div>
-                      ))
-                    )
+                      ));
+                    })()
                   ) : (
-                    savedGossips.length === 0 ? (
+                    historyGossips.length === 0 ? (
                       <div className="py-20 text-center">
                         <Bookmark className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
                         <p className="text-sm text-muted-foreground font-medium">No saved gossip yet.</p>
                       </div>
                     ) : (
-                      savedGossips.map((gossip, i) => (
+                      historyGossips.map((gossip, i) => (
                         <motion.div
                           key={gossip.id}
                           initial={{ opacity: 0, y: 15 }}
