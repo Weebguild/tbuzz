@@ -425,6 +425,7 @@ export default function Profile() {
         .from("comments")
         .select("post_id, created_at, content")
         .eq("user_id", user.id)
+        .not("post_id", "is", null)
         .order("created_at", { ascending: false });
 
       if (comments && comments.length > 0) {
